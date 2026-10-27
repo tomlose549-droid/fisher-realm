@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1c443e">
   <title>湖畔慢时光 · 3D 钓鱼</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23224942'/%3E%3Cpath d='M12 38q10-10 20 0t20 0M12 48q10-10 20 0t20 0' fill='none' stroke='%23c4d9bd' stroke-width='4'/%3E%3Ccircle cx='32' cy='20' r='7' fill='%23edce8e'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=menu1">
+  <link rel="stylesheet" href="./style.css?v=pond1">
 </head>
 <body>
   <main id="game" aria-label="第一人称三维湖边场景">
@@ -14,7 +14,7 @@
     <div class="vignette" aria-hidden="true"></div>
     <header class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true">≋</span><div><h1>湖畔<span>慢时光</span></h1><p>A LITTLE TIME BY THE LAKE</p></div></div>
-      <div class="top-right"><span class="version"><i></i> 场景体验版 <b>V0.1</b></span><button id="help" class="icon-button" title="操作说明" aria-label="操作说明">?</button><button id="settings-toggle" class="icon-button settings-toggle" title="展开设置" aria-label="展开设置" aria-expanded="false" aria-controls="settings-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.4 3-.5 2-1.6.9-2-.6-2.6 4.4 1.5 1.5v1.8l-1.5 1.5 2.6 4.4 2-.6 1.6.9.5 2h5.2l.5-2 1.6-.9 2 .6 2.6-4.4-1.5-1.5v-1.8l1.5-1.5-2.6-4.4-2 .6-1.6-.9-.5-2Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="top-right"><span class="version"><i></i> 场景体验版 <b>V0.2</b></span><button id="help" class="icon-button" title="操作说明" aria-label="操作说明">?</button><button id="settings-toggle" class="icon-button settings-toggle" title="展开设置" aria-label="展开设置" aria-expanded="false" aria-controls="settings-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.4 3-.5 2-1.6.9-2-.6-2.6 4.4 1.5 1.5v1.8l-1.5 1.5 2.6 4.4 2-.6 1.6.9.5 2h5.2l.5-2 1.6-.9 2 .6 2.6-4.4-1.5-1.5v-1.8l1.5-1.5-2.6-4.4-2 .6-1.6-.9-.5-2Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       <section id="settings-panel" class="settings-panel" aria-label="场景设置与操作提示" hidden>
         <h2>湖边设置</h2>
         <div class="controls"><span class="control"><kbd>右键拖动 / 方向键</kbd> 环顾</span><span class="control"><kbd>R</kbd> 回正 <kbd>F</kbd> 全屏</span></div>
@@ -22,18 +22,18 @@
         <p class="phase">这一版，先享受湖景</p>
       </section>
     </header>
-    <aside class="location"><span class="eyebrow">YOUR QUIET CORNER</span><h2>松风湖 <span>·</span> 一号码头</h2><p><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>晴朗清晨 <span>微风拂面</span></p></aside>
+    <aside class="location"><span class="eyebrow">YOUR QUIET CORNER</span><h2>夏日池塘 <span>·</span> 林间钓位</h2><p><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>晴朗夏日 <span>微风拂面</span></p></aside>
     <div class="crosshair" aria-hidden="true"></div>
-    <section id="welcome" class="welcome"><span class="eyebrow">TAKE A BREATH.</span><h2>在湖边，慢下来。</h2><p>让风吹过松林，听时间停在水面。<br>你的第一处钓位，已经准备好了。</p><div class="welcome-tip"><span class="mouse-icon" aria-hidden="true"></span>按住鼠标右键，看看四周 <span>↔</span></div></section>
+    <section id="welcome" class="welcome"><span class="eyebrow">TAKE A BREATH.</span><h2>在湖边，慢下来。</h2><p>让风吹过树梢，听时间停在水面。<br>你的第一处钓位，已经准备好了。</p><div class="welcome-tip"><span class="mouse-icon" aria-hidden="true"></span>按住鼠标右键，看看四周 <span>↔</span></div></section>
     <div id="toast" role="status" aria-live="polite"></div>
-    <dialog id="help-dialog"><form method="dialog"><button class="close" aria-label="关闭">×</button><span class="eyebrow">WELCOME TO THE LAKE</span><h2>留一点时间给湖边</h2><p>这是 V0.1 场景体验版。你固定坐在木质钓台上，可以自由环顾湖景；抛竿和鱼获将在后续版本加入。</p><dl><div><dt>鼠标右键拖动 / 方向键</dt><dd>环顾四周</dd></div><div><dt>R / 回到钓位</dt><dd>恢复初始视角</dd></div><div><dt>F / 全屏按钮</dt><dd>进入或退出全屏</dd></div><div><dt>画质按钮</dt><dd>精细与流畅模式切换</dd></div></dl><p class="touch-help">触屏设备：单指拖动观察。</p><button class="primary">开始看风景 <span>→</span></button></form></dialog>
+    <dialog id="help-dialog"><form method="dialog"><button class="close" aria-label="关闭">×</button><span class="eyebrow">WELCOME TO THE LAKE</span><h2>留一点时间给湖边</h2><p>这是 V0.2 夏日池塘场景版。你固定坐在自然岸边的棕橙色椅子上，左右两侧各约 10 米处有黑灰和米白色椅子，可以自由环顾池塘；抛竿和鱼获将在后续版本加入。</p><dl><div><dt>鼠标右键拖动 / 方向键</dt><dd>环顾四周</dd></div><div><dt>R / 回到钓位</dt><dd>恢复初始视角</dd></div><div><dt>F / 全屏按钮</dt><dd>进入或退出全屏</dd></div><div><dt>画质按钮</dt><dd>精细与流畅模式切换</dd></div></dl><p class="touch-help">触屏设备：单指拖动观察。</p><button class="primary">开始看风景 <span>→</span></button></form></dialog>
     <div id="loading" class="loading"><span class="loading-mark">≋</span><h2>湖畔慢时光</h2><p id="loading-text">正在走向湖边…</p><span class="loading-line"></span></div>
     <div id="error" class="error" hidden><h2>暂时没能打开湖景</h2><p id="error-text"></p><button onclick="location.reload()">重新加载</button></div>
   </main>
   <script>
     window.showGameError = (message) => { document.getElementById('loading').hidden = true; document.getElementById('error').hidden = false; document.getElementById('error-text').textContent = message; };
     if (location.protocol === 'file:') showGameError('请关闭此页，双击文件夹中的「启动游戏.cmd」。游戏需要通过本地服务器打开。');
-    else { import('./main.js?v=menu1').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
+    else { import('./main.js?v=pond1').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
   </script>
 </body>
 </html>

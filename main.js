@@ -283,21 +283,40 @@ canvas.addEventListener('pointermove', e => {
 canvas.addEventListener('pointerup', stopDragging);canvas.addEventListener('pointercancel',stopDragging);canvas.addEventListener('lostpointercapture',stopDragging);
 window.addEventListener('blur', () => {stopDragging();keys.clear();});
 document.addEventListener('visibilitychange', () => {stopDragging();keys.clear();});
-document.querySelector('#reset').addEventListener('click',reset);
+const settingsToggle=document.querySelector('#settings-toggle'),settingsPanel=document.querySelector('#settings-panel');
+function setSettingsOpen(open) {
+  settingsPanel.hidden=!open;settingsToggle.setAttribute('aria-expanded',String(open));
+  settingsToggle.title=open?'收起设置':'展开设置';settingsToggle.setAttribute('aria-label',settingsToggle.title);
+  if(open){keys.clear();stopDragging();}
+  else if(settingsPanel.contains(document.activeElement))settingsToggle.focus({preventScroll:true});
+}
+settingsToggle.addEventListener('click',()=>setSettingsOpen(settingsPanel.hidden));
+document.addEventListener('pointerdown',e=>{
+  if(!settingsPanel.hidden&&!settingsPanel.contains(e.target)&&!settingsToggle.contains(e.target))setSettingsOpen(false);
+});
+document.addEventListener('focusin',e=>{
+  if(!settingsPanel.hidden&&!settingsPanel.contains(e.target)&&!settingsToggle.contains(e.target))setSettingsOpen(false);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!settingsPanel.hidden){e.preventDefault();setSettingsOpen(false);settingsToggle.focus({preventScroll:true});}
+});
+document.querySelector('#reset').addEventListener('click',()=>{reset();setSettingsOpen(false);});
 document.querySelector('#quality').addEventListener('click', () => {
   fine=!fine;renderer.setPixelRatio(Math.min(devicePixelRatio,fine?1.7:1));renderer.shadowMap.enabled=fine;renderer.shadowMap.needsUpdate=true;
   document.querySelector('#quality span').textContent=`画质 · ${fine?'精细':'流畅'}`;toast(fine?'精细画质 · 阴影与湖面反射已开启':'流畅画质 · 降低分辨率与反射更新频率');
 });
 async function fullscreen() {
+  setSettingsOpen(false);
   try { if (document.fullscreenElement) await document.exitFullscreen();else if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();else toast('当前预览不支持全屏，可在浏览器中打开游戏'); }
   catch { toast('当前窗口限制了全屏，请在独立浏览器中打开'); }
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
-document.querySelector('#help').addEventListener('click',()=>{keys.clear();stopDragging();dialog.showModal();});
+document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();dialog.showModal();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
   if(dialog.open || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(!settingsPanel.hidden&&e.code.startsWith('Arrow'))return;
   if(e.code.startsWith('Arrow')){e.preventDefault();keys.add(e.code);dismissWelcome();}
   if(e.repeat)return;
   if(e.code==='KeyR')reset();if(e.code==='KeyF')fullscreen();

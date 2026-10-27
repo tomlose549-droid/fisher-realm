@@ -1,0 +1,9 @@
+{
+  "name": "lakeside-fishing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
+  "scripts": { "start": "node server.cjs" },
+  "dependencies": { "three": "0.186.1" }
+}

@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import { createPond } from './pond-scene.js?v=pond1';
+import { createFishing } from './fishing.js?v=fishing1';
 
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -36,30 +37,38 @@ const keys = new Set(), toastElement = document.querySelector('#toast');
 let toastTimer;
 function toast(message) { toastElement.textContent = message; toastElement.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastElement.classList.remove('visible'), 2400); }
 function dismissWelcome() { if (!explored) { explored = true; document.querySelector('#welcome').classList.add('dismissed'); } }
-function reset() { targetYaw = 0; targetPitch = -.065; toast('已回到面向池塘的初始视角'); }
+function reset() { if(fishing.isActive()){toast('本轮结束后可重置视角');return;}targetYaw = 0; targetPitch = -.065; toast('已回到面向池塘的初始视角'); }
 function stopDragging() { dragging = false; touchId = null; canvas.style.cursor = 'grab'; }
+const fishing=createFishing({scene,camera,player:cameraOrigin,canvas,idleRod:rod,toast,onReady:heading=>{targetYaw=heading;targetPitch=-.065;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
+  if(!settingsPanel.hidden||dialog.open)return;
+  if(fishing.pointerDown(e))return;
+  if(fishing.isFighting())return;
   if (e.button !== 2 && e.pointerType !== 'touch') return;
   if (dragging) return;
   dragging = true; touchId = e.pointerId; lastX=e.clientX;lastY=e.clientY;
   canvas.setPointerCapture(e.pointerId); canvas.style.cursor='grabbing';canvas.focus();
 });
 canvas.addEventListener('pointermove', e => {
+  if(!settingsPanel.hidden||dialog.open)return;
+  fishing.pointerMove(e);if(fishing.isFighting())return;
   if (!dragging || e.pointerId !== touchId) return;
   const dx=e.clientX-lastX,dy=e.clientY-lastY;
   targetYaw -= dx*.003;targetPitch = THREE.MathUtils.clamp(targetPitch-dy*.0027,-1.12,.94);
   lastX=e.clientX;lastY=e.clientY;if(Math.abs(dx)+Math.abs(dy)>1)dismissWelcome();
 });
 canvas.addEventListener('pointerup', stopDragging);canvas.addEventListener('pointercancel',stopDragging);canvas.addEventListener('lostpointercapture',stopDragging);
-window.addEventListener('blur', () => {stopDragging();keys.clear();});
-document.addEventListener('visibilitychange', () => {stopDragging();keys.clear();});
+document.addEventListener('pointerup',e=>{if(e.button===0)fishing.release();});
+document.addEventListener('pointercancel',()=>fishing.release());
+window.addEventListener('blur', () => {stopDragging();keys.clear();fishing.release();});
+document.addEventListener('visibilitychange', () => {stopDragging();keys.clear();fishing.release();});
 const settingsToggle=document.querySelector('#settings-toggle'),settingsPanel=document.querySelector('#settings-panel');
 function setSettingsOpen(open) {
   settingsPanel.hidden=!open;settingsToggle.setAttribute('aria-expanded',String(open));
   settingsToggle.title=open?'收起设置':'展开设置';settingsToggle.setAttribute('aria-label',settingsToggle.title);
-  if(open){keys.clear();stopDragging();}
+  if(open){keys.clear();stopDragging();fishing.release();}
   else if(settingsPanel.contains(document.activeElement))settingsToggle.focus({preventScroll:true});
 }
 settingsToggle.addEventListener('click',()=>setSettingsOpen(settingsPanel.hidden));
@@ -84,10 +93,12 @@ async function fullscreen() {
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
-document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();dialog.showModal();});
+document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();dialog.showModal();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
-  if(dialog.open || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(e.defaultPrevented||dialog.open||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(!/BUTTON|A/.test(e.target.tagName)&&settingsPanel.hidden&&fishing.key(e)){e.preventDefault();return;}
+  if(fishing.isFighting()&&e.code.startsWith('Arrow'))return;
   if(!settingsPanel.hidden&&e.code.startsWith('Arrow'))return;
   if(e.code.startsWith('Arrow')){e.preventDefault();keys.add(e.code);dismissWelcome();}
   if(e.repeat)return;
@@ -110,6 +121,8 @@ function animate(now){
   if(now<nextFrame)return;
   nextFrame+=FRAME_MS;if(nextFrame<=now)nextFrame=now+FRAME_MS;
   clock.update();const dt=Math.min(clock.getDelta(),.12);elapsed+=dt;
+  fishing.update(now/1000);const tracked=fishing.view();
+  if(tracked){targetYaw=yaw+Math.atan2(Math.sin(tracked.yaw-yaw),Math.cos(tracked.yaw-yaw));targetPitch=tracked.pitch;}
   if(keys.has('ArrowLeft'))targetYaw+=dt*.8;if(keys.has('ArrowRight'))targetYaw-=dt*.8;
   if(keys.has('ArrowUp'))targetPitch+=dt*.55;if(keys.has('ArrowDown'))targetPitch-=dt*.55;
   targetPitch=THREE.MathUtils.clamp(targetPitch,-1.12,.94);
@@ -124,9 +137,9 @@ function animate(now){
     camera.getWorldDirection(lookDirection);lookTarget.copy(camera.position).add(lookDirection);lookTarget.y=2*water.position.y-lookTarget.y;
     reflectionCamera.up.set(0,-1,0);reflectionCamera.lookAt(lookTarget);reflectionCamera.updateMatrixWorld();
     reflectionMatrix.multiplyMatrices(reflectionCamera.projectionMatrix,reflectionCamera.matrixWorldInverse);
-    water.visible=false;rod.visible=false;
+    water.visible=false;rod.visible=false;fishing.hideReflection();
     renderer.setRenderTarget(reflectionTarget);renderer.render(scene,reflectionCamera);renderer.setRenderTarget(null);
-    water.visible=true;rod.visible=true;
+    water.visible=true;fishing.restoreReflection();
   }
   renderer.render(scene,camera);frame++;sampleFrames++;
   if(frame===3){sampleStart=performance.now();sampleFrames=0;}
@@ -139,4 +152,4 @@ function animate(now){
 animate(performance.now());
 document.querySelector('#loading').classList.add('done');
 setTimeout(()=>{document.querySelector('#loading').hidden=true;},750);
-window.lakeside={getState:()=>({version:'0.2.0',scene:'summer-pond',yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={getState:()=>({version:'0.3.0',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};

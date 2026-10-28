@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING} from './fishing-rules.js?v=fishing1';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=fishing1';
+import {createWaterEffects} from './water-effects.js?v=water1';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){
   const session=new FishingSession(),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
@@ -22,26 +23,28 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   add(new THREE.SphereGeometry(.085,10,7),material('#e7e3c6'),marker,[0,.015,0],[.8,1.1,.8]);
   add(new THREE.CylinderGeometry(.033,.04,.13,8),material('#cb6450'),marker,[0,.13,0]);
   const ring=add(new THREE.RingGeometry(.18,.20,32),new THREE.MeshBasicMaterial({color:'#dce5b6',transparent:true,opacity:.35,side:THREE.DoubleSide,depthWrite:false}),marker,[0,.012,0]);ring.rotation.x=-Math.PI/2;
-  // One species: an oval tilapia body, striped scales, spiny dorsal fin and tail.
-  const fish=new THREE.Group();fish.name='tilapia';fish.visible=false;scene.add(fish);
-  const scaleCanvas=document.createElement('canvas');scaleCanvas.width=256;scaleCanvas.height=128;const ctx=scaleCanvas.getContext('2d');
-  const gradient=ctx.createLinearGradient(0,0,0,128);gradient.addColorStop(0,'#637455');gradient.addColorStop(.5,'#b6bd94');gradient.addColorStop(1,'#dadbc1');ctx.fillStyle=gradient;ctx.fillRect(0,0,256,128);
-  for(let i=0;i<7;i++){ctx.fillStyle='#344e3e66';ctx.fillRect(i*38+7,15,12,88);}
-  ctx.strokeStyle='#f0eed348';for(let y=15;y<120;y+=12)for(let x=(y%24?0:8);x<256;x+=16){ctx.beginPath();ctx.arc(x,y,8,0,Math.PI);ctx.stroke();}
-  const scales=new THREE.CanvasTexture(scaleCanvas);scales.colorSpace=THREE.SRGBColorSpace;
-  add(new THREE.SphereGeometry(1,20,14),material('#ffffff',{map:scales,roughness:.48}),fish,[0,0,0],[.14,.23,.40]);
-  const finMat=material('#82936c',{side:THREE.DoubleSide,transparent:true,opacity:.85});
-  const finPositions=[],finIndices=[];for(let i=0;i<8;i++){const z=-.27+i*.073,h=.22+Math.sin(i/7*Math.PI)*.13;finPositions.push(0,.13,z,0,h,z+.025);if(i<7){const n=i*2;finIndices.push(n,n+1,n+2,n+1,n+3,n+2);}}
-  const dorsal=new THREE.BufferGeometry();dorsal.setAttribute('position',new THREE.Float32BufferAttribute(finPositions,3));dorsal.setIndex(finIndices);dorsal.computeVertexNormals();add(dorsal,finMat,fish);
-  const tail=new THREE.BufferGeometry();tail.setAttribute('position',new THREE.Float32BufferAttribute([0,0,-.32,0,.19,-.59,0,.02,-.53,0,-.19,-.59],3));tail.setIndex([0,1,2,0,2,3]);tail.computeVertexNormals();add(tail,finMat,fish);
-  for(const side of[-1,1]){add(new THREE.SphereGeometry(.039,10,7),material('#dedfc9'),fish,[side*.11,.075,.25]);add(new THREE.SphereGeometry(.023,8,6),material('#1d2a21',{roughness:.18}),fish,[side*.142,.075,.26]);const fin=add(new THREE.ConeGeometry(.06,.20,5),finMat,fish,[side*.16,-.03,.08]);fin.rotation.z=side*.9;}
-  const mouth=add(new THREE.TorusGeometry(.035,.011,5,12),material('#939b7a'),fish,[0,-.025,.39]);
+  // Fish exists only in the rules. There is no visible fish mesh or fish texture.
+  const waterEffects=createWaterEffects(scene);
+  const retrieveStart=new THREE.Vector3(),retrieveEnd=new THREE.Vector3(),sideVector=new THREE.Vector3();
+  let shorelineDistance=4.5,lastLandedCast=null,lastTrailAt=-Infinity,retrievalProgress=0;
   const target=new THREE.Vector3(),rodTip=new THREE.Vector3(),castDirection=new THREE.Vector3(),handOffset=new THREE.Vector3();
   let pointerX=null,lastStatus='';
   function getTarget(distance=session.distance){return target.set(player.x-Math.sin(session.fishYaw)*distance,.06,player.z-Math.cos(session.fishYaw)*distance);}
-  function fishHeight(distance){const t=1-THREE.MathUtils.smoothstep(distance,FISHING.catchDistance,5);return .06+t*.94;}
-  function waterPoint(yaw){const x=player.x-Math.sin(yaw)*FISHING.distance,z=player.z-Math.cos(yaw)*FISHING.distance;
-    const nx=x/34,nz=(z+14)/41,a=Math.atan2(nz,nx),wobble=1+.026*Math.sin(a*5+.5)+.015*Math.cos(a*7);return Math.hypot(nx,nz)<wobble*.98;}
+  function insideWater(x,z,margin=.995){
+    const nx=x/34,nz=(z+14)/41,a=Math.atan2(nz,nx),wobble=1+.026*Math.sin(a*5+.5)+.015*Math.cos(a*7);
+    return Math.hypot(nx,nz)<wobble*margin;
+  }
+  function waterPoint(yaw){return insideWater(player.x-Math.sin(yaw)*FISHING.distance,player.z-Math.cos(yaw)*FISHING.distance,.98);}
+  function findShore(yaw){let dry=0,wet=FISHING.distance;for(let i=0;i<22;i++){const d=(dry+wet)*.5;if(insideWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d))wet=d;else dry=d;}return wet;}
+  // Keep visible water effects in the pond even when the logical catch distance
+  // extends into the player's natural-bank clearing.
+  function surfaceTarget(distance=session.distance){getTarget(Math.max(distance,shorelineDistance+.24));target.y=.025;return target;}
+  function retrieval(age){
+    const progress=THREE.MathUtils.clamp(age/FISHING.recastDelay,0,1);
+    const pull=THREE.MathUtils.clamp((age-.10)/.65,0,1),eased=THREE.MathUtils.smoothstep(pull,0,1);
+    const lift=progress<.4?THREE.MathUtils.smoothstep(progress,0,.4):1-THREE.MathUtils.smoothstep(progress,.4,1);
+    return {progress,eased,lift,arc:Math.sin(eased*Math.PI)};
+  }
   function key(event){
     if(event.repeat)return event.code==='Space';
     const t=now();session.advance(t);
@@ -61,14 +64,39 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   }
   function pointerDown(event){if(event.button===0&&session.state==='fighting'){session.setReeling(true,now());canvas.setPointerCapture(event.pointerId);canvas.focus();return true;}return false;}
   function release(){session.setReeling(false,now());pointerX=null;}
-  function view(){if(!['fighting','caught'].includes(session.state))return null;getTarget();target.y=fishHeight(session.distance)+.05;castDirection.copy(target).sub(player);return {yaw:Math.atan2(-castDirection.x,-castDirection.z),pitch:Math.atan2(castDirection.y,Math.hypot(castDirection.x,castDirection.z))};}
+  function view(){
+    if(!['fighting','caught'].includes(session.state))return null;
+    surfaceTarget();castDirection.copy(target).sub(player);
+    const yaw=Math.atan2(-castDirection.x,-castDirection.z);
+    let pitch=Math.atan2(castDirection.y,Math.hypot(castDirection.x,castDirection.z));
+    if(session.state==='caught'){
+      const progress=THREE.MathUtils.clamp((now()-session.catchAt)/FISHING.recastDelay,0,1);
+      pitch=THREE.MathUtils.lerp(pitch,-.065,THREE.MathUtils.smoothstep(progress,0,1))+Math.sin(progress*Math.PI)*.45;
+    }
+    return {yaw,pitch};
+  }
   function update(t){
     session.advance(t);
     for(const event of session.drainEvents()){
-      if(event.type==='hooked'){pointerX=null;onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
+      if(event.type==='cast'){shorelineDistance=findShore(session.fishYaw);lastTrailAt=-Infinity;retrievalProgress=0;}
+      if(event.type==='hooked'){pointerX=null;waterEffects.pulse('hook',surfaceTarget(),event.at);onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
       if(event.type==='missed'){toast('鱼脱钩了 · 按空格重新抛竿');onReady(session.fishYaw);}
+      if(event.type==='caught'){
+        retrieveStart.copy(surfaceTarget(FISHING.catchDistance));
+        retrieveEnd.set(.16,-.53,-.85).applyAxisAngle(axisY,session.fishYaw).add(player);
+        sideVector.set(Math.cos(session.fishYaw),0,-Math.sin(session.fishYaw));
+        waterEffects.pulse('catch',retrieveStart,event.at);
+      }
       if(event.type==='ready')onReady(session.fishYaw);
     }
+    if(session.active&&session.castAt!==lastLandedCast&&t>=session.castAt+FISHING.flight){
+      lastLandedCast=session.castAt;
+      if(t-session.castAt-FISHING.flight<1.15)waterEffects.pulse('landing',surfaceTarget(FISHING.distance),session.castAt+FISHING.flight);
+    }
+    if(session.state==='fighting'&&session.reeling&&t-lastTrailAt>=.18){
+      lastTrailAt=t;waterEffects.pulse('trail',surfaceTarget(),t,.8+session.efficiency*.24);
+    }
+    waterEffects.update(t);
     const opacity=session.noticeOpacity(t);notice.style.opacity=String(opacity);notice.hidden=opacity===0;
     const stage=session.state;
     let text='空格抛竿 · 23 米';
@@ -78,24 +106,43 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     if(stage==='fighting')text=`${session.reeling?'正在收线':'按住左键收线'} · ${session.distance.toFixed(2)} 米 · 效率 ${Math.round(session.efficiency*100)}%`;
     if(stage==='caught')text='收竿中…';
     if(text!==lastStatus){status.textContent=text;lastStatus=text;}status.dataset.state=stage;
-    if(stage==='idle'){rod.visible=line.visible=marker.visible=fish.visible=false;idleRod.visible=true;canvas.style.cursor='grab';return;}
+    if(stage==='idle'){rod.visible=line.visible=marker.visible=false;idleRod.visible=true;canvas.style.cursor='grab';return;}
     idleRod.visible=false;rod.visible=line.visible=true;canvas.style.cursor=stage==='fighting'?'crosshair':'grab';
     handOffset.set(.34,-.47,-.12).applyAxisAngle(axisY,session.fishYaw);rod.position.copy(player).add(handOffset);
     rod.rotation.set(.025,session.rodYaw,0);
     const castProgress=THREE.MathUtils.clamp((t-session.castAt)/FISHING.flight,0,1);
     if(stage==='casting')rod.rotation.x+=Math.sin(castProgress*Math.PI)*.7;
-    if(stage==='caught')rod.rotation.x+=THREE.MathUtils.clamp((t-session.catchAt)/.4,0,1)*.3;
+    const motion=stage==='caught'?retrieval(t-session.catchAt):null;
+    if(motion){
+      retrievalProgress=motion.progress;rod.rotation.x+=motion.lift*.65;
+      rod.rotation.y+=signedAngle(session.fishYaw-session.rodYaw)*motion.eased;
+    }
     if(stage==='fighting'&&session.reeling)reelHandle.rotation.z=t*12;
     rod.updateMatrixWorld(true);rodTip.set(...points.at(-1)).applyMatrix4(rod.matrixWorld);
     getTarget();
     if(stage==='casting'){const destination=target.clone();target.copy(player).lerp(destination,castProgress);target.y=player.y*(1-castProgress)+Math.sin(castProgress*Math.PI)*2.9+.06;}
     else if(stage==='waiting')target.y=.06+Math.sin(t*2)*.015;
     else if(stage==='bite')target.y=.06+Math.sin((t-session.biteAt)*24)*.16;
-    else target.y=fishHeight(session.distance);
+    else if(stage==='caught'){
+      target.copy(retrieveStart).lerp(retrieveEnd,motion.eased);
+      target.y+=motion.arc*1.10;
+      target.addScaledVector(sideVector,Math.sin(motion.eased*Math.PI*2)*.24*motion.arc);
+    }else surfaceTarget();
     marker.visible=['casting','waiting','bite'].includes(stage);marker.position.copy(target);ring.material.opacity=stage==='bite'?.5:.25;
-    fish.visible=['fighting','caught'].includes(stage);fish.position.copy(target);fish.position.y-=.08;fish.rotation.set(0,session.fishYaw+(stage==='caught'?.7:0),0);
-    for(let i=0;i<25;i++){const u=i/24,index=i*3;lineArray[index]=THREE.MathUtils.lerp(rodTip.x,target.x,u);lineArray[index+1]=THREE.MathUtils.lerp(rodTip.y,target.y,u)-Math.sin(u*Math.PI)*(stage==='fighting'?.055:.30);lineArray[index+2]=THREE.MathUtils.lerp(rodTip.z,target.z,u);}
+    for(let i=0;i<25;i++){
+      const u=i/24,index=i*3,sag=stage==='fighting'?.055:stage==='caught'?.22+motion.arc*.36:.30;
+      lineArray[index]=THREE.MathUtils.lerp(rodTip.x,target.x,u);
+      lineArray[index+1]=THREE.MathUtils.lerp(rodTip.y,target.y,u)-Math.sin(u*Math.PI)*sag;
+      lineArray[index+2]=THREE.MathUtils.lerp(rodTip.z,target.z,u);
+      if(motion){const swing=Math.sin(u*Math.PI)*Math.sin(motion.eased*Math.PI*2)*.18;lineArray[index]+=sideVector.x*swing;lineArray[index+2]+=sideVector.z*swing;}
+    }
     lineGeometry.attributes.position.needsUpdate=true;
   }
-  return {key,pointerMove,pointerDown,release,view,update,isFighting:()=>session.state==='fighting',isActive:()=>session.active,hideReflection(){rod.visible=line.visible=marker.visible=fish.visible=false;},restoreReflection(){const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);fish.visible=['fighting','caught'].includes(session.state);idleRod.visible=!active;},getState:()=>session.snapshot(now())};
+  return {
+    key,pointerMove,pointerDown,release,view,update,
+    isFighting:()=>session.state==='fighting',isActive:()=>session.active,
+    hideReflection(){rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
+    restoreReflection(){const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},
+    getState:()=>({...session.snapshot(now()),visuals:{fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
+  };
 }

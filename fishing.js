@@ -1,10 +1,12 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=fishing1';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=struggle1';
+import {isPondWater} from './pond-boundary.js?v=struggle1';
 import {createWaterEffects} from './water-effects.js?v=water1';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){
-  const session=new FishingSession(),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
+  const session=new FishingSession(Math.random,{player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
   const now=()=>performance.now()/1000;
+  const meters=document.querySelector('#fishing-meters'),lineFill=document.querySelector('#line-fill'),lineValue=document.querySelector('#line-value'),staminaFill=document.querySelector('#stamina-fill'),staminaValue=document.querySelector('#stamina-value'),phaseLabel=document.querySelector('#fish-phase');
   const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.7,...extra});
   const add=(geo,mat,parent,p,s)=>{const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);parent.add(m);return m;};
   const axisY=new THREE.Vector3(0,1,0);
@@ -25,20 +27,29 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   const ring=add(new THREE.RingGeometry(.18,.20,32),new THREE.MeshBasicMaterial({color:'#dce5b6',transparent:true,opacity:.35,side:THREE.DoubleSide,depthWrite:false}),marker,[0,.012,0]);ring.rotation.x=-Math.PI/2;
   // Fish exists only in the rules. There is no visible fish mesh or fish texture.
   const waterEffects=createWaterEffects(scene);
-  const retrieveStart=new THREE.Vector3(),retrieveEnd=new THREE.Vector3(),sideVector=new THREE.Vector3();
+  const retrieveStart=new THREE.Vector3(),retrieveEnd=new THREE.Vector3(),sideVector=new THREE.Vector3(),lastWetSurface=new THREE.Vector3(0,.025,9);
   let shorelineDistance=4.5,lastLandedCast=null,lastTrailAt=-Infinity,retrievalProgress=0;
   const target=new THREE.Vector3(),rodTip=new THREE.Vector3(),castDirection=new THREE.Vector3(),handOffset=new THREE.Vector3();
   let pointerX=null,lastStatus='';
   function getTarget(distance=session.distance){return target.set(player.x-Math.sin(session.fishYaw)*distance,.06,player.z-Math.cos(session.fishYaw)*distance);}
-  function insideWater(x,z,margin=.995){
-    const nx=x/34,nz=(z+14)/41,a=Math.atan2(nz,nx),wobble=1+.026*Math.sin(a*5+.5)+.015*Math.cos(a*7);
-    return Math.hypot(nx,nz)<wobble*margin;
-  }
+  function insideWater(x,z,margin=.995){return isPondWater(x,z,margin);}
   function waterPoint(yaw){return insideWater(player.x-Math.sin(yaw)*FISHING.distance,player.z-Math.cos(yaw)*FISHING.distance,.98);}
-  function findShore(yaw){let dry=0,wet=FISHING.distance;for(let i=0;i<22;i++){const d=(dry+wet)*.5;if(insideWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d))wet=d;else dry=d;}return wet;}
-  // Keep visible water effects in the pond even when the logical catch distance
-  // extends into the player's natural-bank clearing.
-  function surfaceTarget(distance=session.distance){getTarget(Math.max(distance,shorelineDistance+.24));target.y=.025;return target;}
+  function findShore(yaw){
+    let wet=null;
+    for(let d=.5;d<=55;d+=.5)if(insideWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d)){wet=d;break;}
+    if(wet===null)return Infinity;
+    let dry=wet-.5;for(let i=0;i<20;i++){const d=(dry+wet)*.5;if(insideWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d))wet=d;else dry=d;}return wet;
+  }
+  // Motion uses the actual fish position. Effects stop at the shoreline when the
+  // allowed final ten meters include the player's dry-bank clearing.
+  function surfaceTarget(distance=session.distance){
+    getTarget(distance);
+    if(!insideWater(target.x,target.z)){
+      if(Number.isFinite(shorelineDistance))getTarget(Math.max(distance,shorelineDistance+.24));
+      if(!insideWater(target.x,target.z))target.copy(lastWetSurface);
+    }
+    target.y=.025;lastWetSurface.copy(target);return target;
+  }
   function retrieval(age){
     const progress=THREE.MathUtils.clamp(age/FISHING.recastDelay,0,1);
     const pull=THREE.MathUtils.clamp((age-.10)/.65,0,1),eased=THREE.MathUtils.smoothstep(pull,0,1);
@@ -77,26 +88,42 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   }
   function update(t){
     session.advance(t);
+    if(['fighting','caught'].includes(session.state))shorelineDistance=findShore(session.fishYaw);
     for(const event of session.drainEvents()){
       if(event.type==='cast'){shorelineDistance=findShore(session.fishYaw);lastTrailAt=-Infinity;retrievalProgress=0;}
       if(event.type==='hooked'){pointerX=null;waterEffects.pulse('hook',surfaceTarget(),event.at);onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
-      if(event.type==='missed'){toast('鱼脱钩了 · 按空格重新抛竿');onReady(session.fishYaw);}
+      if(event.type==='missed'){toast('鱼脱钩了 · 按空格重新抛竿');onReady(session.castYaw);}
+      if(event.type==='failed'){
+        const messages={'line-broken':'鱼线断了','escaped':'鱼跑出 50 米了','landed':'鱼跑到了 10 米外的陆地'};
+        toast((messages[event.reason]||'钓鱼失败')+' · 按空格重新抛竿');onReady(session.castYaw);
+      }
+      if(event.type==='exhausted')toast('鱼已耗尽耐力 · 现在可安心收线');
       if(event.type==='caught'){
         retrieveStart.copy(surfaceTarget(FISHING.catchDistance));
         retrieveEnd.set(.16,-.53,-.85).applyAxisAngle(axisY,session.fishYaw).add(player);
         sideVector.set(Math.cos(session.fishYaw),0,-Math.sin(session.fishYaw));
         waterEffects.pulse('catch',retrieveStart,event.at);
       }
-      if(event.type==='ready')onReady(session.fishYaw);
+      if(event.type==='ready')onReady(session.castYaw);
     }
     if(session.active&&session.castAt!==lastLandedCast&&t>=session.castAt+FISHING.flight){
       lastLandedCast=session.castAt;
       if(t-session.castAt-FISHING.flight<1.15)waterEffects.pulse('landing',surfaceTarget(FISHING.distance),session.castAt+FISHING.flight);
     }
-    if(session.state==='fighting'&&session.reeling&&t-lastTrailAt>=.18){
+    if(session.state==='fighting'&&(session.reeling||session.struggling)&&t-lastTrailAt>=.18){
       lastTrailAt=t;waterEffects.pulse('trail',surfaceTarget(),t,.8+session.efficiency*.24);
     }
     waterEffects.update(t);
+    const resource=session.snapshot(t);
+    line.material.color.set(resource.lineColor);
+    meters.hidden=!['fighting','caught'].includes(session.state);
+    meters.style.setProperty('--line-color',resource.lineColor);
+    lineFill.style.width=resource.durability+'%';lineValue.textContent=resource.durability.toFixed(1)+' / 100';
+    staminaFill.style.width=(resource.fishStamina/resource.fishStaminaMaximum*100)+'%';staminaValue.textContent=resource.fishStamina.toFixed(1)+' / '+resource.fishStaminaMaximum;
+    document.querySelector('#line-meter').setAttribute('aria-valuenow',resource.durability.toFixed(1));
+    document.querySelector('#stamina-meter').setAttribute('aria-valuenow',resource.fishStamina.toFixed(1));
+    if(session.struggling)phaseLabel.textContent=(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒';
+    else phaseLabel.textContent=session.fishPhase==='exhausted'?'耐力耗尽 · 永久休息':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中';
     const opacity=session.noticeOpacity(t);notice.style.opacity=String(opacity);notice.hidden=opacity===0;
     const stage=session.state;
     let text='空格抛竿 · 23 米';
@@ -108,7 +135,7 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     if(text!==lastStatus){status.textContent=text;lastStatus=text;}status.dataset.state=stage;
     if(stage==='idle'){rod.visible=line.visible=marker.visible=false;idleRod.visible=true;canvas.style.cursor='grab';return;}
     idleRod.visible=false;rod.visible=line.visible=true;canvas.style.cursor=stage==='fighting'?'crosshair':'grab';
-    handOffset.set(.34,-.47,-.12).applyAxisAngle(axisY,session.fishYaw);rod.position.copy(player).add(handOffset);
+    handOffset.set(.34,-.47,-.12).applyAxisAngle(axisY,session.castYaw);rod.position.copy(player).add(handOffset);
     rod.rotation.set(.025,session.rodYaw,0);
     const castProgress=THREE.MathUtils.clamp((t-session.castAt)/FISHING.flight,0,1);
     if(stage==='casting')rod.rotation.x+=Math.sin(castProgress*Math.PI)*.7;
@@ -143,6 +170,6 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     isFighting:()=>session.state==='fighting',isActive:()=>session.active,
     hideReflection(){rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
     restoreReflection(){const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},
-    getState:()=>({...session.snapshot(now()),visuals:{fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
+    getState:()=>({...session.snapshot(now()),visuals:{fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineColor:line.material.color.getHexString(),lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
   };
 }

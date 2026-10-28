@@ -97,7 +97,7 @@ document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(fa
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
   if(e.defaultPrevented||dialog.open||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
-  if(!/BUTTON|A/.test(e.target.tagName)&&settingsPanel.hidden&&fishing.key(e)){e.preventDefault();return;}
+  if(!/^(BUTTON|A)$/.test(e.target.tagName)&&settingsPanel.hidden&&fishing.key(e)){e.preventDefault();return;}
   if(fishing.isFighting()&&e.code.startsWith('Arrow'))return;
   if(!settingsPanel.hidden&&e.code.startsWith('Arrow'))return;
   if(e.code.startsWith('Arrow')){e.preventDefault();keys.add(e.code);dismissWelcome();}

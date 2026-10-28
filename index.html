@@ -35,7 +35,7 @@
   <script>
     window.showGameError = (message) => { document.getElementById('loading').hidden = true; document.getElementById('error').hidden = false; document.getElementById('error-text').textContent = message; };
     if (location.protocol === 'file:') showGameError('请关闭此页，双击文件夹中的「启动游戏.cmd」。游戏需要通过本地服务器打开。');
-    else { import('./main.js?v=fishing1').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
+    else { import('./main.js?v=fishing2').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
   </script>
 </body>
 </html>

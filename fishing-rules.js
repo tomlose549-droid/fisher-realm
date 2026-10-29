@@ -1,7 +1,7 @@
 // Meters, radians, monotonic seconds; resource ticks are independent of rendering.
 export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,hookWindow:1.45,baseSpeed:3.75,catchDistance:1.25,recastDelay:.8,noticeDelay:.3,noticeFadeAt:4.5,noticeFadeDuration:.6,maxDistance:50,landGraceDistance:10,lineMaximum:100,regenDelay:.95,regenInterval:.1,regenAmount:2.5});
 export const TILAPIA=Object.freeze({name:'罗非鱼',strength:Object.freeze({amount:3,interval:.2}),restDuration:3.3,speed:4.2,stamina:44,struggle:Object.freeze({minAngle:32,maxAngle:42,firstDuration:3.9,secondDuration:3.4}),specials:Object.freeze([])});
-export const BLUEGILL=Object.freeze({name:'蓝鳃太阳鱼',strength:Object.freeze({amount:2,interval:.11}),restDuration:4.2,speed:5.6,stamina:56,struggle:Object.freeze({minAngle:27,maxAngle:36,durations:Object.freeze([3,.9,1.6,4.2])}),specials:Object.freeze([])});
+export const BLUEGILL=Object.freeze({name:'蓝鳃太阳鱼',strength:Object.freeze({amount:2,interval:.11}),restDuration:4.2,speed:5.6,stamina:56,struggle:Object.freeze({minAngle:35,maxAngle:41,durations:Object.freeze([3,.9,1.6,4.2])}),specials:Object.freeze([])});
 export const REDEAR=Object.freeze({name:'红耳太阳鱼',strength:Object.freeze({amount:3,interval:.14}),restDuration:4.2,speed:5.3,stamina:45,struggle:Object.freeze({minAngle:40,maxAngle:50,durations:Object.freeze([1.9,1,1.4,3])}),specials:Object.freeze([])});
 export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR]);
 export function pickFish(unit){return FISH_SPECIES[Math.min(FISH_SPECIES.length-1,Math.max(0,Math.floor(unit*FISH_SPECIES.length)))];}

@@ -10,13 +10,13 @@ test('bluegill profile and species selection boundary',()=>{
 });
 test('four timed legs alternate, reroll angles against the fixed baseline, then rest 4.2 s',()=>{
   const rolls=[0,0,0,.2,.4,.6,1,1,0],f=fight({...BLUEGILL,speed:.01},()=>rolls.shift()??0);
-  close(f.struggleYaw,rad(27));const base=f.roundYaw;
+  close(f.struggleYaw,rad(63));const base=f.roundYaw;
   for(const [before,at,name,side,angle]of [[8.999,9,'second',-1,28.8],[9.899,9.9,'third',1,30.6],[11.499,11.5,'fourth',-1,32.4]]){
-    f.advance(before);assert.ok(f.struggling);f.advance(at);assert.equal(f.fishPhase,name);assert.equal(f.phaseSide,side);close(f.struggleYaw-base,rad(side*angle));close(f.roundYaw,base);
+    f.advance(before);assert.ok(f.struggling);f.advance(at);assert.equal(f.fishPhase,name);assert.equal(f.phaseSide,side);close(f.struggleYaw-base,rad(side*(90-angle)));close(f.roundYaw,base);
   }
   f.advance(15.699);assert.equal(f.fishPhase,'fourth');f.advance(15.7);assert.equal(f.fishPhase,'rest');const p=[f.fishX,f.fishZ];f.advance(19.899);assert.deepEqual([f.fishX,f.fishZ],p);f.advance(19.9);assert.equal(f.round,2);assert.equal(f.fishPhase,'first');close(f.roundYaw,f.fishYaw);
 });
-test('bluegill actually travels 5.6 m in one second',()=>{const f=fight(BLUEGILL);f.advance(7);close(f.fishX,-Math.sin(rad(27))*5.6);close(f.fishZ,-23-Math.cos(rad(27))*5.6);});
+test('bluegill actually travels 5.6 m in one second',()=>{const f=fight(BLUEGILL);f.advance(7);close(f.fishX,-Math.sin(rad(63))*5.6);close(f.fishZ,-23-Math.cos(rad(63))*5.6);});
 test('bluegill damage uses 2 per .11 seconds and keeps shared regeneration',()=>{const f=fight();f.setReeling(true,6);f.advance(6.109);close(f.durability,100);f.advance(6.11);close(f.durability,98);f.advance(6.33);close(f.durability,94);f.setReeling(false,6.33);f.advance(7.279);close(f.durability,94);f.advance(7.28);close(f.durability,96.5);});
 test('third and fourth legs both consume stamina and line; rest does neither',()=>{
   for(const t of [9.9,11.5]){const f=fight();f.advance(t);f.setRodYaw(f.struggleYaw,t);f.setReeling(true,t);f.advance(t+.28);close(f.durability,96);close(f.fishStamina,53);}

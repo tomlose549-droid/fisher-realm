@@ -14,12 +14,12 @@ test('stamina tier boundaries at 25 and 75 degrees',()=>{
 });
 test('a round fixes its baseline, rerolls the opposite angle, then rests exactly 3.3 seconds',()=>{
   const values=[0,.1,.2,.9,.8,.7,.3],f=fight({fish:{...TILAPIA,speed:.1},random:()=>values.shift()??.5});
-  assert.equal(f.fishPhase,'first');assert.equal(f.phaseSide,1);close(f.struggleYaw,radians(34));const baseline=f.roundYaw;
-  f.advance(9.899);assert.equal(f.fishPhase,'first');f.advance(9.9);assert.equal(f.fishPhase,'second');assert.equal(f.phaseSide,-1);close(f.struggleYaw-baseline,radians(-41));
+  assert.equal(f.fishPhase,'first');assert.equal(f.phaseSide,1);close(f.struggleYaw,radians(56));const baseline=f.roundYaw;
+  f.advance(9.899);assert.equal(f.fishPhase,'first');f.advance(9.9);assert.equal(f.fishPhase,'second');assert.equal(f.phaseSide,-1);close(f.struggleYaw-baseline,radians(-49));
   f.advance(13.3);assert.equal(f.fishPhase,'rest');const point=[f.fishX,f.fishZ];f.advance(16.599);assert.deepEqual([f.fishX,f.fishZ],point);f.advance(16.6);assert.equal(f.fishPhase,'first');assert.equal(f.round,2);assert.equal(f.phaseSide,-1);close(f.roundYaw,f.fishYaw);close(f.fishStamina,44);
 });
 test('4.2 m/s movement and reeling are simultaneous vectors',()=>{
-  const run=fight({fish:TILAPIA});run.advance(7);close(run.fishX,-Math.sin(radians(32))*4.2);close(run.fishZ,-23-Math.cos(radians(32))*4.2);
+  const run=fight({fish:TILAPIA});run.advance(7);close(run.fishX,-Math.sin(radians(58))*4.2);close(run.fishZ,-23-Math.cos(radians(58))*4.2);
   const pull=fight({fish:TILAPIA});pull.setReeling(true,6);pull.advance(7);assert.ok(pull.distance<run.distance);assert.ok(pull.fishX<0);assert.ok(pull.fishZ>-23);assert.notEqual(pull.fishYaw,pull.rodYaw);
 });
 test('line loses 3 per 0.2 s only while reeling against struggle; recovery begins 0.95 s after the last loss',()=>{
@@ -32,7 +32,7 @@ test('button tapping retains partial resource tick time',()=>{
 test('fish stamina ticks at all three specified rates, without recovering',()=>{
   for(const[offset,expected]of[[0,32],[50,40],[100,41.5]]){const f=fight();f.setRodYaw(f.struggleYaw+radians(offset),6);f.setReeling(true,6);f.advance(7);close(f.fishStamina,expected);f.setReeling(false,7);f.advance(9);close(f.fishStamina,expected);}
 });
-test('position angle and swimming-direction angle remain distinct',()=>{const f=fight();f.setRodYaw(0,6);close(f.angle,0);close(f.struggleAngle,32);close(f.efficiency,1.2);assert.equal(staminaDrain(f.struggleAngle).amount,1);});
+test('position angle and swimming-direction angle remain distinct',()=>{const f=fight();f.setRodYaw(0,6);close(f.angle,0);close(f.struggleAngle,58);close(f.efficiency,1.2);assert.equal(staminaDrain(f.struggleAngle).amount,1);});
 test('stamina zero immediately ends struggle forever, even across many potential rounds',()=>{
   const f=fight();f.setRodYaw(f.struggleYaw,6);f.setReeling(true,6);f.advance(9.75);close(f.fishStamina,0);close(f.durability,46);assert.equal(f.fishPhase,'exhausted');f.setReeling(false,9.75);const p=[f.fishX,f.fishZ];f.advance(100);assert.equal(f.fishPhase,'exhausted');assert.deepEqual([f.fishX,f.fishZ],p);close(f.durability,100);
 });
@@ -43,7 +43,7 @@ test('zero durability causes one failure and a fresh cast starts at 100',()=>{
   const f=fight({fish:TILAPIA});f.setReeling(true,6);f.advance(12.81);assert.equal(f.state,'idle');assert.equal(f.outcome,'line-broken');close(f.durability,0);assert.equal(f.drainEvents().filter(e=>e.type==='failed').length,1);assert.equal(f.cast(12.82,0),true);close(f.durability,100);close(f.fishStamina,44);
 });
 test('exactly 50 m is permitted; exceeding 50 m fails between render frames',()=>{
-  const fish={...TILAPIA,speed:1,struggle:{...TILAPIA.struggle,minAngle:0,maxAngle:0,firstDuration:100,secondDuration:100}},f=fight({fish});
+  const fish={...TILAPIA,speed:1,struggle:{...TILAPIA.struggle,minAngle:90,maxAngle:90,firstDuration:100,secondDuration:100}},f=fight({fish});
   f.advance(33);close(f.distance,50);assert.equal(f.state,'fighting');f.advance(33.001);assert.equal(f.state,'idle');assert.equal(f.outcome,'escaped');close(f.failure.distance,50,1e-6);
 });
 test('land outside 10 m fails; land within 10 m permits the normal catch',()=>{

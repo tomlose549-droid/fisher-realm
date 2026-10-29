@@ -57,7 +57,8 @@ export class FishingSession{
     this.round++;this.roundYaw=this.fishYaw;this.phaseSide=this.randomUnit()<.5?1:-1;
     this.phaseIndex=0;this.fishPhase=PHASES[0];this.chooseDirection();this.phaseEndsAt=t+this.struggleDurations[0];
   }
-  chooseDirection(){const s=this.profile.struggle;this.struggleYaw=this.roundYaw+this.phaseSide*(s.minAngle+this.randomUnit()*(s.maxAngle-s.minAngle))*Math.PI/180;}
+  // Species angles start at the left/right lateral axis and turn toward forward.
+  chooseDirection(){const s=this.profile.struggle,sideAngle=s.minAngle+this.randomUnit()*(s.maxAngle-s.minAngle);this.struggleYaw=this.roundYaw+this.phaseSide*(90-sideAngle)*Math.PI/180;}
   transition(t){
     while(this.state==='fighting'&&t>=this.phaseEndsAt-EPS){
       const end=this.phaseEndsAt;

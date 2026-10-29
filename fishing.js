@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=distance052';
-import {isPondWater} from './pond-boundary.js?v=distance052';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=tilapia053';
+import {isPondWater} from './pond-boundary.js?v=tilapia053';
 import {createWaterEffects} from './water-effects.js?v=water1';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){

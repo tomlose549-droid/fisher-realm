@@ -1,6 +1,6 @@
 // Meters, radians, monotonic seconds; resource ticks are independent of rendering.
 export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,hookWindow:1.45,baseSpeed:3.75,catchDistance:1.25,recastDelay:.8,noticeDelay:.3,noticeFadeAt:4.5,noticeFadeDuration:.6,maxDistance:50,landGraceDistance:10,lineMaximum:100,regenDelay:.95,regenInterval:.1,regenAmount:2.5});
-export const TILAPIA=Object.freeze({name:'罗非鱼',strength:Object.freeze({amount:3,interval:.2}),restDuration:3.3,speed:5.4,stamina:44,struggle:Object.freeze({minAngle:32,maxAngle:45,firstDuration:4,secondDuration:3.5}),specials:Object.freeze([])});
+export const TILAPIA=Object.freeze({name:'罗非鱼',strength:Object.freeze({amount:3,interval:.2}),restDuration:3.3,speed:4.2,stamina:44,struggle:Object.freeze({minAngle:32,maxAngle:42,firstDuration:3.9,secondDuration:3.4}),specials:Object.freeze([])});
 const EPS=1e-9,STEP=.01;
 export function signedAngle(a){return Math.atan2(Math.sin(a),Math.cos(a));}
 export function reelEfficiency(a){a=Math.abs(a);return a<=3+EPS?1.2:a<=30+EPS?1:a<=90+EPS?.75:.2;}

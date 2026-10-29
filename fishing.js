@@ -1,11 +1,13 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=bluegill060';
-import {isPondWater} from './pond-boundary.js?v=bluegill060';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=audio061';
+import {isPondWater} from './pond-boundary.js?v=audio061';
 import {createWaterEffects} from './water-effects.js?v=water1';
+import {createFishingAudio} from './fishing-audio.js?v=audio061';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){
   const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
   const now=()=>performance.now()/1000;
+  const sounds=createFishingAudio();
   const distanceLabel=document.querySelector('#fish-distance'),distancePoint=new THREE.Vector3();
   let lastDistanceText='';
   const meters=document.querySelector('#fishing-meters'),lineFill=document.querySelector('#line-fill'),lineValue=document.querySelector('#line-value'),staminaFill=document.querySelector('#stamina-fill'),staminaValue=document.querySelector('#stamina-value'),phaseLabel=document.querySelector('#fish-phase');
@@ -105,14 +107,16 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     if(['fighting','caught'].includes(session.state))shorelineDistance=findShore(session.fishYaw);
     for(const event of session.drainEvents()){
       if(event.type==='cast'){shorelineDistance=findShore(session.fishYaw);lastTrailAt=-Infinity;retrievalProgress=0;}
-      if(event.type==='hooked'){pointerX=null;waterEffects.pulse('hook',surfaceTarget(),event.at);onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
+      if(event.type==='hooked'){sounds.play('hooked');pointerX=null;waterEffects.pulse('hook',surfaceTarget(),event.at);onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
       if(event.type==='missed'){toast('鱼脱钩了 · 按空格重新抛竿');onReady(session.castYaw);}
       if(event.type==='failed'){
+        if(event.reason==='line-broken')sounds.play('broken');
         const messages={'line-broken':'鱼线断了','escaped':'鱼跑出 50 米了','landed':'鱼跑到了 10 米外的陆地'};
         toast((messages[event.reason]||'钓鱼失败')+' · 按空格重新抛竿');onReady(session.castYaw);
       }
       if(event.type==='exhausted')toast('鱼已耗尽耐力 · 现在可安心收线');
       if(event.type==='caught'){
+        sounds.play('caught');
         retrieveStart.copy(surfaceTarget(FISHING.catchDistance));
         retrieveEnd.set(.16,-.53,-.85).applyAxisAngle(axisY,session.fishYaw).add(player);
         sideVector.set(Math.cos(session.fishYaw),0,-Math.sin(session.fishYaw));
@@ -186,6 +190,6 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     isFighting:()=>session.state==='fighting',isActive:()=>session.active,
     hideReflection(){rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
     restoreReflection(){const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},
-    getState:()=>({...session.snapshot(now()),visuals:{fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineColor:line.material.color.getHexString(),lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
+    getState:()=>({...session.snapshot(now()),visuals:{audio:sounds.snapshot(),fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineColor:line.material.color.getHexString(),lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
   };
 }

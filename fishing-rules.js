@@ -1,6 +1,10 @@
 // Meters, radians, monotonic seconds; resource ticks are independent of rendering.
 export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,hookWindow:1.45,baseSpeed:3.75,catchDistance:1.25,recastDelay:.8,noticeDelay:.3,noticeFadeAt:4.5,noticeFadeDuration:.6,maxDistance:50,landGraceDistance:10,lineMaximum:100,regenDelay:.95,regenInterval:.1,regenAmount:2.5});
 export const TILAPIA=Object.freeze({name:'罗非鱼',strength:Object.freeze({amount:3,interval:.2}),restDuration:3.3,speed:4.2,stamina:44,struggle:Object.freeze({minAngle:32,maxAngle:42,firstDuration:3.9,secondDuration:3.4}),specials:Object.freeze([])});
+export const BLUEGILL=Object.freeze({name:'蓝鳃太阳鱼',strength:Object.freeze({amount:2,interval:.14}),restDuration:4.25,speed:5.1,stamina:53,struggle:Object.freeze({minAngle:27,maxAngle:36,durations:Object.freeze([3,.9,1.6,3.2])}),specials:Object.freeze([])});
+export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL]);
+export function pickFish(unit){return FISH_SPECIES[unit<.5?0:1];}
+const PHASES=['first','second','third','fourth'];
 const EPS=1e-9,STEP=.01;
 export function signedAngle(a){return Math.atan2(Math.sin(a),Math.cos(a));}
 export function reelEfficiency(a){a=Math.abs(a);return a<=3+EPS?1.2:a<=30+EPS?1:a<=90+EPS?.75:.2;}
@@ -16,8 +20,9 @@ function circleCrossing(x,z,dx,dz,r,entering){
   return null;
 }
 export class FishingSession{
-  constructor(random=Math.random,{fish=TILAPIA,player={x:0,z:0},isWater=()=>true}={}){
-    this.random=random;this.profile=fish;this.player={x:player.x,z:player.z};this.isWater=isWater;
+  constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true}={}){
+    this.random=random;this.randomSpecies=randomSpecies;this.profile=fish;this.player={x:player.x,z:player.z};this.isWater=isWater;
+    this.phaseIndex=0;this.lastCatchName=null;
     this.state='idle';this.fishX=player.x;this.fishZ=player.z;this.castYaw=0;this.rodYaw=0;
     this.reeling=false;this.lastTime=null;this.castAt=null;this.biteAt=null;this.hookDeadline=null;this.catchAt=null;this.lastCatchAt=null;
     this.catches=0;this.outcome=null;this.failure=null;this.events=[];
@@ -31,10 +36,12 @@ export class FishingSession{
   get efficiency(){return reelEfficiency(this.angle);}
   get speed(){return FISHING.baseSpeed*this.efficiency;}
   get active(){return this.state!=='idle';}
-  get struggling(){return this.fishPhase==='first'||this.fishPhase==='second';}
+  get struggling(){return PHASES.includes(this.fishPhase);}
+  get struggleDurations(){const s=this.profile.struggle;return s.durations??[s.firstDuration,s.secondDuration];}
   randomUnit(){return Math.max(0,Math.min(1,this.random()));}
   cast(now,yaw){
     this.advance(now);if(this.state!=='idle')return false;
+    if(this.randomSpecies)this.profile=pickFish(this.randomUnit());
     this.state='casting';this.castYaw=yaw;this.rodYaw=yaw;
     this.fishX=this.player.x-Math.sin(yaw)*FISHING.distance;this.fishZ=this.player.z-Math.cos(yaw)*FISHING.distance;
     this.castAt=now;this.biteAt=now+FISHING.minWait+this.randomUnit()*(FISHING.maxWait-FISHING.minWait);this.hookDeadline=this.biteAt+FISHING.hookWindow;
@@ -47,14 +54,17 @@ export class FishingSession{
   beginRound(t){
     if(this.fishStamina<=EPS){this.fishStamina=0;this.fishPhase='exhausted';this.phaseEndsAt=Infinity;return;}
     this.round++;this.roundYaw=this.fishYaw;this.phaseSide=this.randomUnit()<.5?1:-1;
-    this.fishPhase='first';this.chooseDirection();this.phaseEndsAt=t+this.profile.struggle.firstDuration;
+    this.phaseIndex=0;this.fishPhase=PHASES[0];this.chooseDirection();this.phaseEndsAt=t+this.struggleDurations[0];
   }
   chooseDirection(){const s=this.profile.struggle;this.struggleYaw=this.roundYaw+this.phaseSide*(s.minAngle+this.randomUnit()*(s.maxAngle-s.minAngle))*Math.PI/180;}
   transition(t){
     while(this.state==='fighting'&&t>=this.phaseEndsAt-EPS){
       const end=this.phaseEndsAt;
-      if(this.fishPhase==='first'){this.fishPhase='second';this.phaseSide*=-1;this.chooseDirection();this.phaseEndsAt=end+this.profile.struggle.secondDuration;}
-      else if(this.fishPhase==='second'){this.fishPhase='rest';this.phaseEndsAt=end+this.profile.restDuration;}
+      if(this.struggling){
+        this.phaseIndex++;
+        if(this.phaseIndex<this.struggleDurations.length){this.fishPhase=PHASES[this.phaseIndex];this.phaseSide*=-1;this.chooseDirection();this.phaseEndsAt=end+this.struggleDurations[this.phaseIndex];}
+        else{this.fishPhase='rest';this.phaseEndsAt=end+this.profile.restDuration;}
+      }
       else if(this.fishPhase==='rest')this.beginRound(end);else break;
     }
   }
@@ -73,6 +83,7 @@ export class FishingSession{
     this.fishX=this.player.x;this.fishZ=this.player.z;this.events.push({type:reason==='missed'?'missed':'failed',reason,at:t});
   }
   caught(t){
+    this.lastCatchName=this.profile.name;
     const d=this.distance;this.fishX=this.player.x+(this.fishX-this.player.x)*FISHING.catchDistance/d;this.fishZ=this.player.z+(this.fishZ-this.player.z)*FISHING.catchDistance/d;
     this.catchAt=t;this.lastCatchAt=t;this.state='caught';this.reeling=false;this.catches++;this.outcome='caught';this.fishPhase=null;this.phaseEndsAt=Infinity;this.events.push({type:'caught',at:t});
   }
@@ -124,5 +135,5 @@ export class FishingSession{
   }
   noticeOpacity(now){if(this.lastCatchAt===null)return 0;const age=now-this.lastCatchAt;if(age<FISHING.noticeDelay)return 0;if(age<FISHING.noticeFadeAt)return 1;return Math.max(0,1-(age-FISHING.noticeFadeAt)/FISHING.noticeFadeDuration);}
   drainEvents(){const e=this.events;this.events=[];return e;}
-  snapshot(now){return {state:this.state,distance:this.distance,rodYaw:this.rodYaw,fishYaw:this.fishYaw,castYaw:this.castYaw,fishPosition:{x:this.fishX,z:this.fishZ},angle:this.angle,efficiency:this.efficiency,speed:this.speed,reeling:this.reeling,castAt:this.castAt,biteAt:this.biteAt,hookDeadline:this.hookDeadline,catchAt:this.catchAt,lastCatchAt:this.lastCatchAt,catches:this.catches,outcome:this.outcome,failure:this.failure,noticeOpacity:this.noticeOpacity(now),durability:this.durability,durabilityTier:durabilityTier(this.durability),lineColor:LINE_COLORS[durabilityTier(this.durability)],fishStamina:this.fishStamina,fishStaminaMaximum:this.profile.stamina,fishPhase:this.fishPhase,phaseSide:this.phaseSide,phaseRemaining:Number.isFinite(this.phaseEndsAt)?Math.max(0,this.phaseEndsAt-now):null,round:this.round,roundYaw:this.roundYaw,struggleYaw:this.struggling?this.struggleYaw:null,struggleAngle:this.struggleAngle,lastDamageAt:this.lastDamageAt,nextRegenAt:Number.isFinite(this.nextRegenAt)?this.nextRegenAt:null};}
+  snapshot(now){return {fishName:this.profile.name,lastCatchName:this.lastCatchName,phaseIndex:this.phaseIndex,state:this.state,distance:this.distance,rodYaw:this.rodYaw,fishYaw:this.fishYaw,castYaw:this.castYaw,fishPosition:{x:this.fishX,z:this.fishZ},angle:this.angle,efficiency:this.efficiency,speed:this.speed,reeling:this.reeling,castAt:this.castAt,biteAt:this.biteAt,hookDeadline:this.hookDeadline,catchAt:this.catchAt,lastCatchAt:this.lastCatchAt,catches:this.catches,outcome:this.outcome,failure:this.failure,noticeOpacity:this.noticeOpacity(now),durability:this.durability,durabilityTier:durabilityTier(this.durability),lineColor:LINE_COLORS[durabilityTier(this.durability)],fishStamina:this.fishStamina,fishStaminaMaximum:this.profile.stamina,fishPhase:this.fishPhase,phaseSide:this.phaseSide,phaseRemaining:Number.isFinite(this.phaseEndsAt)?Math.max(0,this.phaseEndsAt-now):null,round:this.round,roundYaw:this.roundYaw,struggleYaw:this.struggling?this.struggleYaw:null,struggleAngle:this.struggleAngle,lastDamageAt:this.lastDamageAt,nextRegenAt:Number.isFinite(this.nextRegenAt)?this.nextRegenAt:null};}
 }

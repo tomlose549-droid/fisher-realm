@@ -1,10 +1,10 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=tilapia053';
-import {isPondWater} from './pond-boundary.js?v=tilapia053';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=bluegill060';
+import {isPondWater} from './pond-boundary.js?v=bluegill060';
 import {createWaterEffects} from './water-effects.js?v=water1';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){
-  const session=new FishingSession(Math.random,{player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
+  const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
   const now=()=>performance.now()/1000;
   const distanceLabel=document.querySelector('#fish-distance'),distancePoint=new THREE.Vector3();
   let lastDistanceText='';
@@ -135,9 +135,11 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     lineFill.style.width=resource.durability+'%';lineValue.textContent=resource.durability.toFixed(1)+' / 100';
     staminaFill.style.width=(resource.fishStamina/resource.fishStaminaMaximum*100)+'%';staminaValue.textContent=resource.fishStamina.toFixed(1)+' / '+resource.fishStaminaMaximum;
     document.querySelector('#line-meter').setAttribute('aria-valuenow',resource.durability.toFixed(1));
+    document.querySelector('#stamina-meter').setAttribute('aria-valuemax',resource.fishStaminaMaximum);
     document.querySelector('#stamina-meter').setAttribute('aria-valuenow',resource.fishStamina.toFixed(1));
     if(session.struggling)phaseLabel.textContent=(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒';
     else phaseLabel.textContent=session.fishPhase==='exhausted'?'耐力耗尽 · 永久休息':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中';
+    notice.textContent=(session.lastCatchName||session.profile.name)+'已被钓';
     const opacity=session.noticeOpacity(t);notice.style.opacity=String(opacity);notice.hidden=opacity===0;
     const stage=session.state;
     let text='空格抛竿 · 23 米';

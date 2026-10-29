@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import { createPond } from './pond-scene.js?v=pond1';
-import { createFishing } from './fishing.js?v=tilapia051';
+import { createFishing } from './fishing.js?v=distance052';
 
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -128,6 +128,7 @@ function animate(now){
   targetPitch=THREE.MathUtils.clamp(targetPitch,-1.12,.94);
   const smooth=1-Math.exp(-dt*16);yaw+=(targetYaw-yaw)*smooth;pitch+=(targetPitch-pitch)*smooth;
   camera.rotation.set(pitch,yaw,0);camera.updateMatrixWorld();
+  fishing.updateDistanceLabel();
   rod.position.y=-.19+Math.sin(elapsed*1.1)*.004;rod.rotation.z=Math.sin(elapsed*.65)*.003;
   for(const r of ripples){const phase=(elapsed*.14+r.userData.phase)%1;r.scale.setScalar(.3+phase*2);r.material.opacity=(1-phase)*.08;}
   for(const b of birds){const o=b.userData.origin;b.position.x=o.x+Math.sin(elapsed*.035+b.userData.phase)*8;b.position.y=o.y+Math.sin(elapsed*2+b.userData.phase)*.12;b.rotation.z=Math.sin(elapsed*3+b.userData.phase)*.1;}
@@ -152,4 +153,4 @@ function animate(now){
 animate(performance.now());
 document.querySelector('#loading').classList.add('done');
 setTimeout(()=>{document.querySelector('#loading').hidden=true;},750);
-window.lakeside={getState:()=>({version:'0.5.1',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={getState:()=>({version:'0.5.2',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};

@@ -1,11 +1,13 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=tilapia051';
-import {isPondWater} from './pond-boundary.js?v=tilapia051';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=distance052';
+import {isPondWater} from './pond-boundary.js?v=distance052';
 import {createWaterEffects} from './water-effects.js?v=water1';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){
   const session=new FishingSession(Math.random,{player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
   const now=()=>performance.now()/1000;
+  const distanceLabel=document.querySelector('#fish-distance'),distancePoint=new THREE.Vector3();
+  let lastDistanceText='';
   const meters=document.querySelector('#fishing-meters'),lineFill=document.querySelector('#line-fill'),lineValue=document.querySelector('#line-value'),staminaFill=document.querySelector('#stamina-fill'),staminaValue=document.querySelector('#stamina-value'),phaseLabel=document.querySelector('#fish-phase');
   const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.7,...extra});
   const add=(geo,mat,parent,p,s)=>{const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);parent.add(m);return m;};
@@ -49,6 +51,18 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
       if(!insideWater(target.x,target.z))target.copy(lastWetSurface);
     }
     target.y=.025;lastWetSurface.copy(target);return target;
+  }
+  // Project after the main camera has moved so the label stays on the water point.
+  function updateDistanceLabel(){
+    distanceLabel.hidden=true;
+    if(!['waiting','bite','fighting'].includes(session.state))return;
+    distancePoint.copy(surfaceTarget());distancePoint.y=.12;distancePoint.project(camera);
+    if(distancePoint.z<-1||distancePoint.z>1||Math.abs(distancePoint.x)>1||Math.abs(distancePoint.y)>1)return;
+    const text=session.distance.toFixed(1)+' 米';
+    if(text!==lastDistanceText){distanceLabel.textContent=text;lastDistanceText=text;}
+    distanceLabel.style.left=((distancePoint.x+1)*50)+'%';
+    distanceLabel.style.top=((1-distancePoint.y)*50)+'%';
+    distanceLabel.hidden=false;
   }
   function retrieval(age){
     const progress=THREE.MathUtils.clamp(age/FISHING.recastDelay,0,1);
@@ -166,7 +180,7 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     lineGeometry.attributes.position.needsUpdate=true;
   }
   return {
-    key,pointerMove,pointerDown,release,view,update,
+    key,pointerMove,pointerDown,release,view,update,updateDistanceLabel,
     isFighting:()=>session.state==='fighting',isActive:()=>session.active,
     hideReflection(){rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
     restoreReflection(){const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},

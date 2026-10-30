@@ -1,8 +1,8 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=blackberry090';
-import {isPondWater} from './pond-boundary.js?v=blackberry090';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=owner0100';
+import {isPondWater} from './pond-boundary.js?v=owner0100';
 import {createWaterEffects} from './water-effects.js?v=water1';
-import {createFishingAudio} from './fishing-audio.js?v=blackberry090';
+import {createFishingAudio} from './fishing-audio.js?v=owner0100';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){
   const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
@@ -187,6 +187,7 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   }
   return {
     key,pointerMove,pointerDown,release,view,update,updateDistanceLabel,
+    setForcedFish:name=>session.setForcedFish(name),getOwnerState:()=>session.ownerState,
     isFighting:()=>session.state==='fighting',isActive:()=>session.active,
     hideReflection(){rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
     restoreReflection(){const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},

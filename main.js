@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import { createPond } from './pond-scene.js?v=pond1';
-import { createFishing } from './fishing.js?v=blackberry090';
+import {createOwnerPanel} from './owner-panel.js?v=owner0100';
+import { createFishing } from './fishing.js?v=owner0100';
 
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -43,7 +44,7 @@ const fishing=createFishing({scene,camera,player:cameraOrigin,canvas,idleRod:rod
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
-  if(!settingsPanel.hidden||dialog.open)return;
+  if(!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
   if(fishing.pointerDown(e))return;
   if(fishing.isFighting())return;
   if (e.button !== 2 && e.pointerType !== 'touch') return;
@@ -52,7 +53,7 @@ canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId); canvas.style.cursor='grabbing';canvas.focus();
 });
 canvas.addEventListener('pointermove', e => {
-  if(!settingsPanel.hidden||dialog.open)return;
+  if(!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
   fishing.pointerMove(e);if(fishing.isFighting())return;
   if (!dragging || e.pointerId !== touchId) return;
   const dx=e.clientX-lastX,dy=e.clientY-lastY;
@@ -93,10 +94,11 @@ async function fullscreen() {
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
+const ownerPanel=createOwnerPanel({fishing,toast,onOpen:()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();}});
 document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();dialog.showModal();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
-  if(e.defaultPrevented||dialog.open||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(e.defaultPrevented||Boolean(document.querySelector('dialog[open]'))||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if(!/^(BUTTON|A)$/.test(e.target.tagName)&&settingsPanel.hidden&&fishing.key(e)){e.preventDefault();return;}
   if(fishing.isFighting()&&e.code.startsWith('Arrow'))return;
   if(!settingsPanel.hidden&&e.code.startsWith('Arrow'))return;
@@ -121,7 +123,7 @@ function animate(now){
   if(now<nextFrame)return;
   nextFrame+=FRAME_MS;if(nextFrame<=now)nextFrame=now+FRAME_MS;
   clock.update();const dt=Math.min(clock.getDelta(),.12);elapsed+=dt;
-  fishing.update(now/1000);const tracked=fishing.view();
+  fishing.update(now/1000);ownerPanel.update();const tracked=fishing.view();
   if(tracked){targetYaw=yaw+Math.atan2(Math.sin(tracked.yaw-yaw),Math.cos(tracked.yaw-yaw));targetPitch=tracked.pitch;}
   if(keys.has('ArrowLeft'))targetYaw+=dt*.8;if(keys.has('ArrowRight'))targetYaw-=dt*.8;
   if(keys.has('ArrowUp'))targetPitch+=dt*.55;if(keys.has('ArrowDown'))targetPitch-=dt*.55;
@@ -153,4 +155,4 @@ function animate(now){
 animate(performance.now());
 document.querySelector('#loading').classList.add('done');
 setTimeout(()=>{document.querySelector('#loading').hidden=true;},750);
-window.lakeside={getState:()=>({version:'0.9.0',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={getState:()=>({version:'0.10.0',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};

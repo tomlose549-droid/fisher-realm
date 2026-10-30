@@ -25,6 +25,7 @@ export class FishingSession{
   constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true}={}){
     this.random=random;this.randomSpecies=randomSpecies;this.profile=fish;this.player={x:player.x,z:player.z};this.isWater=isWater;
     this.phaseIndex=0;this.lastCatchName=null;this.lastCatchColor='#d3d3d3';
+    this.forcedFish=null;this.forcedRemaining=0;this.forcedCastFish=null;
     this.state='idle';this.fishX=player.x;this.fishZ=player.z;this.castYaw=0;this.rodYaw=0;
     this.reeling=false;this.lastTime=null;this.castAt=null;this.biteAt=null;this.hookDeadline=null;this.catchAt=null;this.lastCatchAt=null;
     this.catches=0;this.outcome=null;this.failure=null;this.events=[];
@@ -41,9 +42,17 @@ export class FishingSession{
   get struggling(){return PHASES.includes(this.fishPhase);}
   get struggleDurations(){const s=this.profile.struggle;return s.durations??[s.firstDuration,s.secondDuration];}
   randomUnit(){return Math.max(0,Math.min(1,this.random()));}
+  get ownerState(){return {fishName:this.forcedFish?.name??null,remaining:this.forcedRemaining};}
+  setForcedFish(name){
+    const fish=FISH_SPECIES.find(f=>f.name===name);
+    if(this.state!=='idle'||!fish)return false;
+    this.forcedFish=fish;this.forcedRemaining=10;return true;
+  }
   cast(now,yaw){
     this.advance(now);if(this.state!=='idle')return false;
-    if(this.randomSpecies)this.profile=pickFish(this.randomUnit());
+    this.forcedCastFish=this.forcedRemaining>0?this.forcedFish:null;
+    if(this.forcedCastFish)this.profile=this.forcedCastFish;
+    else if(this.randomSpecies)this.profile=pickFish(this.randomUnit());
     this.state='casting';this.castYaw=yaw;this.rodYaw=yaw;
     this.fishX=this.player.x-Math.sin(yaw)*FISHING.distance;this.fishZ=this.player.z-Math.cos(yaw)*FISHING.distance;
     this.castAt=now;this.biteAt=now+FISHING.minWait+this.randomUnit()*(FISHING.maxWait-FISHING.minWait);this.hookDeadline=this.biteAt+FISHING.hookWindow;
@@ -92,6 +101,10 @@ export class FishingSession{
     this.fishX=this.player.x;this.fishZ=this.player.z;this.events.push({type:reason==='missed'?'missed':'failed',reason,at:t});
   }
   caught(t){
+    if(this.forcedCastFish&&this.forcedCastFish===this.forcedFish){
+      this.forcedRemaining--;if(this.forcedRemaining===0)this.forcedFish=null;
+      this.forcedCastFish=null;
+    }
     this.lastCatchName=this.profile.name;this.lastCatchColor=this.profile.catchColor||'#d3d3d3';
     const d=this.distance;this.fishX=this.player.x+(this.fishX-this.player.x)*FISHING.catchDistance/d;this.fishZ=this.player.z+(this.fishZ-this.player.z)*FISHING.catchDistance/d;
     this.catchAt=t;this.lastCatchAt=t;this.state='caught';this.reeling=false;this.catches++;this.outcome='caught';this.fishPhase=null;this.phaseEndsAt=Infinity;this.events.push({type:'caught',at:t});
@@ -144,5 +157,5 @@ export class FishingSession{
   }
   noticeOpacity(now){if(this.lastCatchAt===null)return 0;const age=now-this.lastCatchAt;if(age<FISHING.noticeDelay)return 0;if(age<FISHING.noticeFadeAt)return 1;return Math.max(0,1-(age-FISHING.noticeFadeAt)/FISHING.noticeFadeDuration);}
   drainEvents(){const e=this.events;this.events=[];return e;}
-  snapshot(now){return {fishName:this.profile.name,lastCatchName:this.lastCatchName,lastCatchColor:this.lastCatchColor,phaseIndex:this.phaseIndex,state:this.state,distance:this.distance,rodYaw:this.rodYaw,fishYaw:this.fishYaw,castYaw:this.castYaw,fishPosition:{x:this.fishX,z:this.fishZ},angle:this.angle,efficiency:this.efficiency,speed:this.speed,reeling:this.reeling,castAt:this.castAt,biteAt:this.biteAt,hookDeadline:this.hookDeadline,catchAt:this.catchAt,lastCatchAt:this.lastCatchAt,catches:this.catches,outcome:this.outcome,failure:this.failure,noticeOpacity:this.noticeOpacity(now),durability:this.durability,durabilityTier:durabilityTier(this.durability),lineColor:LINE_COLORS[durabilityTier(this.durability)],fishStamina:this.fishStamina,fishStaminaMaximum:this.profile.stamina,fishPhase:this.fishPhase,phaseSide:this.phaseSide,phaseRemaining:Number.isFinite(this.phaseEndsAt)?Math.max(0,this.phaseEndsAt-now):null,round:this.round,roundYaw:this.roundYaw,struggleYaw:this.struggling?this.struggleYaw:null,struggleAngle:this.struggleAngle,lastDamageAt:this.lastDamageAt,nextRegenAt:Number.isFinite(this.nextRegenAt)?this.nextRegenAt:null};}
+  snapshot(now){return {ownerMode:this.ownerState,fishName:this.profile.name,lastCatchName:this.lastCatchName,lastCatchColor:this.lastCatchColor,phaseIndex:this.phaseIndex,state:this.state,distance:this.distance,rodYaw:this.rodYaw,fishYaw:this.fishYaw,castYaw:this.castYaw,fishPosition:{x:this.fishX,z:this.fishZ},angle:this.angle,efficiency:this.efficiency,speed:this.speed,reeling:this.reeling,castAt:this.castAt,biteAt:this.biteAt,hookDeadline:this.hookDeadline,catchAt:this.catchAt,lastCatchAt:this.lastCatchAt,catches:this.catches,outcome:this.outcome,failure:this.failure,noticeOpacity:this.noticeOpacity(now),durability:this.durability,durabilityTier:durabilityTier(this.durability),lineColor:LINE_COLORS[durabilityTier(this.durability)],fishStamina:this.fishStamina,fishStaminaMaximum:this.profile.stamina,fishPhase:this.fishPhase,phaseSide:this.phaseSide,phaseRemaining:Number.isFinite(this.phaseEndsAt)?Math.max(0,this.phaseEndsAt-now):null,round:this.round,roundYaw:this.roundYaw,struggleYaw:this.struggling?this.struggleYaw:null,struggleAngle:this.struggleAngle,lastDamageAt:this.lastDamageAt,nextRegenAt:Number.isFinite(this.nextRegenAt)?this.nextRegenAt:null};}
 }

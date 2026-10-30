@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {BLACKBERRY_BASS,TILAPIA,BLUEGILL,REDEAR,pickFish,FishingSession} from '../fishing-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...BLACKBERRY_BASS,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
-test('blackberry profile, white notice and four equal encounter ranges',()=>{
+test('blackberry profile, white notice and five-species encounter ranges',()=>{
   assert.deepEqual(BLACKBERRY_BASS,{name:'黑莓鲈',catchColor:'#ffffff',strength:{amount:3,interval:.23},restDuration:5,speed:5,stamina:42,struggle:{minAngle:45,maxAngle:63,durations:[3.5,3.5,3.4],switchPause:.3},specials:['换边前停顿0.3秒']});
-  for(const [v,fish]of [[0,TILAPIA],[.25-1e-9,TILAPIA],[.25,BLUEGILL],[.5-1e-9,BLUEGILL],[.5,REDEAR],[.75-1e-9,REDEAR],[.75,BLACKBERRY_BASS],[1,BLACKBERRY_BASS]])assert.equal(pickFish(v),fish);
+  for(const [v,fish]of [[0,TILAPIA],[.2-1e-9,TILAPIA],[.2,BLUEGILL],[.4-1e-9,BLUEGILL],[.4,REDEAR],[.6-1e-9,REDEAR],[.6,BLACKBERRY_BASS],[.8-1e-9,BLACKBERRY_BASS]])assert.equal(pickFish(v),fish);
 });
 test('only the two actual switches pause .3 s; rest starts immediately after leg three',()=>{
   const values=[0,0,0,.5,1],f=fight({...BLACKBERRY_BASS,speed:.01},()=>values.shift()??0),base=f.roundYaw;close(f.struggleYaw-base,rad(45));

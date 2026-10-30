@@ -4,7 +4,8 @@ export const TILAPIA=Object.freeze({name:'罗非鱼',strength:Object.freeze({amo
 export const BLUEGILL=Object.freeze({name:'蓝鳃太阳鱼',strength:Object.freeze({amount:2,interval:.11}),restDuration:4.2,speed:5.6,stamina:56,struggle:Object.freeze({minAngle:35,maxAngle:41,durations:Object.freeze([3,.9,1.6,4.2])}),specials:Object.freeze([])});
 export const REDEAR=Object.freeze({name:'红耳太阳鱼',catchColor:'#90ee90',strength:Object.freeze({amount:3,interval:.13}),restDuration:4.2,speed:5.5,stamina:45,struggle:Object.freeze({minAngle:56,maxAngle:63,durations:Object.freeze([1.9,1,1.4,3])}),specials:Object.freeze([])});
 export const BLACKBERRY_BASS=Object.freeze({name:'黑莓鲈',catchColor:'#ffffff',strength:Object.freeze({amount:3,interval:.23}),restDuration:5,speed:5,stamina:42,struggle:Object.freeze({minAngle:45,maxAngle:63,durations:Object.freeze([3.5,3.5,3.4]),switchPause:.3}),specials:Object.freeze(['换边前停顿0.3秒'])});
-export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS]);
+export const GOLDEN_SHINER=Object.freeze({name:'金色闪光鲦',catchColor:'#4c9fff',strength:Object.freeze({amount:1,interval:.15}),restDuration:4.9,speed:6.2,stamina:75,struggle:Object.freeze({minAngle:35,maxAngle:63,durations:Object.freeze([4])}),specials:Object.freeze([])});
+export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER]);
 export function pickFish(unit){return FISH_SPECIES[Math.min(FISH_SPECIES.length-1,Math.max(0,Math.floor(unit*FISH_SPECIES.length)))];}
 const PHASES=['first','second','third','fourth'];
 const EPS=1e-9,STEP=.01;

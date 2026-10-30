@@ -3,7 +3,8 @@ export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,h
 export const TILAPIA=Object.freeze({name:'罗非鱼',strength:Object.freeze({amount:3,interval:.2}),restDuration:3.3,speed:4.2,stamina:44,struggle:Object.freeze({minAngle:32,maxAngle:42,firstDuration:3.9,secondDuration:3.4}),specials:Object.freeze([])});
 export const BLUEGILL=Object.freeze({name:'蓝鳃太阳鱼',strength:Object.freeze({amount:2,interval:.11}),restDuration:4.2,speed:5.6,stamina:56,struggle:Object.freeze({minAngle:35,maxAngle:41,durations:Object.freeze([3,.9,1.6,4.2])}),specials:Object.freeze([])});
 export const REDEAR=Object.freeze({name:'红耳太阳鱼',catchColor:'#90ee90',strength:Object.freeze({amount:3,interval:.13}),restDuration:4.2,speed:5.6,stamina:45,struggle:Object.freeze({minAngle:56,maxAngle:65,durations:Object.freeze([1.9,1,1.4,3])}),specials:Object.freeze([])});
-export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR]);
+export const BLACKBERRY_BASS=Object.freeze({name:'黑莓鲈',catchColor:'#ffffff',strength:Object.freeze({amount:3,interval:.23}),restDuration:5,speed:5,stamina:42,struggle:Object.freeze({minAngle:45,maxAngle:63,durations:Object.freeze([3.5,3.5,3.4]),switchPause:.3}),specials:Object.freeze(['换边前停顿0.3秒'])});
+export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS]);
 export function pickFish(unit){return FISH_SPECIES[Math.min(FISH_SPECIES.length-1,Math.max(0,Math.floor(unit*FISH_SPECIES.length)))];}
 const PHASES=['first','second','third','fourth'];
 const EPS=1e-9,STEP=.01;
@@ -59,14 +60,20 @@ export class FishingSession{
   }
   // Species angles start at the left/right lateral axis and turn toward forward.
   chooseDirection(){const s=this.profile.struggle,sideAngle=s.minAngle+this.randomUnit()*(s.maxAngle-s.minAngle);this.struggleYaw=this.roundYaw+this.phaseSide*(90-sideAngle)*Math.PI/180;}
+  nextLeg(t){this.fishPhase=PHASES[this.phaseIndex];this.phaseSide*=-1;this.chooseDirection();this.phaseEndsAt=t+this.struggleDurations[this.phaseIndex];}
   transition(t){
     while(this.state==='fighting'&&t>=this.phaseEndsAt-EPS){
       const end=this.phaseEndsAt;
       if(this.struggling){
         this.phaseIndex++;
-        if(this.phaseIndex<this.struggleDurations.length){this.fishPhase=PHASES[this.phaseIndex];this.phaseSide*=-1;this.chooseDirection();this.phaseEndsAt=end+this.struggleDurations[this.phaseIndex];}
+        if(this.phaseIndex<this.struggleDurations.length){
+          const pause=this.profile.struggle.switchPause||0;
+          if(pause>0){this.fishPhase='switch-pause';this.phaseEndsAt=end+pause;}
+          else this.nextLeg(end);
+        }
         else{this.fishPhase='rest';this.phaseEndsAt=end+this.profile.restDuration;}
       }
+      else if(this.fishPhase==='switch-pause')this.nextLeg(end);
       else if(this.fishPhase==='rest')this.beginRound(end);else break;
     }
   }

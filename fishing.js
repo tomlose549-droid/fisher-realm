@@ -1,8 +1,8 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=bluegill081';
-import {isPondWater} from './pond-boundary.js?v=bluegill081';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=redear082';
+import {isPondWater} from './pond-boundary.js?v=redear082';
 import {createWaterEffects} from './water-effects.js?v=water1';
-import {createFishingAudio} from './fishing-audio.js?v=bluegill081';
+import {createFishingAudio} from './fishing-audio.js?v=redear082';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook}){
   const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
@@ -143,7 +143,7 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     document.querySelector('#stamina-meter').setAttribute('aria-valuenow',resource.fishStamina.toFixed(1));
     if(session.struggling)phaseLabel.textContent=(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒';
     else phaseLabel.textContent=session.fishPhase==='exhausted'?'耐力耗尽 · 永久休息':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中';
-    notice.textContent=(session.lastCatchName||session.profile.name)+'已被钓';
+    notice.textContent=(session.lastCatchName||session.profile.name)+'已被钓';notice.style.color=session.lastCatchColor;
     const opacity=session.noticeOpacity(t);notice.style.opacity=String(opacity);notice.hidden=opacity===0;
     const stage=session.state;
     let text='空格抛竿 · 23 米';

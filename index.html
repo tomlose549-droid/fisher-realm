@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1c443e">
   <title>湖畔慢时光 · 3D 钓鱼</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23224942'/%3E%3Cpath d='M12 38q10-10 20 0t20 0M12 48q10-10 20 0t20 0' fill='none' stroke='%23c4d9bd' stroke-width='4'/%3E%3Ccircle cx='32' cy='20' r='7' fill='%23edce8e'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=bluegill081">
+  <link rel="stylesheet" href="./style.css?v=redear082">
 </head>
 <body>
   <main id="game" aria-label="第一人称三维湖边场景">
@@ -14,7 +14,7 @@
     <div class="vignette" aria-hidden="true"></div>
     <header class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true">≋</span><div><h1>湖畔<span>慢时光</span></h1><p>A LITTLE TIME BY THE LAKE</p></div></div>
-      <div class="top-right"><span class="version"><i></i> 钓鱼体验版 <b>V0.8.1</b></span><button id="help" class="icon-button" title="操作说明" aria-label="操作说明">?</button><button id="settings-toggle" class="icon-button settings-toggle" title="展开设置" aria-label="展开设置" aria-expanded="false" aria-controls="settings-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.4 3-.5 2-1.6.9-2-.6-2.6 4.4 1.5 1.5v1.8l-1.5 1.5 2.6 4.4 2-.6 1.6.9.5 2h5.2l.5-2 1.6-.9 2 .6 2.6-4.4-1.5-1.5v-1.8l1.5-1.5-2.6-4.4-2 .6-1.6-.9-.5-2Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="top-right"><span class="version"><i></i> 钓鱼体验版 <b>V0.8.2</b></span><button id="help" class="icon-button" title="操作说明" aria-label="操作说明">?</button><button id="settings-toggle" class="icon-button settings-toggle" title="展开设置" aria-label="展开设置" aria-expanded="false" aria-controls="settings-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.4 3-.5 2-1.6.9-2-.6-2.6 4.4 1.5 1.5v1.8l-1.5 1.5 2.6 4.4 2-.6 1.6.9.5 2h5.2l.5-2 1.6-.9 2 .6 2.6-4.4-1.5-1.5v-1.8l1.5-1.5-2.6-4.4-2 .6-1.6-.9-.5-2Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       <section id="settings-panel" class="settings-panel" aria-label="场景设置与操作提示" hidden>
         <h2>湖边设置</h2>
         <div class="controls"><span class="control"><kbd>空格</kbd> 抛竿 23 米</span><span class="control"><kbd>任意键</kbd> 咬钩后提竿</span><span class="control"><kbd>移动鼠标</kbd> 拉鱼时左右转竿</span><span class="control"><kbd>按住左键</kbd> 收线，松开停止</span><span class="control"><kbd>右键拖动 / 方向键</kbd> 空闲时环顾</span><span class="control"><kbd>R</kbd> 回正 <kbd>F</kbd> 全屏</span></div>
@@ -34,14 +34,14 @@
       <div class="resource-row"><span>鱼耐力</span><div id="stamina-meter" class="resource-track stamina-track" role="meter" aria-label="鱼耐力" aria-valuemin="0" aria-valuemax="44" aria-valuenow="44"><i id="stamina-fill"></i></div><span id="stamina-value">44 / 44</span></div>
     </section>
     <p id="catch-notice" class="catch-notice" aria-live="polite" hidden>罗非鱼已被钓</p>
-    <dialog id="help-dialog"><form method="dialog"><button class="close" aria-label="关闭">×</button><span class="eyebrow">A MOMENT TO FISH</span><h2>在池塘边，等一条鱼</h2><p>面向水面按空格抛出 23 米，等待 6–13 秒。当鱼线上下浮动时，在 1.45 秒内按任意键提竿。拉鱼时镜头自动跟鱼，鱼竿需由你手动转向；鱼不显示模型，用鱼线与水波提示位置。鱼会左右挣扎并休息；所有挣扎角度都从正左或正右向本轮正前方转，0° 为横向、90° 为正前方。例如左 30° 就是从正左向前转 30°。顺着挣扎方向转竿收线可更快消耗鱼耐力，注意线韧性，必要时松开左键恢复。每竿随机遇到罗非鱼、蓝鳃太阳鱼或红耳太阳鱼，每种概率为三分之一。成功后自动抬竿，空鱼线荡回。</p><p>罗非鱼每轮先跑 3.9 秒、换边跑 3.4 秒，再休息 3.3 秒；蓝鳃太阳鱼以 35°–41°交替游动 3、0.9、1.6、4.2 秒，再休息 4.2 秒，速度 5.6 米/秒，耐力 56；挣扎中收线每 0.11 秒扣 2 点线韧性。红耳太阳鱼角度 40°–50°，四段时长 1.9、1、1.4、3 秒，休息 4.2 秒，速度 5.3 米/秒，耐力 45，力量每 0.14 秒扣 3 点线韧性。三种鱼耐力为零后均永久休息。罗非鱼挣扎中收线每 0.2 秒扣 3 点线韧性，松开可等待恢复。线韧性为零、鱼超过 50 米或在 10 米外上岸都会失败。</p><dl><div><dt>左右移动鼠标</dt><dd>手动转动鱼竿</dd></div><div><dt>按住鼠标左键</dt><dd>收线，松开停止</dd></div><div><dt>夹角 ≤ 3° / ≤ 30°</dt><dd>效率 120% / 100%</dd></div><div><dt>夹角 ≤ 90° / &gt; 90°</dt><dd>效率 75% / 20%</dd></div><div><dt>基准 3.75 米/秒</dt><dd>收至 1.25 米判定鱼获</dd></div></dl><p class="touch-help">收竿后 0.8 秒可再次抛竿。空闲时右键拖动或方向键环顾，R 回正，F 全屏。钓鱼操作需要键盘与鼠标。</p><button class="primary">开始钓鱼 <span>→</span></button></form></dialog>
+    <dialog id="help-dialog"><form method="dialog"><button class="close" aria-label="关闭">×</button><span class="eyebrow">A MOMENT TO FISH</span><h2>在池塘边，等一条鱼</h2><p>面向水面按空格抛出 23 米，等待 6–13 秒。当鱼线上下浮动时，在 1.45 秒内按任意键提竿。拉鱼时镜头自动跟鱼，鱼竿需由你手动转向；鱼不显示模型，用鱼线与水波提示位置。鱼会左右挣扎并休息；所有挣扎角度都从正左或正右向本轮正前方转，0° 为横向、90° 为正前方。例如左 30° 就是从正左向前转 30°。顺着挣扎方向转竿收线可更快消耗鱼耐力，注意线韧性，必要时松开左键恢复。每竿随机遇到罗非鱼、蓝鳃太阳鱼或红耳太阳鱼，每种概率为三分之一。成功后自动抬竿，空鱼线荡回。</p><p>罗非鱼每轮先跑 3.9 秒、换边跑 3.4 秒，再休息 3.3 秒；蓝鳃太阳鱼以 35°–41°交替游动 3、0.9、1.6、4.2 秒，再休息 4.2 秒，速度 5.6 米/秒，耐力 56；挣扎中收线每 0.11 秒扣 2 点线韧性。红耳太阳鱼角度 56°–65°，四段时长 1.9、1、1.4、3 秒，休息 4.2 秒，速度 5.6 米/秒，耐力 45，力量每 0.13 秒扣 3 点线韧性。三种鱼耐力为零后均永久休息。罗非鱼挣扎中收线每 0.2 秒扣 3 点线韧性，松开可等待恢复。线韧性为零、鱼超过 50 米或在 10 米外上岸都会失败。</p><dl><div><dt>左右移动鼠标</dt><dd>手动转动鱼竿</dd></div><div><dt>按住鼠标左键</dt><dd>收线，松开停止</dd></div><div><dt>夹角 ≤ 3° / ≤ 30°</dt><dd>效率 120% / 100%</dd></div><div><dt>夹角 ≤ 90° / &gt; 90°</dt><dd>效率 75% / 20%</dd></div><div><dt>基准 3.75 米/秒</dt><dd>收至 1.25 米判定鱼获</dd></div></dl><p class="touch-help">收竿后 0.8 秒可再次抛竿。空闲时右键拖动或方向键环顾，R 回正，F 全屏。钓鱼操作需要键盘与鼠标。</p><button class="primary">开始钓鱼 <span>→</span></button></form></dialog>
     <div id="loading" class="loading"><span class="loading-mark">≋</span><h2>湖畔慢时光</h2><p id="loading-text">正在走向湖边…</p><span class="loading-line"></span></div>
     <div id="error" class="error" hidden><h2>暂时没能打开湖景</h2><p id="error-text"></p><button onclick="location.reload()">重新加载</button></div>
   </main>
   <script>
     window.showGameError = (message) => { document.getElementById('loading').hidden = true; document.getElementById('error').hidden = false; document.getElementById('error-text').textContent = message; };
     if (location.protocol === 'file:') showGameError('请关闭此页，双击文件夹中的「启动游戏.cmd」。游戏需要通过本地服务器打开。');
-    else { import('./main.js?v=bluegill081').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
+    else { import('./main.js?v=redear082').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
   </script>
 </body>
 </html>

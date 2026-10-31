@@ -11,5 +11,6 @@ export function createFishingAudio(){
     const audio=clips[name];audio.currentTime=0;
     audio.play().then(()=>played[name]++).catch(error=>errors.push({clip:name,message:error.message}));
   }
-  return {play,snapshot:()=>({played:{...played},errors:errors.slice()})};
+  let paused=[];
+  return {play,pause(){paused=Object.values(clips).filter(a=>!a.paused&&!a.ended);for(const a of paused)a.pause();},resume(){for(const a of paused)a.play().catch(error=>errors.push({message:error.message}));paused=[];},snapshot:()=>({played:{...played},errors:errors.slice()})};
 }

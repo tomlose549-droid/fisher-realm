@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1c443e">
   <title>湖畔慢时光 · 3D 钓鱼</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23224942'/%3E%3Cpath d='M12 38q10-10 20 0t20 0M12 48q10-10 20 0t20 0' fill='none' stroke='%23c4d9bd' stroke-width='4'/%3E%3Ccircle cx='32' cy='20' r='7' fill='%23edce8e'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=shiner0111">
+  <link rel="stylesheet" href="./style.css?v=bag0120">
 </head>
 <body>
   <main id="game" aria-label="第一人称三维湖边场景">
@@ -14,7 +14,7 @@
     <div class="vignette" aria-hidden="true"></div>
     <header class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true">≋</span><div><h1>湖畔<span>慢时光</span></h1><p>A LITTLE TIME BY THE LAKE</p></div></div>
-      <div class="top-right"><span class="version"><i></i> 钓鱼体验版 <b>V0.11.1</b></span><button id="help" class="icon-button" title="操作说明" aria-label="操作说明">?</button><button id="settings-toggle" class="icon-button settings-toggle" title="展开设置" aria-label="展开设置" aria-expanded="false" aria-controls="settings-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.4 3-.5 2-1.6.9-2-.6-2.6 4.4 1.5 1.5v1.8l-1.5 1.5 2.6 4.4 2-.6 1.6.9.5 2h5.2l.5-2 1.6-.9 2 .6 2.6-4.4-1.5-1.5v-1.8l1.5-1.5-2.6-4.4-2 .6-1.6-.9-.5-2Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="top-right"><span class="version"><i></i> 钓鱼体验版 <b>V0.12.0</b></span><button id="help" class="icon-button" title="操作说明" aria-label="操作说明">?</button><button id="settings-toggle" class="icon-button settings-toggle" title="展开设置" aria-label="展开设置" aria-expanded="false" aria-controls="settings-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.4 3-.5 2-1.6.9-2-.6-2.6 4.4 1.5 1.5v1.8l-1.5 1.5 2.6 4.4 2-.6 1.6.9.5 2h5.2l.5-2 1.6-.9 2 .6 2.6-4.4-1.5-1.5v-1.8l1.5-1.5-2.6-4.4-2 .6-1.6-.9-.5-2Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       <section id="settings-panel" class="settings-panel" aria-label="场景设置与操作提示" hidden>
         <h2>湖边设置</h2>
         <div class="controls"><span class="control"><kbd>空格</kbd> 抛竿 23 米</span><span class="control"><kbd>任意键</kbd> 咬钩后提竿</span><span class="control"><kbd>移动鼠标</kbd> 拉鱼时左右转竿</span><span class="control"><kbd>按住左键</kbd> 收线，松开停止</span><span class="control"><kbd>右键拖动 / 方向键</kbd> 空闲时环顾</span><span class="control"><kbd>R</kbd> 回正 <kbd>F</kbd> 全屏</span></div>
@@ -28,6 +28,8 @@
     <section id="welcome" class="welcome"><span class="eyebrow">TAKE A BREATH.</span><h2>在湖边，慢下来。</h2><p>让风吹过树梢，听时间停在水面。<br>你的第一处钓位，已经准备好了。</p><div class="welcome-tip"><span class="mouse-icon" aria-hidden="true"></span>空格抛竿，等一条鱼 <span>↔</span></div></section>
     <div id="toast" role="status" aria-live="polite"></div>
     <div id="fishing-status" class="fishing-status" data-state="idle">空格抛竿 · 23 米</div>
+    <button id="backpack-toggle" class="backpack-toggle" type="button" aria-label="打开背包" title="背包"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6V5a4 4 0 0 1 8 0v1M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12H5ZM8 13h8v5H8ZM8 9h8"/></svg></button>
+    <dialog id="inventory-dialog" aria-labelledby="inventory-title"><header class="inventory-header"><div><span class="inventory-eyebrow">YOUR LAKESIDE COLLECTION</span><h2 id="inventory-title">湖畔背包</h2></div><button id="inventory-close" type="button" aria-label="关闭背包，继续游戏">收起背包 ×</button></header><div class="inventory-layout"><section id="fish-pile" class="fish-pile"><div class="inventory-section-title"><h3>鱼堆</h3><span id="pile-count">0 条</span></div><div id="fish-pile-list" class="fish-pile-list"></div><p class="inventory-subtle">拖到这里，腾出背包空间</p></section><section class="bag-section"><div class="inventory-section-title"><h3>背包</h3><span>5 列 × 3 行</span></div><div id="inventory-grid" class="inventory-grid" aria-label="宽五格高三格的背包"></div><p id="inventory-hint" role="status">拖动鱼调整位置，也可先点鱼，再点目标格子或鱼堆。</p><div class="inventory-footer"><span id="inventory-count">0 条鱼</span><span>游戏已暂停 · 物品自动保存</span></div></section></div></dialog>
     <div id="fish-distance" class="fish-distance" aria-hidden="true" hidden></div>
     <section id="fishing-meters" class="fishing-meters" aria-label="钓鱼状态" hidden>
       <p id="fish-phase" class="fish-phase"></p>
@@ -43,7 +45,7 @@
   <script>
     window.showGameError = (message) => { document.getElementById('loading').hidden = true; document.getElementById('error').hidden = false; document.getElementById('error-text').textContent = message; };
     if (location.protocol === 'file:') showGameError('请关闭此页，双击文件夹中的「启动游戏.cmd」。游戏需要通过本地服务器打开。');
-    else { import('./main.js?v=shiner0111').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
+    else { import('./main.js?v=bag0120').catch(error => { console.error(error); showGameError('加载 3D 场景失败。请使用最新的 Chrome 或 Edge，并确认浏览器已启用图形加速。详情：' + error.message); }); }
   </script>
 </body>
 </html>

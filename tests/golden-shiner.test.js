@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {GOLDEN_SHINER,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...GOLDEN_SHINER,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
-test('golden shiner profile and five equal species intervals including both boundaries',()=>{
+test('golden shiner profile and six equal species intervals including both boundaries',()=>{
   assert.deepEqual(GOLDEN_SHINER,{name:'金色闪光鲦',catchColor:'#4c9fff',strength:{amount:1,interval:.15},restDuration:4.9,speed:6.2,stamina:75,struggle:{minAngle:52,maxAngle:63,durations:[4]},specials:[]});
-  for(let i=0;i<5;i++){assert.equal(pickFish(i/5),FISH_SPECIES[i]);assert.equal(pickFish((i+1)/5-1e-9),FISH_SPECIES[i]);}assert.equal(pickFish(1),GOLDEN_SHINER);
+  for(let i=0;i<FISH_SPECIES.length;i++){assert.equal(pickFish(i/FISH_SPECIES.length),FISH_SPECIES[i]);assert.equal(pickFish((i+1)/FISH_SPECIES.length-1e-9),FISH_SPECIES[i]);}assert.equal(pickFish(1),FISH_SPECIES.at(-1));
 });
 test('one four-second leg goes directly to 4.9 seconds rest and the next round rerolls its starting side',()=>{
   const rolls=[0,0,0,1,.5],f=fight({...GOLDEN_SHINER,speed:.01},()=>rolls.shift()??0);close(f.struggleYaw,rad(38));f.advance(9.999);assert.equal(f.fishPhase,'first');f.advance(10);assert.equal(f.fishPhase,'rest');const p=[f.fishX,f.fishZ];f.advance(14.899);assert.deepEqual([f.fishX,f.fishZ],p);f.advance(14.9);assert.equal(f.fishPhase,'first');assert.equal(f.round,2);assert.equal(f.phaseSide,-1);close(f.roundYaw,f.fishYaw);close(f.struggleYaw-f.roundYaw,-rad(32.5));

@@ -4,6 +4,7 @@ export const FISH_ITEMS=Object.freeze({
   '蓝鳃太阳鱼':{w:2,h:1,color:'#008000',image:'cutouts/bluegill.png'},
   '红耳太阳鱼':{w:2,h:1,color:'#90ee90',image:'cutouts/redear.png'},
   '黑莓鲈':{w:3,h:1,color:'#ffffff',image:'cutouts/blackberry.png'},
+  '尼罗罗非鱼':{w:2,h:1,color:'#ffffff',image:'nile-tilapia.png'},
   '金色闪光鲦':{w:1,h:1,color:'#0000ff',image:'cutouts/shiner.png'},
 });
 export class FishInventory{

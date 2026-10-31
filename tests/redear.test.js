@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {REDEAR,BLUEGILL,TILAPIA,pickFish,FishingSession} from '../fishing-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...REDEAR,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
-test('redear profile and five-species selection boundaries',()=>{
+test('redear profile and six-species selection boundaries',()=>{
   assert.deepEqual(REDEAR,{name:'红耳太阳鱼',catchColor:'#90ee90',strength:{amount:3,interval:.13},restDuration:4.2,speed:5.5,stamina:45,struggle:{minAngle:56,maxAngle:63,durations:[1.9,1,1.4,3]},specials:[]});
-  for(const [r,fish]of [[0,TILAPIA],[.2-1e-9,TILAPIA],[.2,BLUEGILL],[.4-1e-9,BLUEGILL],[.4,REDEAR],[.6-1e-9,REDEAR]])assert.equal(pickFish(r),fish);
+  for(const [r,fish]of [[0,TILAPIA],[1/6-1e-9,TILAPIA],[1/6,BLUEGILL],[2/6-1e-9,BLUEGILL],[2/6,REDEAR],[3/6-1e-9,REDEAR]])assert.equal(pickFish(r),fish);
 });
 test('redear alternates all four timed legs against a fixed baseline then rests 4.2 s',()=>{
   const rolls=[0,0,0,.2,.4,.6,1,0,0],f=fight({...REDEAR,speed:.01},()=>rolls.shift()??0),base=f.roundYaw;close(f.struggleYaw,rad(34));

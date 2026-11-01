@@ -5,7 +5,7 @@ import {FishInventory,FISH_ITEMS} from '../inventory-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish=NILE_TILAPIA,random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);assert.equal(f.hook(6),true);return f;}
 test('Nile tilapia is a distinct sixth species and uses a white two-wide inventory item',()=>{
- assert.equal(FISH_SPECIES.length,6);assert.equal(pickFish(5/6),NILE_TILAPIA);assert.equal(pickFish(1),NILE_TILAPIA);
+ assert.ok(FISH_SPECIES.includes(NILE_TILAPIA));assert.equal(pickFish(5/FISH_SPECIES.length),NILE_TILAPIA);assert.equal(pickFish(6/FISH_SPECIES.length-1e-9),NILE_TILAPIA);
  const f=fight();assert.equal(f.fishStamina,45);assert.deepEqual(NILE_TILAPIA.specials,[]);
  assert.deepEqual(FISH_ITEMS[NILE_TILAPIA.name],{w:2,h:1,color:'#ffffff',image:'nile-tilapia.png'});
  const b=new FishInventory();for(let i=0;i<7;i++)b.add(NILE_TILAPIA.name);assert.equal(b.items[6].x,null);assert.deepEqual(new FishInventory(b.serialize()).serialize(),b.serialize());

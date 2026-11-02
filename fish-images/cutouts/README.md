@@ -13,3 +13,10 @@
 罗非鱼最终版本的定向修正提示词：
 
 > Use case: background-extraction. Edit target: the supplied original tilapia image. Remove the white background completely to alpha=0, right up to the fish silhouette. Keep the actual fish opaque, with its existing colors and anatomy. Output a clean transparent PNG cutout of this exact original fish, facing left, full head fins and tail intact, original 3:2 aspect ratio and proportional anatomy. This is an inventory sprite; absolutely NO cast shadow, NO glow, NO halo, NO gradient, NO blur, NO colored backdrop or residue, NO ghosted silhouette. Empty space must be completely transparent and the fish must remain opaque. Preserve the source image; edit only the background.
+
+## 欧洲河鲈补图 · V0.16
+
+使用内置 image_gen 编辑工具（transparent_background=true），以 ../european-perch.png 为编辑目标，输出 european-perch.png。原图单独保留。
+
+提示词：
+Use case: background-extraction. Edit target: the single provided European perch fish image. Remove ONLY its white background to genuinely transparent alpha=0. Preserve this exact fish's shape, original proportions, facing-left pose, colors, scales, markings, pale opaque fish belly, complete head, all fins, and tail. No redraw or stylization. No shadow, glow, halo, gradient, colored background, or white rectangle. Keep the entire fish visible with a small transparent margin for an inventory icon. Fish stays opaque, empty space completely transparent.

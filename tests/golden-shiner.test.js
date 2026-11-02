@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {GOLDEN_SHINER,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...GOLDEN_SHINER,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
-test('golden shiner profile and eight equal species intervals including both boundaries',()=>{
+test('golden shiner profile and nine equal species intervals including both boundaries',()=>{
   assert.deepEqual(GOLDEN_SHINER,{name:'金色闪光鲦',catchColor:'#4c9fff',strength:{amount:1,interval:.15},restDuration:4.9,speed:6.4,stamina:75,struggle:{minAngle:52,maxAngle:63,durations:[4]},specials:[]});
   for(let i=0;i<FISH_SPECIES.length;i++){assert.equal(pickFish(i/FISH_SPECIES.length),FISH_SPECIES[i]);assert.equal(pickFish((i+1)/FISH_SPECIES.length-1e-9),FISH_SPECIES[i]);}assert.equal(pickFish(1),FISH_SPECIES.at(-1));
 });

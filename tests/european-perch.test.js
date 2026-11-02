@@ -4,8 +4,8 @@ import {EUROPEAN_PERCH,FISH_SPECIES,pickFish,FishingSession} from '../fishing-ru
 import {FishInventory,FISH_ITEMS} from '../inventory-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...EUROPEAN_PERCH,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);assert.equal(f.hook(6),true);return f;}
-test('European perch is the eighth species and packs a light green three-wide name card',()=>{
- assert.equal(FISH_SPECIES.length,8);assert.equal(pickFish(7/8),EUROPEAN_PERCH);assert.equal(pickFish(1),EUROPEAN_PERCH);assert.deepEqual(FISH_ITEMS['欧洲河鲈'],{w:3,h:1,color:'#90ee90',image:null});const b=new FishInventory();for(let i=0;i<4;i++)b.add('欧洲河鲈');assert.equal(b.items[3].x,null);assert.equal(b.moveToBag(b.items[3].id,2,0),true);assert.equal(b.items[0].x,null);assert.deepEqual(new FishInventory(b.serialize()).serialize(),b.serialize());
+test('European perch is the eighth species and packs a light green three-wide image item',()=>{
+ assert.ok(FISH_SPECIES.includes(EUROPEAN_PERCH));assert.equal(pickFish(7/FISH_SPECIES.length),EUROPEAN_PERCH);assert.equal(pickFish(8/FISH_SPECIES.length-1e-9),EUROPEAN_PERCH);assert.deepEqual(FISH_ITEMS['欧洲河鲈'],{w:3,h:1,color:'#90ee90',image:'cutouts/european-perch.png'});const b=new FishInventory();for(let i=0;i<4;i++)b.add('欧洲河鲈');assert.equal(b.items[3].x,null);assert.equal(b.moveToBag(b.items[3].id,2,0),true);assert.equal(b.items[0].x,null);assert.deepEqual(new FishInventory(b.serialize()).serialize(),b.serialize());
 });
 test('European perch moves 4.9 m/s at both lateral angle endpoints on either side',()=>{
  for(const side of [0,1])for(const sample of [0,1]){const rolls=[0,side,sample],f=fight(EUROPEAN_PERCH,()=>rolls.shift()??0),a=sample?59:36;close(f.struggleYaw,(side?-1:1)*rad(90-a));f.advance(7);close(f.fishX,(side?1:-1)*4.9*Math.cos(rad(a)));close(f.fishZ,-23-4.9*Math.sin(rad(a)));}

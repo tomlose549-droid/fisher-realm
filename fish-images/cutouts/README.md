@@ -20,3 +20,10 @@
 
 提示词：
 Use case: background-extraction. Edit target: the single provided European perch fish image. Remove ONLY its white background to genuinely transparent alpha=0. Preserve this exact fish's shape, original proportions, facing-left pose, colors, scales, markings, pale opaque fish belly, complete head, all fins, and tail. No redraw or stylization. No shadow, glow, halo, gradient, colored background, or white rectangle. Keep the entire fish visible with a small transparent margin for an inventory icon. Fish stays opaque, empty space completely transparent.
+
+## 斑点叉尾鮰和白鮰 · V0.17
+
+内置 image_gen 编辑工具，transparent_background=true。分别以 ../channel-catfish.png、../white-catfish.png 为编辑目标，输出 channel-catfish.png、white-catfish.png，原图保留。
+
+提示词：
+Use case: background-extraction. Edit target: the single supplied fish photo. Remove ONLY the white background to completely transparent alpha=0, keep fish opaque including pale belly. Preserve the exact source fish silhouette, all delicate whiskers/barbels, fins and complete tail, natural proportions, scales/spots, original colors and lighting, facing left. Do not redraw or stylize. No shadow, glow, halo, gradient or white rectangle. Entire fish with small transparent margin, no cropping, for an inventory icon.

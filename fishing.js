@@ -1,8 +1,8 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=clear0190';
-import {isPondWater} from './pond-boundary.js?v=clear0190';
+import {FishingSession,FISHING,signedAngle} from './fishing-rules.js?v=pickerel0200';
+import {isPondWater} from './pond-boundary.js?v=pickerel0200';
 import {createWaterEffects} from './water-effects.js?v=water1';
-import {createFishingAudio} from './fishing-audio.js?v=clear0190';
+import {createFishingAudio} from './fishing-audio.js?v=pickerel0200';
 
 export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000}){
   const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');

@@ -1,4 +1,4 @@
-import {FISH_SPECIES} from './fishing-rules.js?v=clear0190';
+import {FISH_SPECIES} from './fishing-rules.js?v=pickerel0200';
 
 export function createOwnerPanel({fishing,onOpen,toast,onClearBag}){
   const command=document.querySelector('#realm-command'),message=document.querySelector('#realm-command-message'),dialog=document.querySelector('#owner-dialog'),select=document.querySelector('#owner-fish'),status=document.querySelector('#owner-mode-status');

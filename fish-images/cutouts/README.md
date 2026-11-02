@@ -27,3 +27,10 @@ Use case: background-extraction. Edit target: the single provided European perch
 
 提示词：
 Use case: background-extraction. Edit target: the single supplied fish photo. Remove ONLY the white background to completely transparent alpha=0, keep fish opaque including pale belly. Preserve the exact source fish silhouette, all delicate whiskers/barbels, fins and complete tail, natural proportions, scales/spots, original colors and lighting, facing left. Do not redraw or stylize. No shadow, glow, halo, gradient or white rectangle. Entire fish with small transparent margin, no cropping, for an inventory icon.
+
+## 大口黑鲈与链纹狗鱼 · V0.20
+
+内置 image_gen 编辑工具，transparent_background=true。分别以 ../largemouth-bass.png、../chain-pickerel.png 为编辑目标，输出 largemouth-bass.png、chain-pickerel.png。原图保留。
+
+提示词：
+Use case: background-extraction. Edit target: the single supplied fish image. Remove ONLY the white background to genuinely transparent alpha=0; keep pale fish belly and entire fish opaque. Preserve exact silhouette, anatomy, original proportions, full head/mouth, all fins and complete tail, scales and markings, source colors and lighting, facing left. No redraw, no stylization, no stretching or cropping. No white rectangle, shadows, glow, halo, gradient or background residue. Entire fish visible with a small transparent margin for an inventory icon.

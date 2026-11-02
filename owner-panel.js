@@ -1,6 +1,6 @@
-import {FISH_SPECIES} from './fishing-rules.js?v=bass0180';
+import {FISH_SPECIES} from './fishing-rules.js?v=clear0190';
 
-export function createOwnerPanel({fishing,onOpen,toast}){
+export function createOwnerPanel({fishing,onOpen,toast,onClearBag}){
   const command=document.querySelector('#realm-command'),message=document.querySelector('#realm-command-message'),dialog=document.querySelector('#owner-dialog'),select=document.querySelector('#owner-fish'),status=document.querySelector('#owner-mode-status');
   for(const fish of FISH_SPECIES){const option=document.createElement('option');option.value=fish.name;option.textContent=fish.name;select.appendChild(option);}
   let lastStatus='';
@@ -11,8 +11,8 @@ export function createOwnerPanel({fishing,onOpen,toast}){
     const mode=fishing.getOwnerState();if(mode.fishName)select.value=mode.fishName;
     dialog.showModal();return true;
   }
-  command.addEventListener('input',()=>{message.textContent='';open();});
-  document.querySelector('#realm-command-form').addEventListener('submit',event=>{event.preventDefault();if(!open())message.textContent='未识别的内容';});
+  command.addEventListener('input',()=>{message.textContent=command.value.trim()==='clear'?'按回车清空背包格子里的鱼，鱼堆保留。':'';open();});
+  document.querySelector('#realm-command-form').addEventListener('submit',event=>{event.preventDefault();if(command.value.trim()==='clear'){command.value='';const result=onClearBag();message.textContent=`已清空背包，共 ${result.removed} 条鱼；鱼堆保留。`+(result.saved?'':'本次未能保存。');if(result.saved)toast(`背包已清空 · ${result.removed} 条鱼`);return;}if(!open())message.textContent='未识别的内容';});
   document.querySelector('#owner-close').addEventListener('click',()=>dialog.close());
   document.querySelector('#owner-fish-form').addEventListener('submit',event=>{
     event.preventDefault();

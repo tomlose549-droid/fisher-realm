@@ -1,9 +1,9 @@
-import {GameTime} from './game-time.js?v=bass0180';
-import {createInventory} from './inventory.js?v=bass0180';
+import {GameTime} from './game-time.js?v=clear0190';
+import {createInventory} from './inventory.js?v=clear0190';
 import * as THREE from './vendor/three.module.js';
 import { createPond } from './pond-scene.js?v=pond1';
-import {createOwnerPanel} from './owner-panel.js?v=bass0180';
-import { createFishing } from './fishing.js?v=bass0180';
+import {createOwnerPanel} from './owner-panel.js?v=clear0190';
+import { createFishing } from './fishing.js?v=clear0190';
 
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -98,7 +98,7 @@ async function fullscreen() {
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
-const ownerPanel=createOwnerPanel({fishing,toast,onOpen:()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();}});
+const ownerPanel=createOwnerPanel({fishing,toast,onClearBag:()=>inventory.clearBag(),onOpen:()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();}});
 document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();dialog.showModal();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
@@ -159,4 +159,4 @@ function animate(now){
 animate(performance.now());
 document.querySelector('#loading').classList.add('done');
 setTimeout(()=>{document.querySelector('#loading').hidden=true;},750);
-window.lakeside={getState:()=>({paused:gameTime.paused,inventory:inventory.snapshot(),version:'0.18.0',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={getState:()=>({paused:gameTime.paused,inventory:inventory.snapshot(),version:'0.19.0',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};

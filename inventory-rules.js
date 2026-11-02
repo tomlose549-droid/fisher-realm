@@ -25,5 +25,6 @@ export class FishInventory{
   add(name){if(!FISH_ITEMS[name])return null;const item={id:String(this.nextId++),name,x:null,y:null};this.items.push(item);for(let y=0;y<BAG_HEIGHT;y++)for(let x=0;x<BAG_WIDTH;x++)if(this.fits(item,x,y)&&!this.overlaps(item,x,y).length){item.x=x;item.y=y;return item;}return item;}
   moveToBag(id,x,y){const item=this.items.find(i=>i.id===id);if(!item||!this.fits(item,x,y))return false;for(const other of this.overlaps(item,x,y)){other.x=null;other.y=null;}item.x=x;item.y=y;return true;}
   moveToPile(id){const item=this.items.find(i=>i.id===id);if(!item)return false;item.x=null;item.y=null;return true;}
+  clearBag(){const count=this.items.length;this.items=this.items.filter(item=>item.x===null);return count-this.items.length;}
   serialize(){return {version:1,items:this.items.map(i=>({...i}))};}
 }

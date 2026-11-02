@@ -10,7 +10,8 @@ export const COMMON_CARP=Object.freeze({name:'普通鲤鱼',catchColor:'#ffffff'
 export const EUROPEAN_PERCH=Object.freeze({name:'欧洲河鲈',catchColor:'#90ee90',strength:Object.freeze({amount:3,interval:.2}),restDuration:4.7,speed:4.9,stamina:50,struggle:Object.freeze({minAngle:36,maxAngle:59,durations:Object.freeze([3.5,3.9,3.5]),switchPause:.25}),specials:Object.freeze(['换边前停顿0.25秒'])});
 export const WHITE_CATFISH=Object.freeze({name:'白鮰',catchColor:'#008000',strength:Object.freeze({amount:6,interval:.15}),restDuration:1,speed:3,stamina:43,struggle:Object.freeze({minAngle:30,maxAngle:36,durations:Object.freeze([4,1.5])}),specials:Object.freeze([])});
 export const CHANNEL_CATFISH=Object.freeze({name:'斑点叉尾鮰',catchColor:'#40e0d0',strength:Object.freeze({amount:7,interval:.16}),restDuration:1.1,speed:3.4,stamina:47,struggle:Object.freeze({minAngle:31,maxAngle:36,durations:Object.freeze([4.4,1.5])}),specials:Object.freeze([])});
-export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER,NILE_TILAPIA,COMMON_CARP,EUROPEAN_PERCH,WHITE_CATFISH,CHANNEL_CATFISH]);
+export const LARGEMOUTH_BASS=Object.freeze({name:'大口黑鲈',catchColor:'#4c9fff',strength:Object.freeze({amount:4,interval:.19}),restDuration:4.5,speed:5.1,stamina:63,struggle:Object.freeze({minAngle:37,maxAngle:61,durations:Object.freeze([5,3,2.5]),switchPause:.3}),specials:Object.freeze(['换边前停顿0.3秒'])});
+export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER,NILE_TILAPIA,COMMON_CARP,EUROPEAN_PERCH,WHITE_CATFISH,CHANNEL_CATFISH,LARGEMOUTH_BASS]);
 export function pickFish(unit){return FISH_SPECIES[Math.min(FISH_SPECIES.length-1,Math.max(0,Math.floor(unit*FISH_SPECIES.length)))];}
 const PHASES=['first','second','third','fourth'];
 const EPS=1e-9,STEP=.01;

@@ -1,4 +1,4 @@
-import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js?v=channel0172';
+import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js?v=bass0180';
 const STORAGE_KEY='fisher-realm-inventory-v1';
 export function createInventory({onOpen,onClose,toast}){
   let saved;try{saved=JSON.parse(localStorage.getItem(STORAGE_KEY));}catch{}

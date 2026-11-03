@@ -34,3 +34,10 @@ Use case: background-extraction. Edit target: the single supplied fish photo. Re
 
 提示词：
 Use case: background-extraction. Edit target: the single supplied fish image. Remove ONLY the white background to genuinely transparent alpha=0; keep pale fish belly and entire fish opaque. Preserve exact silhouette, anatomy, original proportions, full head/mouth, all fins and complete tail, scales and markings, source colors and lighting, facing left. No redraw, no stylization, no stretching or cropping. No white rectangle, shadows, glow, halo, gradient or background residue. Entire fish visible with a small transparent margin for an inventory icon.
+
+## 豹纹翼甲鲶 · V0.22
+
+内置 image_gen 编辑工具，transparent_background=true。以 ../leopard-pleco.png 为编辑目标，输出 leopard-pleco.png。原图保留。
+
+提示词：
+Use case: background-extraction. Edit target: the single provided leopard pleco fish image. Remove ONLY the white background to genuinely transparent alpha=0; keep the entire fish opaque including pale areas. Preserve the exact source fish silhouette, anatomy, original proportions, leopard markings and colors, full head, all delicate small appendages, large dorsal fin, other fins and complete tail, original lighting and facing-left pose. Do not redraw, stylize, recolor, stretch or crop. No shadows, glow, halo, gradients or white rectangle. Entire fish visible with a small transparent margin, for a game inventory icon.

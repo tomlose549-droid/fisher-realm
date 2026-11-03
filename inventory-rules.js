@@ -1,5 +1,6 @@
 export const BAG_WIDTH=5,BAG_HEIGHT=3;
 export const FISH_ITEMS=Object.freeze({
+  '豹纹翼甲鲶':{w:2,h:2,color:'#808080',image:'cutouts/leopard-pleco.png'},
   '罗非鱼':{w:2,h:1,color:'#808080',image:'cutouts/tilapia.png'},
   '蓝鳃太阳鱼':{w:2,h:1,color:'#008000',image:'cutouts/bluegill.png'},
   '红耳太阳鱼':{w:2,h:1,color:'#90ee90',image:'cutouts/redear.png'},

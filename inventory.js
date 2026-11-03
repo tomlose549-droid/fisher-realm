@@ -1,4 +1,4 @@
-import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js?v=pickerel0200';
+import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js?v=reset0210';
 const STORAGE_KEY='fisher-realm-inventory-v1';
 export function createInventory({onOpen,onClose,toast}){
   let saved;try{saved=JSON.parse(localStorage.getItem(STORAGE_KEY));}catch{}
@@ -20,5 +20,5 @@ export function createInventory({onOpen,onClose,toast}){
   document.querySelector('#backpack-toggle').addEventListener('click',()=>{onOpen();dialog.showModal();render();});
   document.querySelector('#inventory-close').addEventListener('click',()=>dialog.close());
   dialog.addEventListener('close',()=>{clearDrag();selected=null;onClose();document.querySelector('#backpack-toggle').focus({preventScroll:true});});
-  return {clearBag(){clearDrag();selected=null;const removed=model.clearBag(),saved=save();render();return {removed,saved};},addFish(name){const item=model.add(name);if(item){save();render();}},snapshot:()=>({...model.serialize(),open:dialog.open}),isOpen:()=>dialog.open};
+  return {clearAll(){clearDrag();selected=null;shown=40;const removed=model.clearAll(),saved=save();render();return {removed,saved};},addFish(name){const item=model.add(name);if(item){save();render();}},snapshot:()=>({...model.serialize(),open:dialog.open}),isOpen:()=>dialog.open};
 }

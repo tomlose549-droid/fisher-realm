@@ -41,3 +41,17 @@ Use case: background-extraction. Edit target: the single supplied fish image. Re
 
 提示词：
 Use case: background-extraction. Edit target: the single provided leopard pleco fish image. Remove ONLY the white background to genuinely transparent alpha=0; keep the entire fish opaque including pale areas. Preserve the exact source fish silhouette, anatomy, original proportions, leopard markings and colors, full head, all delicate small appendages, large dorsal fin, other fins and complete tail, original lighting and facing-left pose. Do not redraw, stylize, recolor, stretch or crop. No shadows, glow, halo, gradients or white rectangle. Entire fish visible with a small transparent margin, for a game inventory icon.
+
+## 长吻雀鳝 · V0.23
+
+内置 image_gen 编辑工具，transparent_background=true。以 ../longnose-gar.png 为编辑目标，保存为 longnose-gar.png，原图保留。
+
+提示词：
+Use case: background-extraction. Asset type: fishing-game inventory sprite. Input image: edit target, provided 长吻雀鳝 fish. Remove only the white background and output true transparent alpha. Keep the entire original fish silhouette, anatomy, pose, all fins, mouth, eye, tail, scales, markings, original colors and proportions unchanged. Fish itself must stay opaque including pale belly and fin details. Center the whole fish with a small transparent margin, no clipping, no stretching, no added lighting, no shadow, no glow, no white halo, no text or new objects.
+
+## 玛雅慈鲷 · V0.23
+
+内置 image_gen 编辑工具，transparent_background=true。以 ../mayan-cichlid.png 为编辑目标，保存为 mayan-cichlid.png，原图保留。
+
+提示词：
+Use case: background-extraction. Asset type: fishing-game inventory sprite. Input image: edit target, provided 玛雅慈鲷 fish. Remove only the white background and output true transparent alpha. Keep the entire original fish silhouette, anatomy, pose, all fins, mouth, eye, tail, scales, markings, original colors and proportions unchanged. Fish itself must stay opaque including pale belly and fin details. Center the whole fish with a small transparent margin, no clipping, no stretching, no added lighting, no shadow, no glow, no white halo, no text or new objects.

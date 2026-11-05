@@ -1,25 +1,6 @@
+import {FISH_CATALOG} from './fish-data.js';
 export const BAG_WIDTH=5,BAG_HEIGHT=3;
-export const FISH_ITEMS=Object.freeze({
-  '黄鲶':{w:3,h:1,color:'#008000',image:'cutouts/yellow-bullhead.webp'},
-  '弓鳍鱼':{w:2,h:1,color:'#0000ff',image:'cutouts/bowfin.webp'},
-  '地图鱼':{w:2,h:2,color:'#40e0d0',image:'cutouts/oscar.png'},
-  '佛罗里达雀鳝':{w:4,h:1,color:'#301934',image:null},
-  '长吻雀鳝':{w:4,h:1,color:'#ee82ee',image:'cutouts/longnose-gar.png'},
-  '玛雅慈鲷':{w:2,h:2,color:'#008000',image:'cutouts/mayan-cichlid.png'},
-  '豹纹翼甲鲶':{w:2,h:2,color:'#808080',image:'cutouts/leopard-pleco.png'},
-  '罗非鱼':{w:2,h:1,color:'#808080',image:'cutouts/tilapia.png'},
-  '蓝鳃太阳鱼':{w:2,h:1,color:'#008000',image:'cutouts/bluegill.png'},
-  '红耳太阳鱼':{w:2,h:1,color:'#90ee90',image:'cutouts/redear.png'},
-  '黑莓鲈':{w:3,h:1,color:'#ffffff',image:'cutouts/blackberry.png'},
-  '链纹狗鱼':{w:3,h:1,color:'#301934',image:'cutouts/chain-pickerel.png'},
-  '大口黑鲈':{w:3,h:2,color:'#0000ff',image:'cutouts/largemouth-bass.png'},
-  '斑点叉尾鮰':{w:3,h:2,color:'#40e0d0',image:'cutouts/channel-catfish.png'},
-  '白鮰':{w:3,h:1,color:'#008000',image:'cutouts/white-catfish.png'},
-  '欧洲河鲈':{w:3,h:1,color:'#90ee90',image:'cutouts/european-perch.png'},
-  '普通鲤鱼':{w:2,h:1,color:'#ffffff',image:'common-carp.png'},
-  '尼罗罗非鱼':{w:2,h:1,color:'#ffffff',image:'nile-tilapia.png'},
-  '金色闪光鲦':{w:1,h:1,color:'#0000ff',image:'cutouts/shiner.png'},
-});
+export const FISH_ITEMS=FISH_CATALOG.items;
 export class FishInventory{
   constructor(saved){this.items=[];this.nextId=1;
     if(saved?.version===1&&Array.isArray(saved.items))for(const raw of saved.items){

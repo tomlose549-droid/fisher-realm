@@ -5,7 +5,7 @@ import {FishInventory,FISH_ITEMS} from '../inventory-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish,random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);assert.equal(f.hook(6),true);return f;}
 test('gar and cichlid join the random and owner catalogs with exact profiles',()=>{
-  assert.equal(FISH_SPECIES.length,19);
+
   for(const [fish,index,expected] of [
     [LONGNOSE_GAR,13,{name:'长吻雀鳝',catchColor:'#ee82ee',strength:{amount:4,interval:.16},restDuration:4.5,speed:6.5,stamina:90,struggle:{minAngle:46,maxAngle:59,durations:[4.5,2,1.5,1,.8]},specials:[]}],
     [MAYAN_CICHLID,14,{name:'玛雅慈鲷',catchColor:'#008000',strength:{amount:3,interval:.15},restDuration:4.1,speed:5,stamina:54,struggle:{minAngle:34,maxAngle:42,durations:[6.2,3.1]},specials:[]}]

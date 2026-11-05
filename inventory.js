@@ -1,5 +1,5 @@
-import {loadInventoryImage} from './inventory-images.js?v=images0251';
-import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js?v=images0251';
+import {loadInventoryImage} from './inventory-images.js?v=catalog0252';
+import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js?v=catalog0252';
 const STORAGE_KEY='fisher-realm-inventory-v1';
 export function createInventory({onOpen,onClose,toast}){
   let saved;try{saved=JSON.parse(localStorage.getItem(STORAGE_KEY));}catch{}

@@ -55,3 +55,10 @@ Use case: background-extraction. Asset type: fishing-game inventory sprite. Inpu
 
 提示词：
 Use case: background-extraction. Asset type: fishing-game inventory sprite. Input image: edit target, provided 玛雅慈鲷 fish. Remove only the white background and output true transparent alpha. Keep the entire original fish silhouette, anatomy, pose, all fins, mouth, eye, tail, scales, markings, original colors and proportions unchanged. Fish itself must stay opaque including pale belly and fin details. Center the whole fish with a small transparent margin, no clipping, no stretching, no added lighting, no shadow, no glow, no white halo, no text or new objects.
+
+## 地图鱼 · V0.24
+
+内置 image_gen 编辑工具，transparent_background=true。原图 ../oscar.png，成品 oscar.png。
+
+提示词：
+Use case: background-extraction. Edit target: supplied Oscar fish image. Remove ONLY white background to true transparent alpha. Preserve exact entire fish silhouette, anatomy, natural proportions, orange markings, original colors and lighting, pale opaque areas, full head, all fins and complete tail. No stretching, cropping, recoloring, stylization, shadows, glow, halo, text or white rectangle. Fish opaque, empty space transparent; small transparent margin for inventory sprite.

@@ -15,7 +15,9 @@ export const CHAIN_PICKEREL=Object.freeze({name:'链纹狗鱼',catchColor:'#3019
 export const LEOPARD_PLECO=Object.freeze({name:'豹纹翼甲鲶',catchColor:'#808080',strength:Object.freeze({amount:3,interval:.16}),restDuration:2.6,speed:2.7,stamina:32,struggle:Object.freeze({minAngle:33,maxAngle:40,durations:Object.freeze([3.4,2])}),specials:Object.freeze([])});
 export const LONGNOSE_GAR=Object.freeze({name:'长吻雀鳝',catchColor:'#ee82ee',strength:Object.freeze({amount:4,interval:.16}),restDuration:4.5,speed:6.5,stamina:90,struggle:Object.freeze({minAngle:46,maxAngle:59,durations:Object.freeze([4.5,2,1.5,1,.8])}),specials:Object.freeze([])});
 export const MAYAN_CICHLID=Object.freeze({name:'玛雅慈鲷',catchColor:'#008000',strength:Object.freeze({amount:3,interval:.15}),restDuration:4.1,speed:5,stamina:54,struggle:Object.freeze({minAngle:34,maxAngle:42,durations:Object.freeze([6.2,3.1])}),specials:Object.freeze([])});
-export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER,NILE_TILAPIA,COMMON_CARP,EUROPEAN_PERCH,WHITE_CATFISH,CHANNEL_CATFISH,LARGEMOUTH_BASS,CHAIN_PICKEREL,LEOPARD_PLECO,LONGNOSE_GAR,MAYAN_CICHLID]);
+export const OSCAR=Object.freeze({name:'地图鱼',catchColor:'#40e0d0',strength:Object.freeze({amount:4,interval:.15}),restDuration:4.2,speed:5.2,stamina:55,struggle:Object.freeze({minAngle:34,maxAngle:43,durations:Object.freeze([6.3,2.8,.6])}),specials:Object.freeze([])});
+export const FLORIDA_GAR=Object.freeze({name:'佛罗里达雀鳝',catchColor:'#301934',strength:Object.freeze({amount:4,interval:.15}),restDuration:4.9,speed:6.2,stamina:86,struggle:Object.freeze({minAngle:47,maxAngle:57,durations:Object.freeze([4,2,1.5,.8,.2])}),specials:Object.freeze([])});
+export const FISH_SPECIES=Object.freeze([TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER,NILE_TILAPIA,COMMON_CARP,EUROPEAN_PERCH,WHITE_CATFISH,CHANNEL_CATFISH,LARGEMOUTH_BASS,CHAIN_PICKEREL,LEOPARD_PLECO,LONGNOSE_GAR,MAYAN_CICHLID,OSCAR,FLORIDA_GAR]);
 export function pickFish(unit){return FISH_SPECIES[Math.min(FISH_SPECIES.length-1,Math.max(0,Math.floor(unit*FISH_SPECIES.length)))];}
 const PHASES=['first','second','third','fourth','fifth'];
 const EPS=1e-9,STEP=.01;

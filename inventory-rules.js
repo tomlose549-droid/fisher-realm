@@ -1,5 +1,7 @@
 export const BAG_WIDTH=5,BAG_HEIGHT=3;
 export const FISH_ITEMS=Object.freeze({
+  '地图鱼':{w:2,h:2,color:'#40e0d0',image:'cutouts/oscar.png'},
+  '佛罗里达雀鳝':{w:4,h:1,color:'#301934',image:null},
   '长吻雀鳝':{w:4,h:1,color:'#ee82ee',image:'cutouts/longnose-gar.png'},
   '玛雅慈鲷':{w:2,h:2,color:'#008000',image:'cutouts/mayan-cichlid.png'},
   '豹纹翼甲鲶':{w:2,h:2,color:'#808080',image:'cutouts/leopard-pleco.png'},

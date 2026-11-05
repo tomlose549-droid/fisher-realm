@@ -20,3 +20,6 @@
 .inventory-fish{padding:3px;isolation:isolate}.inventory-fish img{position:relative;z-index:1;flex:none;width:100%;height:100%;object-fit:contain;object-position:center;mix-blend-mode:normal}.inventory-fish span{position:absolute;z-index:2;left:3px;right:3px;bottom:2px;text-align:center;max-width:calc(100% - 6px);background:linear-gradient(transparent,#10251c38);border-radius:2px}.inventory-drag-ghost img{height:100%}@media(max-width:560px){.inventory-fish{padding:2px}.inventory-fish span{left:2px;right:2px;bottom:1px;max-width:calc(100% - 4px)}}
 
 .inventory-fish-no-image span{position:static;color:var(--fish-label-color,#294137);text-shadow:none;background:none;font-size:12px;white-space:normal;text-align:center;line-height:1.4}
+
+/* Expose image loading instead of silently leaving a name-only card. */
+.inventory-fish[data-image-state=loading]::after,.inventory-fish[data-image-state=error]::after{position:absolute;inset:3px 3px 18px;display:grid;place-items:center;font-size:10px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;z-index:1}.inventory-fish[data-image-state=loading]::after{content:'图片加载中…'}.inventory-fish[data-image-state=error]::after{content:'图片未加载，重开背包可重试'}.inventory-fish[data-image-state=loading] img,.inventory-fish[data-image-state=error] img{visibility:hidden}

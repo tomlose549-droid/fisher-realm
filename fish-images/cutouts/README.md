@@ -76,3 +76,8 @@ Use case: background-extraction. Edit target: supplied 黄鲶 fish. Remove ONLY 
 
 提示词：
 Use case: background-extraction. Edit target: supplied 弓鳍鱼 fish. Remove ONLY white background to true transparent alpha. Keep entire original fish opaque including pale belly and delicate fins. Preserve exact anatomy, proportions, colors, lighting, markings, full head, all whiskers/barbels if present, all fins and complete tail. No redraw, cropping, stretching, recoloring, shadow, halo, glow or white rectangle. Whole fish centered with small transparent margin for inventory sprite.
+
+
+## V0.25.1 加载优化
+
+黄鲶 yellow-bullhead.webp（1007688 字节）和弓鳍鱼 bowfin.webp（1378322 字节）由已有 PNG 无损重新编码，尺寸和逐像素 RGBA 完全一致，不修改图像内容；原始 PNG 与上方内置工具提示词保留。

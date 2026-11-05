@@ -12,7 +12,8 @@ const clone=v=>structuredClone(v);
 
 test('all pre-refactor profiles, order, legacy exports and inventory values remain exact',()=>{
  assert.deepEqual(rules.FISH_SPECIES.slice(0,baseline.profiles.length),baseline.profiles);
- for(const [name,item]of Object.entries(baseline.items))assert.deepEqual(FISH_ITEMS[name],item);
+ // The separately requested Florida gar image fix is the only approved metadata delta.
+ for(const [name,item]of Object.entries(baseline.items))assert.deepEqual(FISH_ITEMS[name],name==='佛罗里达雀鳝'?{...item,image:'cutouts/florida-gar.png'}:item);
  for(const [i,data]of FISH_DATA.entries()){assert.equal(rules[data.id]??FISH_CATALOG.byId[data.id],rules.FISH_SPECIES[i]);assert.deepEqual(FISH_ITEMS[data.name],data.inventory);}
  assert.equal(rules.TILAPIA.struggle.firstDuration,3.9);assert.equal(rules.TILAPIA.struggle.durations,undefined);
  assert.equal(rules.TILAPIA.catchColor,undefined);assert.equal(rules.BLUEGILL.catchColor,undefined);

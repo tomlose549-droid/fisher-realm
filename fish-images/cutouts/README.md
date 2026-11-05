@@ -81,3 +81,10 @@ Use case: background-extraction. Edit target: supplied 弓鳍鱼 fish. Remove ON
 ## V0.25.1 加载优化
 
 黄鲶 yellow-bullhead.webp（1007688 字节）和弓鳍鱼 bowfin.webp（1378322 字节）由已有 PNG 无损重新编码，尺寸和逐像素 RGBA 完全一致，不修改图像内容；原始 PNG 与上方内置工具提示词保留。
+
+## 佛罗里达雀鳝图片补入
+
+内置 image_gen 编辑工具，transparent_background=true。原图 ../florida-gar.png，成品 florida-gar.png。
+
+提示词：
+Use case: background-extraction. Edit target: supplied Florida gar fish image. Remove ONLY white background to true transparent alpha. Preserve exact fish silhouette, short broad snout, original natural proportions, spotted scales and fins, colors and lighting, opaque pale belly, complete head and tail, all fins. No redraw, stretching, cropping, recoloring, shadows, halo, glow, text or white rectangle. Entire original fish centered with a small transparent margin, fish itself fully opaque, background transparent. Inventory sprite.

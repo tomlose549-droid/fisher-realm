@@ -57,7 +57,13 @@ export function createFishGuide({onOpen,onClose,entries=FISH_DATA,doc=document})
         });
       }
     }
-    // Native details handles mouse, Enter and Space. Close siblings before loading.
+    // Keyboard activation also emits click. Select synchronously so rapid clicks
+    // cannot let an earlier queued toggle event close the latest selection.
+    summary.addEventListener('click',event=>{
+      event.preventDefault();const opening=!details.open;
+      if(opening)for(const other of cards)if(other!==details)other.open=false;
+      details.open=opening;if(opening)expand();
+    });
     details.addEventListener('toggle',()=>{if(!details.open)return;for(const other of cards)if(other!==details)other.open=false;expand();});
     return {details,loadThumb(){if(fish.image)loadInventoryImage(thumb.image,inventoryImageSources(fish.image)[0],state=>{
       thumb.wrap.dataset.imageState=state;thumb.wrap.setAttribute('aria-busy',String(state==='loading'));
@@ -73,7 +79,7 @@ export function createFishGuide({onOpen,onClose,entries=FISH_DATA,doc=document})
   function open(){
     if(dialog.open)return;onOpen();search.value='';
     const built=catalog.fish.map(card);cards=built.map(c=>c.details);list.replaceChildren(...cards);filter();
-    dialog.showModal();list.scrollTop=0;search.focus({preventScroll:true});built.forEach(c=>c.loadThumb());
+    dialog.showModal();doc.querySelector('.guide-scroll').scrollTop=0;search.focus({preventScroll:true});built.forEach(c=>c.loadThumb());
   }
   toggle.addEventListener('click',open);
   search.addEventListener('input',filter);

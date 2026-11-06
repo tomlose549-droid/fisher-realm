@@ -1,4 +1,4 @@
-import {FISH_CATALOG} from './fish-data.js';
+import {FISH_CATALOG,DEFAULT_CATCH_COLOR} from './fish-data.js';
 // Meters, radians, monotonic seconds; resource ticks are independent of rendering.
 export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,hookWindow:1.45,baseSpeed:3.75,catchDistance:1.25,recastDelay:.8,noticeDelay:.3,noticeFadeAt:4.5,noticeFadeDuration:.6,maxDistance:50,landGraceDistance:10,lineMaximum:100,regenDelay:.95,regenInterval:.1,regenAmount:2.5});
 export const FISH_SPECIES=FISH_CATALOG.profiles;
@@ -23,7 +23,7 @@ function circleCrossing(x,z,dx,dz,r,entering){
 export class FishingSession{
   constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true}={}){
     this.random=random;this.randomSpecies=randomSpecies;this.profile=fish;this.player={x:player.x,z:player.z};this.isWater=isWater;
-    this.phaseIndex=0;this.lastCatchName=null;this.lastCatchColor='#d3d3d3';
+    this.phaseIndex=0;this.lastCatchName=null;this.lastCatchColor=DEFAULT_CATCH_COLOR;
     this.forcedFish=null;this.forcedRemaining=0;this.forcedCastFish=null;
     this.state='idle';this.fishX=player.x;this.fishZ=player.z;this.castYaw=0;this.rodYaw=0;
     this.reeling=false;this.lastTime=null;this.castAt=null;this.biteAt=null;this.hookDeadline=null;this.catchAt=null;this.lastCatchAt=null;
@@ -104,7 +104,7 @@ export class FishingSession{
       this.forcedRemaining--;if(this.forcedRemaining===0)this.forcedFish=null;
       this.forcedCastFish=null;
     }
-    this.lastCatchName=this.profile.name;this.lastCatchColor=this.profile.catchColor||'#d3d3d3';
+    this.lastCatchName=this.profile.name;this.lastCatchColor=this.profile.catchColor||DEFAULT_CATCH_COLOR;
     const d=this.distance;this.fishX=this.player.x+(this.fishX-this.player.x)*FISHING.catchDistance/d;this.fishZ=this.player.z+(this.fishZ-this.player.z)*FISHING.catchDistance/d;
     this.catchAt=t;this.lastCatchAt=t;this.state='caught';this.reeling=false;this.catches++;this.outcome='caught';this.fishPhase=null;this.phaseEndsAt=Infinity;this.events.push({type:'caught',at:t});
   }

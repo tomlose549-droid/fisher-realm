@@ -1,3 +1,4 @@
+import {renderFishHelp} from './fish-help.js';
 import {releaseVersion} from './release-assets.js';
 import {GameTime} from './game-time.js';
 import {createInventory} from './inventory.js';
@@ -107,7 +108,7 @@ async function fullscreen() {
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
 const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onOpen:()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();}});
-document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();dialog.showModal();});
+document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();renderFishHelp();dialog.showModal();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
   if(e.defaultPrevented||Boolean(document.querySelector('dialog[open]'))||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;

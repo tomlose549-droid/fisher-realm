@@ -40,6 +40,8 @@
 .guide-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:11px;color:#c3d1bc;margin:11px 0 5px}
 .guide-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;padding-right:6px}
 .guide-fish{border-bottom:1px solid #c7d7b92b}
+.guide-locked{display:grid;place-items:center;min-height:95px;color:#aabda5;background:#dce5cf04;user-select:none}
+.guide-locked>span{font-size:25px;line-height:1;filter:grayscale(1);opacity:.7}
 .guide-summary{display:grid;grid-template-columns:100px minmax(0,1fr) 126px;align-items:center;gap:18px;padding:14px 4px;cursor:pointer;list-style:none;border-radius:8px}
 .guide-summary::-webkit-details-marker{display:none}
 .guide-summary:hover,.guide-summary:focus-visible{background:#dce5cf0b}

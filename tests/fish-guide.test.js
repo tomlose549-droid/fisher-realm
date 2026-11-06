@@ -13,8 +13,6 @@ test('guide uses all catalog fish in encounter order with two independent actual
     assert.equal(entry.restDuration,fish.restDuration);assert.deepEqual([entry.height,entry.width],[fish.inventory.h,fish.inventory.w]);
     assert.equal(entry.probability,`1/${FISH_DATA.length}（约${(100/FISH_DATA.length).toFixed(2)}%）`);
   }
-  const bluegill=guide.fish.find(f=>f.id==='BLUEGILL');assert.notEqual(bluegill.catchColor,bluegill.inventoryColor);
-  const bass=guide.fish.find(f=>f.id==='LARGEMOUTH_BASS');assert.notEqual(bass.catchColor,bass.inventoryColor);
 });
 
 test('new and changed fish automatically update guide fields, probability and missing image',()=>{

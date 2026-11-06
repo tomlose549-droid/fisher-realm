@@ -1,9 +1,17 @@
-import {GameTime} from './game-time.js?v=catalog0252';
-import {createInventory} from './inventory.js?v=catalog0252';
+import {releaseVersion} from './release-assets.js';
+import {GameTime} from './game-time.js';
+import {createInventory} from './inventory.js';
 import * as THREE from './vendor/three.module.js';
-import { createPond } from './pond-scene.js?v=pond1';
-import {createOwnerPanel} from './owner-panel.js?v=catalog0252';
-import { createFishing } from './fishing.js?v=catalog0252';
+import { createPond } from './pond-scene.js';
+import {createOwnerPanel} from './owner-panel.js';
+import { createFishing } from './fishing.js';
+
+// An older cached HTML entry must reload before it can launch the new module graph.
+if(!releaseVersion()){
+  const button=document.querySelector('#error button');
+  if(button)button.onclick=()=>{const next=new URL(location.href);next.searchParams.set('reload',Date.now());location.replace(next.href);};
+  throw new Error('页面入口已更新，请点击重新加载以获取最新版本。');
+}
 
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -159,4 +167,4 @@ function animate(now){
 animate(performance.now());
 document.querySelector('#loading').classList.add('done');
 setTimeout(()=>{document.querySelector('#loading').hidden=true;},750);
-window.lakeside={getState:()=>({paused:gameTime.paused,inventory:inventory.snapshot(),version:'0.25.2',scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={getState:()=>({paused:gameTime.paused,inventory:inventory.snapshot(),version:releaseVersion(),scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};

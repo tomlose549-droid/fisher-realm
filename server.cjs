@@ -12,4 +12,4 @@ http.createServer((req, res) => {
     if (relative.startsWith('..') || path.isAbsolute(relative) || relative.split(path.sep).some(p => p.startsWith('.')) || !['.html','.js','.css','.svg','.png','.webp','.json','.wav'].includes(path.extname(file))) { res.writeHead(403); return res.end('Forbidden'); }
     fs.readFile(file, (error, data) => { if (error) { res.writeHead(404); return res.end('Not found'); } res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' }); res.end(data); });
   } catch { res.writeHead(400); res.end('Bad request'); }
-}).listen(5173, '127.0.0.1', () => console.log('Lakeside V0.1: http://127.0.0.1:5173  (Ctrl+C to stop)')).on('error', error => { console.error(error.message); process.exitCode = 1; });
+}).listen(5173, '127.0.0.1', () => console.log('Lakeside V'+require('./package.json').version+': http://127.0.0.1:5173  (Ctrl+C to stop)')).on('error', error => { console.error(error.message); process.exitCode = 1; });

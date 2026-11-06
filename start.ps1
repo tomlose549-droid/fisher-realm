@@ -14,13 +14,14 @@ foreach ($candidatePort in 5173..5183) {
 if ($null -eq $gameListener) { Write-Host 'Ports 5173-5183 are busy. Close an earlier game window and try again.'; Read-Host 'Press Enter'; exit 1 }
 $gameUrl = "http://127.0.0.1:$gamePort/"
 Write-Host ''
-Write-Host '  LAKESIDE / V0.1' -ForegroundColor Green
+$gameVersion = (Get-Content -LiteralPath (Join-Path $gameRoot 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
+Write-Host ('  LAKESIDE / V' + $gameVersion) -ForegroundColor Green
 Write-Host "  $gameUrl"
 Write-Host '  Keep this window open while playing. Close it to stop.'
 Write-Host '  Right mouse drag: look / R: reset / F: fullscreen'
 Write-Host ''
 if (-not $NoBrowser) { Start-Process $gameUrl }
-$gameMimeTypes = @{ '.html'='text/html; charset=utf-8'; '.js'='text/javascript; charset=utf-8'; '.css'='text/css; charset=utf-8'; '.svg'='image/svg+xml'; '.png'='image/png'; '.wav'='audio/wav' }
+$gameMimeTypes = @{ '.html'='text/html; charset=utf-8'; '.js'='text/javascript; charset=utf-8'; '.css'='text/css; charset=utf-8'; '.svg'='image/svg+xml'; '.png'='image/png'; '.webp'='image/webp'; '.json'='application/json; charset=utf-8'; '.wav'='audio/wav' }
 try {
     while ($true) {
         $gameClient = $gameListener.AcceptTcpClient()

@@ -20,6 +20,6 @@ export function createInventory({onOpen,onClose,toast}){
   dialog.addEventListener('click',e=>{if(suppressClick)return;const b=e.target.closest('[data-fish-id]');if(b){if(selected&&grid.contains(b)&&selected!==b.dataset.fishId){const item=model.items.find(i=>i.id===b.dataset.fishId);if(model.moveToBag(selected,item.x,item.y))changed();else hint.textContent='这里放不下，请换个位置。';}else{selected=selected===b.dataset.fishId?null:b.dataset.fishId;render();}return;}const cell=e.target.closest('[data-x]');if(selected&&cell){if(model.moveToBag(selected,Number(cell.dataset.x),Number(cell.dataset.y)))changed();else hint.textContent='这里放不下，请换个位置。';}else if(selected&&pile.contains(e.target)){model.moveToPile(selected);changed();}});
   document.querySelector('#backpack-toggle').addEventListener('click',()=>{onOpen();dialog.showModal();render();});
   document.querySelector('#inventory-close').addEventListener('click',()=>dialog.close());
-  dialog.addEventListener('close',()=>{clearDrag();selected=null;onClose();document.querySelector('#backpack-toggle').focus({preventScroll:true});});
+  dialog.addEventListener('close',()=>{clearDrag();selected=null;onClose();if(!document.querySelector('dialog[open]'))document.querySelector('#backpack-toggle').focus({preventScroll:true});});
   return {clearAll(){clearDrag();selected=null;shown=40;const removed=model.clearAll(),saved=save();render();return {removed,saved};},addFish(name){const item=model.add(name);if(item){save();render();}},snapshot:()=>({...model.serialize(),open:dialog.open}),isOpen:()=>dialog.open};
 }

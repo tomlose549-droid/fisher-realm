@@ -25,4 +25,53 @@
 .inventory-fish[data-image-state=loading]::after,.inventory-fish[data-image-state=error]::after{position:absolute;inset:3px 3px 18px;display:grid;place-items:center;font-size:10px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;z-index:1}.inventory-fish[data-image-state=loading]::after{content:'图片加载中…'}.inventory-fish[data-image-state=error]::after{content:'图片未加载，重开背包可重试'}.inventory-fish[data-image-state=loading] img,.inventory-fish[data-image-state=error] img{visibility:hidden}
 
 /* Fish details are generated from the shared catalog. */
+
+/* The guide shares the bag's lakeside palette; colors are labeled swatches. */
+#fish-guide-dialog{width:min(940px,calc(100% - 28px));max-height:calc(100dvh - 28px);padding:26px 28px 16px;background:#183d35f5;color:#e8eddf;border:1px solid #c7d7b94d;overflow:hidden}
+#fish-guide-dialog[open]{display:flex;flex-direction:column}
+#fish-guide-dialog::backdrop{background:#09292165;backdrop-filter:blur(5px)}
+.guide-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none}
+.guide-header h2{margin:7px 0 18px;color:#f0eedc;font-size:27px}
+#fish-guide-close{flex:none;border:1px solid #dce5cf50;border-radius:20px;color:#e5eadb;background:#e5eadb0d;padding:9px 13px;font-size:12px}
+.guide-toolbar{flex:none;margin-bottom:10px}
+.guide-toolbar label{display:block;font-size:11px;margin-bottom:7px;color:#cbd8c5}
+#fish-guide-search{width:100%;font:inherit;font-size:13px;padding:11px 13px;border-radius:8px;border:1px solid #c7d7b94d;background:#0c2c284d;color:#f0eedc;outline-offset:3px}
+#fish-guide-search::placeholder{color:#b4c6b2}
+.guide-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:11px;color:#c3d1bc;margin:11px 0 5px}
+.guide-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;padding-right:6px}
+.guide-fish{border-bottom:1px solid #c7d7b92b}
+.guide-summary{display:grid;grid-template-columns:100px minmax(0,1fr) 126px;align-items:center;gap:18px;padding:14px 4px;cursor:pointer;list-style:none;border-radius:8px}
+.guide-summary::-webkit-details-marker{display:none}
+.guide-summary:hover,.guide-summary:focus-visible{background:#dce5cf0b}
+.guide-summary:focus-visible{outline:2px solid #f3dca1;outline-offset:-2px}
+.guide-info h3{font-size:16px;font-weight:500;margin:0 0 9px;color:#f0eedc;overflow-wrap:anywhere}
+.guide-info h3::after{content:'＋';color:#a7bda0;font-size:13px;margin-left:10px}
+.guide-fish[open] .guide-info h3::after{content:'－'}
+.guide-stats{display:flex;flex-wrap:wrap;gap:7px 16px;font-size:11px;line-height:1.6;color:#cbd8c5;font-variant-numeric:tabular-nums}
+.guide-colors{display:flex;flex-direction:column;gap:10px}
+.guide-color{display:flex;gap:10px;align-items:center;justify-content:space-between;color:#cbd8c5;font-size:11px;white-space:nowrap}
+.guide-swatch{display:inline-block;width:22px;height:22px;border:1px solid #d5dec4c4;border-radius:5px;box-shadow:0 0 0 1px #0c272580;flex:none}
+.guide-thumbnail{height:66px;position:relative;display:grid;place-items:center;border-radius:7px;background:#e5eadb0b;overflow:hidden}
+.guide-thumbnail img{width:100%;height:100%;object-fit:contain}
+.guide-image-status{font-size:10px;color:#e3e8d9;line-height:1.6;text-align:center;padding:4px;overflow-wrap:anywhere}
+.guide-thumbnail .guide-image-status{position:absolute;inset:0;display:grid;place-items:center;background:#183d35c4}
+.guide-thumbnail[data-image-state=ready] .guide-image-status{display:none}
+.guide-thumbnail:not([data-image-state=ready]) img{visibility:hidden}
+.guide-detail{padding:8px 4px 20px;display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,1.4fr);align-items:start;gap:24px}
+.guide-large-image{position:relative;min-height:180px;aspect-ratio:4/3;border:1px solid #c7d7b92b;border-radius:10px;background:#c7d7b90b;overflow:hidden}
+.guide-large-image img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10px}
+.guide-large-image:not([data-image-state=ready]) img:not(.guide-preview){visibility:hidden}
+.guide-large-image .guide-image-status{position:absolute;left:0;right:0;bottom:0;background:#102d2ae6;z-index:1}
+.guide-large-image[data-image-state=ready] .guide-image-status{display:none}
+.guide-detail-data h4{font-size:12px;font-weight:500;color:#eee8d6;margin:0 0 9px}
+#fish-guide-dialog .guide-fields{margin:0 0 17px;font-size:11px}
+#fish-guide-dialog .guide-fields div{display:block;border:0;padding:0;margin:0 0 9px}
+.guide-fields dt{color:#b5c9af;margin-bottom:3px}
+#fish-guide-dialog .guide-fields dd{color:#e3e8d9;line-height:1.6;overflow-wrap:anywhere}
+#fish-guide-dialog .guide-movement{color:#e3e8d9;font-size:11px;margin:0 0 9px;overflow-wrap:anywhere}
+#fish-guide-dialog .guide-angle-note{font-size:10px;color:#b5c9af;margin:0}
+#fish-guide-dialog .guide-footer{font-size:10px;color:#b5c9af;margin:12px 0 0;flex:none}
+#fish-guide-empty{color:#cbd8c5;text-align:center;padding:30px 0}
+@media(max-width:600px){#fish-guide-dialog{padding:20px 16px 13px}.guide-header{gap:8px}.guide-header h2{font-size:23px}.guide-header .inventory-eyebrow{font-size:7px;letter-spacing:1px}#fish-guide-close{font-size:10px;padding:8px 10px}.guide-summary{grid-template-columns:78px minmax(0,1fr);gap:11px;padding:13px 2px}.guide-info h3{font-size:14px}.guide-stats{font-size:10px;gap:3px 10px}.guide-colors{grid-column:1/-1;flex-direction:row;justify-content:flex-end;gap:20px}.guide-color{font-size:10px;gap:8px}.guide-swatch{width:18px;height:18px}.guide-detail{grid-template-columns:1fr;gap:16px}.guide-large-image{min-height:140px;max-height:260px;aspect-ratio:4/3}.guide-meta{font-size:10px}.guide-scroll{padding-right:3px}}
+@media(max-height:500px){#fish-guide-dialog{padding-top:14px}.guide-header h2{margin-bottom:10px;font-size:21px}.guide-toolbar label{display:none}#fish-guide-search{padding:8px 10px}.guide-meta{margin-top:6px}}
 #help-dialog{width:min(560px,calc(100% - 28px));max-height:calc(100dvh - 28px);overflow:auto}.help-fish-heading{font-size:14px;font-weight:500;margin-top:22px}.help-fish-entry{border-top:1px solid #26473e26;padding:10px 0}.help-fish-entry summary{cursor:pointer;font-size:14px;color:#26473e}.help-fish-entry p{margin:8px 0;overflow-wrap:anywhere}@media(max-width:560px){#help-dialog{padding:28px 20px}.help-fish-entry p{font-size:11px}}

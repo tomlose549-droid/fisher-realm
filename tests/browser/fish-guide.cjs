@@ -10,7 +10,13 @@ const server=http.createServer((req,res)=>{try{
  }catch{res.writeHead(404).end();}});
 const saved={version:1,items:[{id:'1',name:'佛罗里达雀鳝',x:0,y:0},{id:'2',name:'黄鲶',x:null,y:null}]};
 async function state(p){return p.evaluate(()=>window.lakeside.getState());}
-async function ready(p,url){await p.goto(url,{waitUntil:'networkidle'});await p.waitForFunction(()=>window.lakeside);await p.locator('#loading').waitFor({state:'hidden'});}
+async function ready(p,url){
+ // These existing cases verify the fully unlocked view. Lock/catch migration
+ // has separate coverage in fish-guide-unlocks.cjs, without this seed.
+ const ids=fs.readFileSync(path.join(root,'fish-data.js'),'utf8').split('\n').filter(l=>l.trim().startsWith('{"id":')).map(l=>JSON.parse(l.trim().replace(/,$/,'' )).id);
+ await p.addInitScript(fishIds=>localStorage.setItem('fisher-realm-discoveries-v1',JSON.stringify({version:1,fishIds})),[...ids,'GUIDE_TEST']);
+ await p.goto(url,{waitUntil:'networkidle'});await p.waitForFunction(()=>window.lakeside);await p.locator('#loading').waitFor({state:'hidden'});
+}
 async function open(p){
  // A held mouse is captured by the rod. Use real keyboard activation to open
  // the guide while still reeling, then verify that opening releases that state.
@@ -39,7 +45,7 @@ try{
  await p.locator('.guide-scroll').evaluate(e=>e.scrollTop=e.scrollHeight);assert.ok(await p.locator('.guide-scroll').evaluate(e=>e.scrollTop>0));await close(p);await open(p);assert.equal(await p.locator('.guide-scroll').evaluate(e=>e.scrollTop),0);
  await p.evaluate(()=>{const summaries=document.querySelectorAll('.guide-summary');summaries[0].click();summaries[1].click();});await p.waitForFunction(()=>document.querySelectorAll('.guide-fish[open]').length===1&&document.querySelector('[data-guide-fish-id="BLUEGILL"]').open);
  await p.locator('[data-guide-fish-id="BLUEGILL"] summary').focus();await p.keyboard.press('Enter');await p.waitForFunction(()=>document.querySelectorAll('.guide-fish[open]').length===0);await p.keyboard.press('Space');await p.waitForFunction(()=>document.querySelector('[data-guide-fish-id="BLUEGILL"]').open);
- await p.locator('#fish-guide-search').fill('太阳鱼');assert.deepEqual(await p.locator('.guide-fish:not([hidden]) .guide-info h3').allTextContents(),['蓝鳃太阳鱼','红耳太阳鱼']);assert.ok((await p.locator('#fish-guide-count').textContent()).includes('2 种 / 共 19'));
+ await p.locator('#fish-guide-search').fill('太阳鱼');assert.deepEqual(await p.locator('.guide-fish:not([hidden]) .guide-info h3').allTextContents(),['蓝鳃太阳鱼','红耳太阳鱼']);assert.ok((await p.locator('#fish-guide-count').textContent()).includes('找到 2 种 · 已解锁 19 / 19'));
  await p.locator('#fish-guide-search').fill('不存在');await p.locator('#fish-guide-empty').waitFor({state:'visible'});await close(p);await open(p);assert.equal(await p.locator('#fish-guide-search').inputValue(),'');assert.equal(await p.locator('.guide-fish[open]').count(),0);assert.equal(await p.locator('.guide-scroll').evaluate(e=>e.scrollTop),0);
  await p.setViewportSize({width:390,height:844});await p.locator('[data-guide-fish-id="TILAPIA"] summary').click();await p.waitForFunction(()=>document.querySelector('[data-guide-fish-id="TILAPIA"] .guide-large-image')?.dataset.imageState==='ready');await p.screenshot({path:path.join(root,'.qa/guide-mobile.png')});
  const overflow=await p.locator('#fish-guide-dialog').evaluate(e=>({width:e.scrollWidth>e.clientWidth,body:document.documentElement.scrollWidth>innerWidth,box:e.getBoundingClientRect().toJSON()}));assert.equal(overflow.width,false);assert.equal(overflow.body,false);assert.ok(overflow.box.x>=0&&overflow.box.right<=390&&overflow.box.height<=844);

@@ -1,5 +1,6 @@
 import {renderFishHelp} from './fish-help.js';
 import {createFishGuide} from './fish-guide.js';
+import {createFishDiscoveries} from './fish-discoveries.js';
 import {releaseVersion} from './release-assets.js';
 import {GameTime} from './game-time.js';
 import {createInventory} from './inventory.js';
@@ -61,7 +62,8 @@ function prepareModal(){
 }
 function finishModal(){if(!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();}}
 const inventory=createInventory({toast,onOpen:prepareModal,onClose:finishModal});
-const fishing=createFishing({scene,camera,player:cameraOrigin,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>inventory.addFish(name),onReady:heading=>{targetYaw=heading;targetPitch=-.065;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
+const discoveries=createFishDiscoveries({items:inventory.snapshot().items,onSaveError:()=>toast('图鉴解锁记录暂未保存，本次游戏仍可查看')});
+const fishing=createFishing({scene,camera,player:cameraOrigin,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=-.065;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
@@ -117,7 +119,7 @@ document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
 const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onOpen:prepareModal});
 document.querySelector('#owner-dialog').addEventListener('close',finishModal);
-createFishGuide({onOpen:prepareModal,onClose:finishModal});
+createFishGuide({onOpen:prepareModal,onClose:finishModal,isDiscovered:id=>discoveries.has(id)});
 document.querySelector('#help').addEventListener('click',()=>{prepareModal();renderFishHelp();dialog.showModal();});
 dialog.addEventListener('close',finishModal);
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});

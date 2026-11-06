@@ -13,7 +13,7 @@ export function buildFishGuide(entries=FISH_DATA){
   }))};
 }
 
-export function createFishGuide({onOpen,onClose,entries=FISH_DATA,doc=document}){
+export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=FISH_DATA,doc=document}){
   const dialog=doc.querySelector('#fish-guide-dialog'),list=doc.querySelector('#fish-guide-list'),
     search=doc.querySelector('#fish-guide-search'),count=doc.querySelector('#fish-guide-count'),
     empty=doc.querySelector('#fish-guide-empty'),toggle=doc.querySelector('#fish-guide-toggle');
@@ -32,6 +32,11 @@ export function createFishGuide({onOpen,onClose,entries=FISH_DATA,doc=document})
     row.append(el('span','',label),chip);return row;
   }
   function field(label,value){const row=el('div');row.append(el('dt','',label),el('dd','',String(value)));return row;}
+  function lockedCard(){
+    const details=el('div','guide-fish guide-locked'),lock=el('span','','🔒');
+    details.dataset.guideLocked='true';details.setAttribute('role','img');details.setAttribute('aria-label','未解锁，钓获后可查看');lock.setAttribute('aria-hidden','true');details.append(lock);
+    return {details,loadThumb(){}};
+  }
   function card(fish){
     const details=el('details','guide-fish'),summary=el('summary','guide-summary');details.dataset.guideFishId=fish.id;
     const thumb=picture(fish,'guide-thumbnail'),info=el('div','guide-info'),stats=el('div','guide-stats');
@@ -61,30 +66,34 @@ export function createFishGuide({onOpen,onClose,entries=FISH_DATA,doc=document})
     // cannot let an earlier queued toggle event close the latest selection.
     summary.addEventListener('click',event=>{
       event.preventDefault();const opening=!details.open;
-      if(opening)for(const other of cards)if(other!==details)other.open=false;
+      if(opening)for(const other of cards)if(other!==details&&other.open)other.open=false;
       details.open=opening;if(opening)expand();
     });
-    details.addEventListener('toggle',()=>{if(!details.open)return;for(const other of cards)if(other!==details)other.open=false;expand();});
+    details.addEventListener('toggle',()=>{if(!details.open)return;for(const other of cards)if(other!==details&&other.open)other.open=false;expand();});
     return {details,loadThumb(){if(fish.image)loadInventoryImage(thumb.image,inventoryImageSources(fish.image)[0],state=>{
       thumb.wrap.dataset.imageState=state;thumb.wrap.setAttribute('aria-busy',String(state==='loading'));
       thumb.status.textContent=state==='loading'?'图片加载中…':state==='error'?'缩略图加载失败':'';
     });}};
   }
   function filter(){
-    const term=search.value.trim();let shown=0;
-    cards.forEach((card,i)=>{card.hidden=!catalog.fish[i].name.includes(term);if(card.hidden)card.open=false;else shown++;});
-    count.textContent=term?`找到 ${shown} 种 / 共 ${catalog.count} 种鱼`:`共收录 ${catalog.count} 种鱼`;
+    const term=search.value.trim(),unlocked=catalog.fish.filter(f=>isDiscovered(f.id)).length;let shown=0;
+    cards.forEach((card,i)=>{
+      const fish=catalog.fish[i],known=isDiscovered(fish.id);
+      card.hidden=term?(!known||!fish.name.includes(term)):false;
+      if(card.hidden&&card.open)card.open=false;if(!card.hidden)shown++;
+    });
+    count.textContent=term?`找到 ${shown} 种 · 已解锁 ${unlocked} / ${catalog.count} 种鱼`:`已解锁 ${unlocked} / ${catalog.count} 种鱼`;
     empty.hidden=shown!==0;
   }
   function open(){
     if(dialog.open)return;onOpen();search.value='';
-    const built=catalog.fish.map(card);cards=built.map(c=>c.details);list.replaceChildren(...cards);filter();
+    const built=catalog.fish.map(f=>isDiscovered(f.id)?card(f):lockedCard());cards=built.map(c=>c.details);list.replaceChildren(...cards);filter();
     dialog.showModal();doc.querySelector('.guide-scroll').scrollTop=0;search.focus({preventScroll:true});built.forEach(c=>c.loadThumb());
   }
   toggle.addEventListener('click',open);
   search.addEventListener('input',filter);
   doc.querySelector('#fish-guide-close').addEventListener('click',()=>dialog.close());
   dialog.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dialog.close();}});
-  dialog.addEventListener('close',()=>{for(const card of cards)card.open=false;onClose();if(!doc.querySelector('dialog[open]'))doc.querySelector('#settings-toggle').focus({preventScroll:true});});
+  dialog.addEventListener('close',()=>{for(const card of cards)if(card.open)card.open=false;onClose();if(!doc.querySelector('dialog[open]'))doc.querySelector('#settings-toggle').focus({preventScroll:true});});
   return {open,isOpen:()=>dialog.open};
 }

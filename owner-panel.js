@@ -19,6 +19,6 @@ export function createOwnerPanel({fishing,onOpen,toast,onClearAll}){
     if(!fishing.setForcedFish(select.value)){status.textContent='请先结束当前这一轮，再确认选择';return;}
     update();dialog.close();toast(`已选择${select.value} · 接下来成功钓获 10 条`);
   });
-  dialog.addEventListener('close',()=>document.querySelector('#settings-toggle').focus({preventScroll:true}));
+  dialog.addEventListener('close',()=>{if(!document.querySelector('dialog[open]'))document.querySelector('#settings-toggle').focus({preventScroll:true});});
   return {update:()=>{if(dialog.open)update();}};
 }

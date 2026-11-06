@@ -1,4 +1,5 @@
 import {renderFishHelp} from './fish-help.js';
+import {createFishGuide} from './fish-guide.js';
 import {releaseVersion} from './release-assets.js';
 import {GameTime} from './game-time.js';
 import {createInventory} from './inventory.js';
@@ -52,7 +53,14 @@ function dismissWelcome() { if (!explored) { explored = true; document.querySele
 function reset() { if(fishing.isActive()){toast('本轮结束后可重置视角');return;}targetYaw = 0; targetPitch = -.065; toast('已回到面向池塘的初始视角'); }
 function stopDragging() { dragging = false; touchId = null; canvas.style.cursor = 'grab'; }
 const gameTime=new GameTime();
-const inventory=createInventory({toast,onOpen:()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();gameTime.pause();fishing.update(gameTime.now());fishing.pauseAudio();},onClose:()=>{gameTime.resume();fishing.resumeAudio();}});
+// Closing a previous modal queues its close event; only the last modal may resume.
+function prepareModal(){
+  setSettingsOpen(false);keys.clear();stopDragging();fishing.release();
+  if(!gameTime.paused){gameTime.pause();fishing.update(gameTime.now());fishing.pauseAudio();}
+  for(const open of document.querySelectorAll('dialog[open]'))open.close();
+}
+function finishModal(){if(!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();}}
+const inventory=createInventory({toast,onOpen:prepareModal,onClose:finishModal});
 const fishing=createFishing({scene,camera,player:cameraOrigin,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>inventory.addFish(name),onReady:heading=>{targetYaw=heading;targetPitch=-.065;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -107,8 +115,11 @@ async function fullscreen() {
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
-const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onOpen:()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();}});
-document.querySelector('#help').addEventListener('click',()=>{setSettingsOpen(false);keys.clear();stopDragging();fishing.release();renderFishHelp();dialog.showModal();});
+const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onOpen:prepareModal});
+document.querySelector('#owner-dialog').addEventListener('close',finishModal);
+createFishGuide({onOpen:prepareModal,onClose:finishModal});
+document.querySelector('#help').addEventListener('click',()=>{prepareModal();renderFishHelp();dialog.showModal();});
+dialog.addEventListener('close',finishModal);
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
   if(e.defaultPrevented||Boolean(document.querySelector('dialog[open]'))||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;

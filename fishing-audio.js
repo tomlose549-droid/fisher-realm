@@ -1,8 +1,9 @@
+import {assetUrl} from './release-assets.js';
 const CLIPS={hooked:'hooked.wav',broken:'line-broken.wav',caught:'caught.wav'};
 
 export function createFishingAudio(){
   const clips=Object.fromEntries(Object.entries(CLIPS).map(([name,file])=>{
-    const audio=new Audio(new URL('./audio/'+file,import.meta.url).href);
+    const audio=new Audio(assetUrl('./audio/'+file));
     audio.preload='auto';return [name,audio];
   }));
   const played={hooked:0,broken:0,caught:0},errors=[];

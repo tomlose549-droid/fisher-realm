@@ -23,3 +23,6 @@
 
 /* Expose image loading instead of silently leaving a name-only card. */
 .inventory-fish[data-image-state=loading]::after,.inventory-fish[data-image-state=error]::after{position:absolute;inset:3px 3px 18px;display:grid;place-items:center;font-size:10px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;z-index:1}.inventory-fish[data-image-state=loading]::after{content:'图片加载中…'}.inventory-fish[data-image-state=error]::after{content:'图片未加载，重开背包可重试'}.inventory-fish[data-image-state=loading] img,.inventory-fish[data-image-state=error] img{visibility:hidden}
+
+/* Fish details are generated from the shared catalog. */
+#help-dialog{width:min(560px,calc(100% - 28px));max-height:calc(100dvh - 28px);overflow:auto}.help-fish-heading{font-size:14px;font-weight:500;margin-top:22px}.help-fish-entry{border-top:1px solid #26473e26;padding:10px 0}.help-fish-entry summary{cursor:pointer;font-size:14px;color:#26473e}.help-fish-entry p{margin:8px 0;overflow-wrap:anywhere}@media(max-width:560px){#help-dialog{padding:28px 20px}.help-fish-entry p{font-size:11px}}

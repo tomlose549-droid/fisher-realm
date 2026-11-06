@@ -1,3 +1,4 @@
+export const DEFAULT_CATCH_COLOR='#d3d3d3';
 // The only editable catalog for ordinary fish. Existing IDs/names are save/API identities.
 // Keep encounter order stable. Inventory dimensions are width (w), then height (h).
 function freeze(value){

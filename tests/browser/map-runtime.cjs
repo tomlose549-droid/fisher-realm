@@ -9,6 +9,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify({version:1,items:[{id:'1',name:'美洲鳗鲡',x:0,y:0}]}));});
   await page.goto('http://127.0.0.1:'+server.address().port+'/');await page.locator('#loading').waitFor({state:'hidden'});
+  await page.waitForFunction(()=>Boolean(window.lakeside),null,{timeout:10000});
   const initial=await page.evaluate(()=>window.lakeside.getState());
   assert.equal(initial.scene,'summer-pond');assert.equal(initial.treeCount,137);assert.equal(initial.targetFps,25);
   assert.deepEqual(initial.camera,[0,1.78,32]);assert.deepEqual(initial.chairs.map(c=>c.horizontalDistance),[10,0,10]);
@@ -21,6 +22,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
     const check=(condition,message)=>{if(!condition)throw Error(message);};
     const THREE=await import('./vendor/three.module.js'),{createMapRuntime}=await import('./map-runtime.js');
     const {getMapContext,listMaps}=await import('./map-registry.js'),{createPond}=await import('./pond-scene.js');
+    const {SUMMER_POND,isSummerPondWater}=await import('./maps/summer-pond.js');
     const {createIdleRod}=await import('./idle-rod.js'),{createFishing}=await import('./fishing.js');
     const inventoryBefore=localStorage.getItem('fisher-realm-inventory-v1'),guideBefore=localStorage.getItem('fisher-realm-discoveries-v1');
     const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(58,4/3,.06,420),sentinel=new THREE.Group();scene.add(camera,sentinel);
@@ -30,6 +32,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
     try{
       for(let i=0;i<3;i++){
         const map=await createMapRuntime({scene,camera,renderer});map.update(1);map.setQuality(false);
+        check(camera.position.toArray().join(',')==='0,1.78,32'&&camera.rotation.x===-.065&&camera.rotation.y===0,'successful map creation did not apply spawn');
         check(map.getDiagnostics().reflectionSize.join(',')==='640,400','fast reflection size');
         map.setQuality(true);camera.updateMatrixWorld();map.renderReflection({frame:1,fine:true,force:true});renderer.render(scene,camera);
         if(i===0){
@@ -45,12 +48,35 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
         renderer.render(scene,camera);memory.push({...renderer.info.memory});cycleReports.push({disposed:true,sharedObjectsPreserved:true});
       }
       check(memory.every(m=>m.geometries===memory[0].geometries&&m.textures===memory[0].textures),'GPU allocations accumulated across map lifecycles');
+      camera.position.set(123,20,456);camera.rotation.set(.2,.4,0);
+      const previousPose=JSON.stringify({position:camera.position.toArray(),rotation:camera.rotation.toArray(),quaternion:camera.quaternion.toArray()});
+      const custom={...SUMMER_POND,water:{...SUMMER_POND.water,center:[100,-50],radii:[68,82]}};
+      const customView=createPond(scene,camera,renderer,custom);
+      try{
+        let terrain,water;scene.traverse(o=>{if(o.geometry?.attributes?.position?.count===1544&&o.material?.vertexColors)terrain=o;if(o.material?.uniforms?.shoreRadii)water=o;});
+        const vertices=terrain.geometry.attributes.position;
+        for(const i of [0,27,64,120]){
+          const angle=i/192*Math.PI*2,s=custom.water.shoreline;
+          const scale=1+s.sinAmplitude*Math.sin(angle*s.sinFrequency+s.sinPhase)+s.cosAmplitude*Math.cos(angle*s.cosFrequency);
+          const x=100+Math.cos(angle)*68*scale,z=-50+Math.sin(angle)*82*scale;
+          check(Math.abs(vertices.getX(i)-x)<.00005&&Math.abs(vertices.getZ(i)-z)<.00005,'terrain ignored supplied center/radii');
+          check(isSummerPondWater(vertices.getX(i),vertices.getZ(i),1,custom.water),'rendered shoreline and water decisions disagree');
+          const j=4*193+i,px=vertices.getX(j),pz=vertices.getZ(j);
+          const expectedY=.47+Math.max(0,Math.hypot((px-100)/68,(pz+50)/82)-1.12)*1.1+Math.sin(angle*5)*.3;
+          check(Math.abs(vertices.getY(j)-expectedY)<.00005,'terrain height ignored supplied center/radii');
+        }
+        check(water.material.uniforms.shoreCenter.value.toArray().join(',')==='100,-50'&&water.material.uniforms.shoreRadii.value.toArray().join(',')==='68,82','shader ignored supplied configuration');
+        check(JSON.stringify({position:camera.position.toArray(),rotation:camera.rotation.toArray(),quaternion:camera.quaternion.toArray()})===previousPose,'scene builder moved shared camera');
+      }finally{customView.dispose();}
+      const previousRenderer=JSON.stringify({exposure:renderer.toneMappingExposure,autoUpdate:renderer.shadowMap.autoUpdate,needsUpdate:renderer.shadowMap.needsUpdate});
       const create=document.createElement;
       document.createElement=function(tag,...args){if(tag==='canvas')throw Error('intentional map create failure');return create.call(this,tag,...args);};
-      try{createPond(scene,camera,renderer);throw Error('expected creation failure');}
+      try{await createMapRuntime({scene,camera,renderer});throw Error('expected creation failure');}
       catch(error){check(error.message==='intentional map create failure','wrong create failure');}
       finally{document.createElement=create;}
       check(scene.children.length===2&&scene.background===background&&scene.fog===fog,'failed construction leaked map state');
+      check(JSON.stringify({position:camera.position.toArray(),rotation:camera.rotation.toArray(),quaternion:camera.quaternion.toArray()})===previousPose,'failed construction moved shared camera');
+      check(JSON.stringify({exposure:renderer.toneMappingExposure,autoUpdate:renderer.shadowMap.autoUpdate,needsUpdate:renderer.shadowMap.needsUpdate})===previousRenderer,'failed construction changed renderer state');
     }finally{renderer.dispose();renderer.forceContextLoss();}
 
     const ownScene=new THREE.Scene(),ownCamera=new THREE.PerspectiveCamera(),position=new THREE.Vector3(10,9,20);ownCamera.position.copy(position);
@@ -79,7 +105,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
     check(localStorage.getItem('fisher-realm-inventory-v1')===inventoryBefore,'map lifecycle changed inventory');
     check(localStorage.getItem('fisher-realm-discoveries-v1')===guideBefore,'map lifecycle changed discoveries');
     check(listMaps().length===1,'a second production map was added');
-    return {cycles:cycleReports,memory,constructionFailureCleaned:true,reflectionFailureRestored:true,
+    return {cycles:cycleReports,memory,customShorelineMatchesTerrainAndShader:true,failedConstructionPreservesCamera:true,constructionFailureCleaned:true,reflectionFailureRestored:true,
       injectedWaterAndPool:true,catchAndRetrieval:true,globalSavesPreserved:true,registeredMaps:listMaps()};
   });
   assert.deepEqual(errors,[]);console.log(JSON.stringify(reports));

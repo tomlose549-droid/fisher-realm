@@ -16,6 +16,6 @@ export function getMapFishPool(id=DEFAULT_MAP_ID){
 export function getMapContext(id=DEFAULT_MAP_ID){
   const {config,isWater}=getMapDefinition(id);
   return Object.freeze({id:config.id,name:config.name,spawn:config.spawn,waterLevel:config.water.level,
-    labels:config.labels,isWater,fishPool:getMapFishPool(id)});
+    labels:config.labels,isWater:(x,z,margin)=>isWater(x,z,margin,config.water),fishPool:getMapFishPool(id)});
 }
 export function listMaps(){return Object.values(definitions).map(d=>({id:d.config.id,name:d.config.name}));}

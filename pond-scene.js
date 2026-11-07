@@ -5,11 +5,10 @@ import {createResourceScope} from './scene-resources.js';
 // A meter-based, fully navigable 3D scene; the reference image is not a backdrop.
 export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sharedResources=new Set()}={}) {
   const scene=new THREE.Group();scene.name='map-'+config.id;parentScene.add(scene);
-  const previous={background:parentScene.background,fog:parentScene.fog,exposure:renderer.toneMappingExposure,shadowAutoUpdate:renderer.shadowMap.autoUpdate};
+  const previous={background:parentScene.background,fog:parentScene.fog,exposure:renderer.toneMappingExposure,shadowAutoUpdate:renderer.shadowMap.autoUpdate,shadowNeedsUpdate:renderer.shadowMap.needsUpdate};
   const targets=[];
   try {
-  const cameraOrigin = new THREE.Vector3(...config.spawn.position);
-  camera.position.copy(cameraOrigin);
+  const cameraOrigin=new THREE.Vector3(...config.spawn.position); // Distance statistics only; the factory owns camera placement.
   const background=new THREE.Color(config.environment.background),fog=new THREE.Fog(config.environment.fog.color,config.environment.fog.near,config.environment.fog.far);
   parentScene.background=background;parentScene.fog=fog;
   renderer.toneMappingExposure = config.environment.exposure;
@@ -43,8 +42,8 @@ export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sha
   }`}),false);
   for(let i=0;i<14;i++){const a=range(0,Math.PI*2),r=range(105,170),x=Math.cos(a)*r,z=-15+Math.sin(a)*r,y=range(34,56),s=range(2.8,5.5);for(let j=0;j<7;j++)cloudPool.add([x+(j-3)*s*.95,y+Math.sin(j*.9)*s*.5,z+range(-2,2)],[s*range(.85,1.5),s*range(.65,1.1),s*.8],null,'#ffffff');}
 
-  function coast(a,f=1){return new THREE.Vector3(...shorelinePoint(a,f));}
-  const groundY=groundHeight;
+  function coast(a,f=1){return new THREE.Vector3(...shorelinePoint(a,f,config.water));}
+  const groundY=(x,z)=>groundHeight(x,z,config.water);
   // A continuous sandy edge, grassy ground and gently wooded hills.
   const terrain=new THREE.BufferGeometry(),verts=[],colors=[],indices=[],layers=[1,1+config.water.ramp.width,1.045,1.10,1.2,1.5,2.1,4];
   for(let l=0;l<layers.length;l++)for(let i=0;i<=192;i++){
@@ -171,12 +170,12 @@ export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sha
       if(resources.disposed)return;resources.dispose();
       if(parentScene.background===background)parentScene.background=previous.background;
       if(parentScene.fog===fog)parentScene.fog=previous.fog;
-      renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.shadowAutoUpdate;
+      renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.shadowAutoUpdate;renderer.shadowMap.needsUpdate=previous.shadowNeedsUpdate;
     }
   };
   } catch(error){
     createResourceScope(scene,{targets,shared:sharedResources}).dispose();parentScene.background=previous.background;parentScene.fog=previous.fog;
-    renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.shadowAutoUpdate;
+    renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.shadowAutoUpdate;renderer.shadowMap.needsUpdate=previous.shadowNeedsUpdate;
     throw error;
   }
 }

@@ -12,20 +12,20 @@ export const SUMMER_POND=freeze({
   labels:{castHint:'请面向池塘水面，再按空格抛竿',reset:'已回到面向池塘的初始视角'}
 });
 
-export function shorelineScale(angle){
-  const s=SUMMER_POND.water.shoreline;
+export function shorelineScale(angle,water=SUMMER_POND.water){
+  const s=water.shoreline;
   return 1+s.sinAmplitude*Math.sin(angle*s.sinFrequency+s.sinPhase)+s.cosAmplitude*Math.cos(angle*s.cosFrequency);
 }
-export function shorelinePoint(angle,factor=1){
-  const {center,radii}=SUMMER_POND.water,wobble=shorelineScale(angle);
+export function shorelinePoint(angle,factor=1,water=SUMMER_POND.water){
+  const {center,radii}=water,wobble=shorelineScale(angle,water);
   return [center[0]+Math.cos(angle)*radii[0]*wobble*factor,0,center[1]+Math.sin(angle)*radii[1]*wobble*factor];
 }
-export function groundHeight(x,z){
-  const {center,radii}=SUMMER_POND.water;
+export function groundHeight(x,z,water=SUMMER_POND.water){
+  const {center,radii}=water;
   return .47+Math.max(0,Math.hypot((x-center[0])/radii[0],(z-center[1])/radii[1])-1.12)*1.1;
 }
-export function isSummerPondWater(x,z,margin=1){
-  const {center,radii,level,ramp}=SUMMER_POND.water,nx=(x-center[0])/radii[0],nz=(z-center[1])/radii[1];
+export function isSummerPondWater(x,z,margin=1,water=SUMMER_POND.water){
+  const {center,radii,level,ramp}=water,nx=(x-center[0])/radii[0],nz=(z-center[1])/radii[1];
   const surfaceFactor=1+ramp.width*((level-ramp.startY)/(ramp.endY-ramp.startY));
-  return Math.hypot(nx,nz)<shorelineScale(Math.atan2(nz,nx))*surfaceFactor*margin;
+  return Math.hypot(nx,nz)<shorelineScale(Math.atan2(nz,nx),water)*surfaceFactor*margin;
 }

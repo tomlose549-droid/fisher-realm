@@ -32,20 +32,20 @@ async function main() {
       "const fs=require('node:fs'),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');if(!fs.existsSync(process.env.CHROME_PATH||chromium.executablePath()))throw Error('Chrome missing: set CHROME_PATH or install Playwright browser')"], timeoutMs:10000},
     {name:'thumbnail', command:process.env.PYTHON || 'python', args:[
       path.join(root, 'scripts/build-inventory-thumbnails.py'), '--fish', fish.id, '--check'], timeoutMs:30000},
-    {name:'rules', command:process.execPath, args:['--test', ...fs.readdirSync(path.join(root, 'tests'))
-      .filter(name=>name.endsWith('.test.js')).sort().map(name=>path.join(root, 'tests', name))], timeoutMs:60000},
+    {name:'rules', command:process.execPath, args:[path.join(root,'scripts/check-fish-rules.cjs'),fish.id], timeoutMs:60000},
     {name:'browser', command:process.execPath, args:[path.join(root, 'tests/browser/new-fish.cjs'), fish.id], timeoutMs:120000}
   ];
   const result=await executeSteps(steps, async step=>{
     console.log(`Checking ${step.name}...`);
     return run(step.command, step.args, {cwd:root, timeoutMs:step.timeoutMs});
   });
-  const resources=['fish-data.js', fish.inventory.image && 'fish-images/'+fish.inventory.image,
+  const resources=[fish.inventory.image && 'fish-images/'+fish.inventory.image,
     fish.inventory.image && 'fish-images/thumbnails/'+fish.inventory.image.replace(/\.[^./]+$/, '.webp'),
     fish.inventory.image && 'fish-images/thumbnails/'+fish.inventory.image.replace(/\.[^./]+$/, '.webp.meta.json')].filter(Boolean);
-  const report={fish:fish.id, name:fish.name, checkedAt:new Date().toISOString(), configuration:fish,
-    fingerprints:Object.fromEntries(resources.map(file=>[file, fs.existsSync(path.join(root,file)) ?
-      createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex') : null])), ...result};
+  const report={fish:fish.id, name:fish.name, scope:'selected-fish', checkedAt:new Date().toISOString(), configuration:fish,
+    fingerprints:{configuration:createHash('sha256').update(JSON.stringify(fish)).digest('hex'),
+      ...Object.fromEntries(resources.map(file=>[file, fs.existsSync(path.join(root,file)) ?
+        createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex') : null]))}, ...result};
   fs.mkdirSync(path.dirname(output), {recursive:true});
   fs.writeFileSync(output, JSON.stringify(report, null, 2)+'\n');
   for (const stage of result.stages) console.log(`${stage.passed?'PASS':'FAIL'} ${stage.stage} (${stage.durationMs}ms)${stage.error?': '+stage.error:''}`);

@@ -42,6 +42,11 @@ test('template rejects duplicate identities using the real catalog without editi
   }
 });
 
+test('ordinary new-fish input reads existing identities without revalidating old parameters',async()=>{
+  const oldIdentity={id:'OLD_ENTRY',name:'旧鱼',strength:null,inventory:null};
+  assert.equal((await tool.prepare(sample(),[oldIdentity])).id,'TEMPLATE_TEST_FISH');
+});
+
 test('CLI emits a draft, warns missing art and cannot overwrite an existing output or catalog',async()=>{
   const folder=await mkdtemp(join(tmpdir(),'fish-template-'));
   try {

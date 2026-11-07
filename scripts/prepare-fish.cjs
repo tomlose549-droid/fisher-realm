@@ -28,7 +28,9 @@ async function prepare(input, entries) {
     struggle:{minAngle:input.挣扎.最小角度,maxAngle:input.挣扎.最大角度,durations:input.挣扎.每段秒},
     specials:input.特殊属性,inventory:{w:input.背包.宽,h:input.背包.高,color:color.toLowerCase(),image:input.背包.图片}};
   if(pause>0) fish.struggle.switchPause=pause;
-  createFishCatalog([...entries,fish]);
+  createFishCatalog([fish]);
+  if(entries.some(entry=>entry.id===fish.id)) throw Error('invalid or duplicate id: '+fish.id);
+  if(entries.some(entry=>entry.name===fish.name)) throw Error('invalid or duplicate name: '+fish.name);
   if(pause>0 && fish.struggle.durations.length<2) throw Error('换边停顿秒：只有一段游动，不存在换边；请先确认');
   // Current ordinary-fish engine only implements the documented switch pause.
   const expected=pause>0 ? [`换边前停顿${pause}秒`] : [];

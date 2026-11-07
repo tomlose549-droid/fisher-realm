@@ -85,7 +85,7 @@ async function main() {
   const origin=(await git('remote','get-url','origin')).trim();
   const match=origin.match(/^(?:https:\/\/github\.com\/|git@github\.com:)([\w.-]+\/[\w.-]+?)(?:\.git)?$/);
   assert.ok(match, 'Expected a plain github.com origin without embedded credentials');
-  const repo=match[1], branch=(await git('symbolic-ref','--short','HEAD')).trim();
+  const repo=match[1], branch=action==='push'?(await git('symbolic-ref','--short','HEAD')).trim():null;
   if(action==='push') {
     assert.ok(!['main','master'].includes(branch), 'Use a work branch; no direct main push');
     assert.equal((await git('status','--porcelain')).trim(), '', 'Commit reviewed changes before pushing');

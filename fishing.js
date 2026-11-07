@@ -1,13 +1,16 @@
 import * as THREE from './vendor/three.module.js';
 import {FishingSession,FISHING,signedAngle} from './fishing-rules.js';
-import {isPondWater} from './pond-boundary.js';
 import {createWaterEffects} from './water-effects.js';
 import {createFishingAudio} from './fishing-audio.js';
+import {createResourceScope} from './scene-resources.js';
 
-export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000}){
-  const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater:(x,z)=>isPondWater(x,z)}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
+export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000}){
+  if(!mapContext||typeof mapContext.isWater!=='function'||!Number.isFinite(mapContext.waterLevel))throw new TypeError('Fishing requires a map context');
+  const {waterLevel,isWater,fishPool}=mapContext,targetY=waterLevel+.095,surfaceY=waterLevel+.06;
+  const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater,fishPool}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
   const now=getTime;
   const sounds=createFishingAudio();
+  const root=new THREE.Group();root.name='player-fishing';scene.add(root);let disposed=false;
   const distanceLabel=document.querySelector('#fish-distance'),distancePoint=new THREE.Vector3();
   let lastDistanceText='';
   const meters=document.querySelector('#fishing-meters'),lineFill=document.querySelector('#line-fill'),lineValue=document.querySelector('#line-value'),staminaFill=document.querySelector('#stamina-fill'),staminaValue=document.querySelector('#stamina-value'),phaseLabel=document.querySelector('#fish-phase');
@@ -22,7 +25,7 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   const add=(geo,mat,parent,p,s)=>{const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);parent.add(m);return m;};
   const axisY=new THREE.Vector3(0,1,0);
   function beam(a,b,r0,r1,mat,parent){const v=new THREE.Vector3(...a),end=new THREE.Vector3(...b),d=end.clone().sub(v);const m=add(new THREE.CylinderGeometry(r1,r0,d.length(),8),mat,parent);m.position.copy(v).add(end).multiplyScalar(.5);m.quaternion.setFromUnitVectors(axisY,d.normalize());return m;}
-  const rod=new THREE.Group();rod.visible=false;rod.name='independent-fishing-rod';scene.add(rod);
+  const rod=new THREE.Group();rod.visible=false;rod.name='independent-fishing-rod';root.add(rod);
   const cork=material('#b79764'),carbon=material('#30483c',{roughness:.32,metalness:.35}),metal=material('#8a9387',{metalness:.65,roughness:.35});
   const points=[[0,-.25,.30],[0,0,0],[0,.23,-.7],[0,.43,-1.5],[0,.51,-2.2],[0,.53,-2.9]];
   for(let i=1;i<points.length;i++)beam(points[i-1],points[i],.027-i*.0036,.024-i*.0036,i===1?cork:carbon,rod);
@@ -31,19 +34,19 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   beam([.11,-.04,.03],[.17,-.11,.03],.009,.009,metal,rod);
   const reelHandle=add(new THREE.SphereGeometry(.025,6,4),cork,rod,[.17,-.11,.03],[1.4,.7,.7]);
   const lineArray=new Float32Array(25*3),lineGeometry=new THREE.BufferGeometry();lineGeometry.setAttribute('position',new THREE.BufferAttribute(lineArray,3).setUsage(THREE.DynamicDrawUsage));
-  const line=new THREE.Line(lineGeometry,new THREE.LineBasicMaterial({color:'#e4e9d5',transparent:true,opacity:.86}));line.frustumCulled=false;line.visible=false;scene.add(line);
-  const marker=new THREE.Group();marker.visible=false;scene.add(marker);
+  const line=new THREE.Line(lineGeometry,new THREE.LineBasicMaterial({color:'#e4e9d5',transparent:true,opacity:.86}));line.frustumCulled=false;line.visible=false;root.add(line);
+  const marker=new THREE.Group();marker.visible=false;root.add(marker);
   add(new THREE.SphereGeometry(.085,10,7),material('#e7e3c6'),marker,[0,.015,0],[.8,1.1,.8]);
   add(new THREE.CylinderGeometry(.033,.04,.13,8),material('#cb6450'),marker,[0,.13,0]);
   const ring=add(new THREE.RingGeometry(.18,.20,32),new THREE.MeshBasicMaterial({color:'#dce5b6',transparent:true,opacity:.35,side:THREE.DoubleSide,depthWrite:false}),marker,[0,.012,0]);ring.rotation.x=-Math.PI/2;
   // Fish exists only in the rules. There is no visible fish mesh or fish texture.
-  const waterEffects=createWaterEffects(scene);
-  const retrieveStart=new THREE.Vector3(),retrieveEnd=new THREE.Vector3(),sideVector=new THREE.Vector3(),lastWetSurface=new THREE.Vector3(0,.025,9);
+  const waterEffects=createWaterEffects(root,{waterLevel}),resources=createResourceScope(root);
+  const retrieveStart=new THREE.Vector3(),retrieveEnd=new THREE.Vector3(),sideVector=new THREE.Vector3(),lastWetSurface=new THREE.Vector3(player.x-Math.sin(mapContext.spawn.yaw)*FISHING.distance,surfaceY,player.z-Math.cos(mapContext.spawn.yaw)*FISHING.distance);
   let shorelineDistance=4.5,lastLandedCast=null,lastTrailAt=-Infinity,retrievalProgress=0;
   const target=new THREE.Vector3(),rodTip=new THREE.Vector3(),castDirection=new THREE.Vector3(),handOffset=new THREE.Vector3();
   let pointerX=null,lastStatus='';
-  function getTarget(distance=session.distance){return target.set(player.x-Math.sin(session.fishYaw)*distance,.06,player.z-Math.cos(session.fishYaw)*distance);}
-  function insideWater(x,z,margin=.995){return isPondWater(x,z,margin);}
+  function getTarget(distance=session.distance){return target.set(player.x-Math.sin(session.fishYaw)*distance,targetY,player.z-Math.cos(session.fishYaw)*distance);}
+  function insideWater(x,z,margin=.995){return isWater(x,z,margin);}
   function waterPoint(yaw){return insideWater(player.x-Math.sin(yaw)*FISHING.distance,player.z-Math.cos(yaw)*FISHING.distance,.98);}
   function findShore(yaw){
     let wet=null;
@@ -60,12 +63,13 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
       if(Number.isFinite(shorelineDistance))getTarget(Math.max(distance,shorelineDistance+.24));
       if(!insideWater(target.x,target.z))target.copy(lastWetSurface);
     }
-    target.y=.025;lastWetSurface.copy(target);return target;
+    target.y=surfaceY;lastWetSurface.copy(target);return target;
   }
   // Project after the main camera has moved so the label stays on the water point.
   function updateDistanceLabel(){
+    if(disposed)return;
     if(!['waiting','bite','fighting'].includes(session.state)){hidden(distanceLabel,true);return;}
-    distancePoint.copy(surfaceTarget());distancePoint.y=.12;distancePoint.project(camera);
+    distancePoint.copy(surfaceTarget());distancePoint.y=waterLevel+.155;distancePoint.project(camera);
     if(distancePoint.z<-1||distancePoint.z>1||Math.abs(distancePoint.x)>1||Math.abs(distancePoint.y)>1){hidden(distanceLabel,true);return;}
     const text=session.distance.toFixed(1)+' 米';
     if(text!==lastDistanceText){distanceLabel.textContent=text;lastDistanceText=text;}
@@ -80,36 +84,40 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     return {progress,eased,lift,arc:Math.sin(eased*Math.PI)};
   }
   function key(event){
+    if(disposed)return false;
     if(event.repeat)return event.code==='Space';
     const t=now();session.advance(t);
     if(session.state==='bite'){session.hook(t);return true;}
     if(event.code!=='Space')return false;
     if(session.state==='idle'){
       const heading=camera.rotation.y;
-      if(!waterPoint(heading)){toast('请面向池塘水面，再按空格抛竿');return true;}
+      if(!waterPoint(heading)){toast(mapContext.labels.castHint);return true;}
       session.cast(t,heading);pointerX=null;onCast();
     }
     return true;
   }
   function pointerMove(event){
+    if(disposed)return;
     if(session.state!=='fighting'){pointerX=event.clientX;return;}
     const dx=Number.isFinite(event.movementX)&&event.movementX!==0?event.movementX:(pointerX===null?0:event.clientX-pointerX);
     pointerX=event.clientX;if(dx)session.setRodYaw(session.rodYaw-dx*.006,now());
   }
-  function pointerDown(event){if(event.button===0&&session.state==='fighting'){session.setReeling(true,now());canvas.setPointerCapture(event.pointerId);canvas.focus();return true;}return false;}
-  function release(){session.setReeling(false,now());pointerX=null;}
+  function pointerDown(event){if(disposed)return false;if(event.button===0&&session.state==='fighting'){session.setReeling(true,now());canvas.setPointerCapture(event.pointerId);canvas.focus();return true;}return false;}
+  function release(){if(disposed)return;session.setReeling(false,now());pointerX=null;}
   function view(){
+    if(disposed)return null;
     if(!['fighting','caught'].includes(session.state))return null;
     surfaceTarget();castDirection.copy(target).sub(player);
     const yaw=Math.atan2(-castDirection.x,-castDirection.z);
     let pitch=Math.atan2(castDirection.y,Math.hypot(castDirection.x,castDirection.z));
     if(session.state==='caught'){
       const progress=THREE.MathUtils.clamp((now()-session.catchAt)/FISHING.recastDelay,0,1);
-      pitch=THREE.MathUtils.lerp(pitch,-.065,THREE.MathUtils.smoothstep(progress,0,1))+Math.sin(progress*Math.PI)*.45;
+      pitch=THREE.MathUtils.lerp(pitch,mapContext.spawn.pitch,THREE.MathUtils.smoothstep(progress,0,1))+Math.sin(progress*Math.PI)*.45;
     }
     return {yaw,pitch};
   }
   function update(t){
+    if(disposed)return;
     session.advance(t);
     if(['fighting','caught'].includes(session.state))updateShore();
     for(const event of session.drainEvents()){
@@ -175,9 +183,9 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     if(stage==='fighting'&&session.reeling)reelHandle.rotation.z=t*12;
     rod.updateMatrixWorld(true);rodTip.set(...points.at(-1)).applyMatrix4(rod.matrixWorld);
     getTarget();
-    if(stage==='casting'){const destination=target.clone();target.copy(player).lerp(destination,castProgress);target.y=player.y*(1-castProgress)+Math.sin(castProgress*Math.PI)*2.9+.06;}
-    else if(stage==='waiting')target.y=.06+Math.sin(t*2)*.015;
-    else if(stage==='bite')target.y=.06+Math.sin((t-session.biteAt)*24)*.16;
+    if(stage==='casting'){const destination=target.clone();target.copy(player).lerp(destination,castProgress);target.y=THREE.MathUtils.lerp(player.y+.06,targetY,castProgress)+Math.sin(castProgress*Math.PI)*2.9;}
+    else if(stage==='waiting')target.y=targetY+Math.sin(t*2)*.015;
+    else if(stage==='bite')target.y=targetY+Math.sin((t-session.biteAt)*24)*.16;
     else if(stage==='caught'){
       target.copy(retrieveStart).lerp(retrieveEnd,motion.eased);
       target.y+=motion.arc*1.10;
@@ -196,10 +204,11 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   return {
     key,pointerMove,pointerDown,release,view,update,updateDistanceLabel,
     pauseAudio:()=>sounds.pause(),resumeAudio:()=>sounds.resume(),
+    dispose(){if(disposed)return;disposed=true;waterEffects.dispose();resources.dispose();sounds.dispose();hidden(distanceLabel,true);hidden(meters,true);hidden(notice,true);idleRod.visible=true;},
     setForcedFish:name=>session.setForcedFish(name),getOwnerState:()=>session.ownerState,
-    isFighting:()=>session.state==='fighting',isActive:()=>session.active,
-    hideReflection(){rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
-    restoreReflection(){const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},
+    isFighting:()=>!disposed&&session.state==='fighting',isActive:()=>!disposed&&session.active,
+    hideReflection(){if(disposed)return;rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
+    restoreReflection(){if(disposed)return;const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},
     getState:()=>({...session.snapshot(now()),visuals:{audio:sounds.snapshot(),fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineColor:line.material.color.getHexString(),lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
   };
 }

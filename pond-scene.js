@@ -1,12 +1,18 @@
 import * as THREE from './vendor/three.module.js';
+import {SUMMER_POND,shorelinePoint,groundHeight} from './maps/summer-pond.js';
+import {createResourceScope} from './scene-resources.js';
 
 // A meter-based, fully navigable 3D scene; the reference image is not a backdrop.
-export function createPond(scene, camera, renderer) {
-  const cameraOrigin = new THREE.Vector3(0, 1.78, 32);
+export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sharedResources=new Set()}={}) {
+  const scene=new THREE.Group();scene.name='map-'+config.id;parentScene.add(scene);
+  const previous={background:parentScene.background,fog:parentScene.fog,exposure:renderer.toneMappingExposure,shadowAutoUpdate:renderer.shadowMap.autoUpdate};
+  const targets=[];
+  try {
+  const cameraOrigin = new THREE.Vector3(...config.spawn.position);
   camera.position.copy(cameraOrigin);
-  scene.background = new THREE.Color('#49a4ef');
-  scene.fog = new THREE.Fog('#9dc6b3', 82, 225);
-  renderer.toneMappingExposure = 1.0;
+  const background=new THREE.Color(config.environment.background),fog=new THREE.Fog(config.environment.fog.color,config.environment.fog.near,config.environment.fog.far);
+  parentScene.background=background;parentScene.fog=fog;
+  renderer.toneMappingExposure = config.environment.exposure;
   const hemi = new THREE.HemisphereLight('#c4e5ff', '#9b9259', 1.55);
   const sun = new THREE.DirectionalLight('#fff0c7', 2.8);
   sun.position.set(-38, 62, 24);sun.target.position.set(0,0,-9);sun.castShadow=true;
@@ -37,13 +43,13 @@ export function createPond(scene, camera, renderer) {
   }`}),false);
   for(let i=0;i<14;i++){const a=range(0,Math.PI*2),r=range(105,170),x=Math.cos(a)*r,z=-15+Math.sin(a)*r,y=range(34,56),s=range(2.8,5.5);for(let j=0;j<7;j++)cloudPool.add([x+(j-3)*s*.95,y+Math.sin(j*.9)*s*.5,z+range(-2,2)],[s*range(.85,1.5),s*range(.65,1.1),s*.8],null,'#ffffff');}
 
-  function coast(a,f=1){const wobble=1+.026*Math.sin(a*5+.5)+.015*Math.cos(a*7);return new THREE.Vector3(Math.cos(a)*34*wobble*f,0,-14+Math.sin(a)*41*wobble*f);}
-  function groundY(x,z){return .47+Math.max(0,Math.hypot(x/34,(z+14)/41)-1.12)*1.1;}
+  function coast(a,f=1){return new THREE.Vector3(...shorelinePoint(a,f));}
+  const groundY=groundHeight;
   // A continuous sandy edge, grassy ground and gently wooded hills.
-  const terrain=new THREE.BufferGeometry(),verts=[],colors=[],indices=[],layers=[1,1.018,1.045,1.10,1.2,1.5,2.1,4];
+  const terrain=new THREE.BufferGeometry(),verts=[],colors=[],indices=[],layers=[1,1+config.water.ramp.width,1.045,1.10,1.2,1.5,2.1,4];
   for(let l=0;l<layers.length;l++)for(let i=0;i<=192;i++){
     const a=i/192*Math.PI*2,p=coast(a,layers[l]);
-    p.y=l===0?-.16:l===1?.12:l===2?.32:groundY(p.x,p.z)+(l>3?Math.sin(a*5)*.3*(l-3):0);
+    p.y=l===0?config.water.ramp.startY:l===1?config.water.ramp.endY:l===2?.32:groundY(p.x,p.z)+(l>3?Math.sin(a*5)*.3*(l-3):0);
     verts.push(p.x,p.y,p.z);color.set(l<3?'#c8b78b':'#6f983e').multiplyScalar(range(.91,1.08));colors.push(color.r,color.g,color.b);
     if(l&&i){const n=l*193+i;indices.push(n,n-1,n-193,n-1,n-194,n-193);}
   }
@@ -126,19 +132,52 @@ export function createPond(scene, camera, renderer) {
     const handle=mesh(new THREE.TorusGeometry(.19,.008,5,16,Math.PI),materials.metal,scene,[x,y+.31,z]);handle.rotation.y=Math.PI/2;
   }
 
-  const reflectionTarget=new THREE.WebGLRenderTarget(1024,640,{depthBuffer:true}),reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4();
-  const waterUniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()}};
+  const reflectionTarget=new THREE.WebGLRenderTarget(...config.quality.fine.reflection,{depthBuffer:true}),reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4();
+  targets.push(reflectionTarget);
+  const waterUniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()},shoreCenter:{value:new THREE.Vector2(...config.water.center)},shoreRadii:{value:new THREE.Vector2(...config.water.radii)}};
   const water=mesh(new THREE.PlaneGeometry(480,480),new THREE.ShaderMaterial({uniforms:waterUniforms,
     vertexShader:'varying vec3 vWorld;varying vec4 vMirror;uniform mat4 mirrorMatrix;void main(){vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;vMirror=mirrorMatrix*w;gl_Position=projectionMatrix*viewMatrix*w;}',
-    fragmentShader:`uniform float time;uniform sampler2D mirrorMap;uniform vec3 sunDir;varying vec3 vWorld;varying vec4 vMirror;
-    void main(){vec2 p=vWorld.xz;float t=time;float a=sin(p.x*3.5+p.y*1.2+t*.8)+.38*sin(p.y*8.-t*1.1);float b=cos(p.y*5.5-p.x*.8-t*.75);vec3 n=normalize(vec3(a*.017,1.,b*.013));vec3 eye=normalize(cameraPosition-vWorld);float f=.24+.46*pow(1.-max(dot(eye,n),0.),2.5);vec2 uv=vMirror.xy/vMirror.w*.5+.5;uv+=n.xz*.035;vec3 reflected=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb;float shore=clamp((length(vec2(p.x/34.,(p.y+14.)/41.))-.83)/.16,0.,1.);vec3 base=mix(vec3(.024,.16,.095),vec3(.15,.23,.075),shore*.65);vec3 c=mix(base,reflected*vec3(.68,.87,.72),f*.85);float spec=pow(max(dot(reflect(-sunDir,n),eye),0.),170.);c+=vec3(.9,.8,.43)*spec*.65;float threads=pow(max(0.,sin(p.y*9.+sin(p.x*.8)+t*.9)),25.);c+=vec3(.025,.045,.035)*threads*(1.-shore*.5);gl_FragColor=vec4(c,1.);
+    fragmentShader:`uniform float time;uniform sampler2D mirrorMap;uniform vec3 sunDir;uniform vec2 shoreCenter;uniform vec2 shoreRadii;varying vec3 vWorld;varying vec4 vMirror;
+    void main(){vec2 p=vWorld.xz;float t=time;float a=sin(p.x*3.5+p.y*1.2+t*.8)+.38*sin(p.y*8.-t*1.1);float b=cos(p.y*5.5-p.x*.8-t*.75);vec3 n=normalize(vec3(a*.017,1.,b*.013));vec3 eye=normalize(cameraPosition-vWorld);float f=.24+.46*pow(1.-max(dot(eye,n),0.),2.5);vec2 uv=vMirror.xy/vMirror.w*.5+.5;uv+=n.xz*.035;vec3 reflected=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb;float shore=clamp((length((p-shoreCenter)/shoreRadii)-.83)/.16,0.,1.);vec3 base=mix(vec3(.024,.16,.095),vec3(.15,.23,.075),shore*.65);vec3 c=mix(base,reflected*vec3(.68,.87,.72),f*.85);float spec=pow(max(dot(reflect(-sunDir,n),eye),0.),170.);c+=vec3(.9,.8,.43)*spec*.65;float threads=pow(max(0.,sin(p.y*9.+sin(p.x*.8)+t*.9)),25.);c+=vec3(.025,.045,.035)*threads*(1.-shore*.5);gl_FragColor=vec4(c,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
-    }`}),scene);water.rotation.x=-Math.PI/2;water.position.y=-.035;water.castShadow=false;water.receiveShadow=false;
+    }`}),scene);water.rotation.x=-Math.PI/2;water.position.y=config.water.level;water.castShadow=false;water.receiveShadow=false;
   const padPool=pool(new THREE.CircleGeometry(1,12,.15,Math.PI*1.88),mat('#ffffff',{side:THREE.DoubleSide}),false);
   for(let i=0;i<370;i++){const a=range(0,Math.PI*2),p=coast(a,range(.91,.995));if(Math.abs(p.x)<3&&p.z>20)continue;const s=range(.06,.18);padPool.add([p.x,.006+range(0,.006),p.z],[s,s,1],[-Math.PI/2,0,range(0,6)],['#8d9b30','#687f26','#a3aa37'][i%3]);}
   const ripples=[];for(let i=0;i<6;i++){const ring=mesh(new THREE.RingGeometry(.98,1,40),new THREE.MeshBasicMaterial({color:'#b9cf88',transparent:true,opacity:.10,side:THREE.DoubleSide,depthWrite:false}),scene,[range(-19,19),.009,range(-35,19)]);ring.rotation.x=-Math.PI/2;ring.castShadow=false;ring.userData.phase=random();ripples.push(ring);}
   const birds=[];for(let i=0;i<5;i++){const b=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-.3,.07,0),new THREE.Vector3(0,0,0),new THREE.Vector3(.3,.07,0)]),new THREE.LineBasicMaterial({color:'#3f6260'}));b.position.set(range(-25,25),range(17,23),range(-80,-54));b.userData.origin=b.position.clone();b.userData.phase=range(0,6);scene.add(b);birds.push(b);}
   pools.forEach(p=>p.finish());
-  return {mat,materials,mesh,box,beam,sun,water,waterUniforms,reflectionTarget,reflectionCamera,reflectionMatrix,ripples,birds,vegetationTime,chairs,cameraOrigin,treeCount:treeRecords.length};
+  const resources=createResourceScope(scene,{targets,shared:sharedResources}),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();
+  return {
+    update(elapsed){
+      if(resources.disposed)return;
+      for(const r of ripples){const phase=(elapsed*.14+r.userData.phase)%1;r.scale.setScalar(.3+phase*2);r.material.opacity=(1-phase)*.08;}
+      for(const b of birds){const o=b.userData.origin;b.position.x=o.x+Math.sin(elapsed*.035+b.userData.phase)*8;b.position.y=o.y+Math.sin(elapsed*2+b.userData.phase)*.12;b.rotation.z=Math.sin(elapsed*3+b.userData.phase)*.1;}
+      vegetationTime.value=elapsed;waterUniforms.time.value=elapsed;
+    },
+    setQuality(fine){if(!resources.disposed)reflectionTarget.setSize(...config.quality[fine?'fine':'fast'].reflection);},
+    renderReflection({frame,fine,force=false,before=()=>{},after=()=>{}}){
+      if(resources.disposed||(!force&&!(frame>0&&frame%config.quality[fine?'fine':'fast'].reflectionEvery===0)))return;
+      reflectionCamera.copy(camera,false);reflectionCamera.position.y=2*water.position.y-camera.position.y;
+      camera.getWorldDirection(lookDirection);lookTarget.copy(camera.position).add(lookDirection);lookTarget.y=2*water.position.y-lookTarget.y;
+      reflectionCamera.up.set(0,-1,0);reflectionCamera.lookAt(lookTarget);reflectionCamera.updateMatrixWorld();
+      reflectionMatrix.multiplyMatrices(reflectionCamera.projectionMatrix,reflectionCamera.matrixWorldInverse);
+      const target=renderer.getRenderTarget(),visible=water.visible;
+      try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parentScene,reflectionCamera);}
+      finally{renderer.setRenderTarget(target);water.visible=visible;after();}
+    },
+    getDiagnostics:()=>({chairs,treeCount:treeRecords.length,disposed:resources.disposed,objects:scene.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height]}),
+    dispose(){
+      if(resources.disposed)return;resources.dispose();
+      if(parentScene.background===background)parentScene.background=previous.background;
+      if(parentScene.fog===fog)parentScene.fog=previous.fog;
+      renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.shadowAutoUpdate;
+    }
+  };
+  } catch(error){
+    createResourceScope(scene,{targets,shared:sharedResources}).dispose();parentScene.background=previous.background;parentScene.fog=previous.fog;
+    renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.shadowAutoUpdate;
+    throw error;
+  }
 }
+export const createMap=createPond;

@@ -12,8 +12,13 @@ test('one package version matches npm lock metadata and both startup paths use i
 test('import-map manifest covers every runtime module and every relative module dependency',async()=>{
  const config=manifest.fisherRealm,modules=config.modules;assert.equal(new Set(modules).size,modules.length);
  const root=(await readdir(new URL('../',import.meta.url))).filter(p=>p.endsWith('.js')&&p!=='release-loader.js');
- const expected=[...root,'vendor/three.module.js','vendor/three.core.js'].sort();assert.deepEqual([...modules].sort(),expected);
- for(const name of modules){const source=await read(name);assert.ok(!/from\s+['"][^'"]+\?v=/.test(source),name+' has a manual module version');for(const m of source.matchAll(/from\s+['"](\.[^'"]+)['"]/g)){const url=new URL(m[1],new URL('../'+name,import.meta.url));const relative=decodeURI(url.pathname.slice(new URL('../',import.meta.url).pathname.length));assert.ok(modules.includes(relative),name+' missing dependency '+relative);}}
+ async function mapModules(directory='maps'){
+  const entries=await readdir(new URL('../'+directory+'/',import.meta.url),{withFileTypes:true});
+  return (await Promise.all(entries.map(entry=>entry.isDirectory()?mapModules(directory+'/'+entry.name):entry.name.endsWith('.js')?[directory+'/'+entry.name]:[]))).flat();
+ }
+ const maps=await mapModules();
+ const expected=[...root,...maps,'vendor/three.module.js','vendor/three.core.js'].sort();assert.deepEqual([...modules].sort(),expected);
+ for(const name of modules){const source=await read(name);assert.ok(!/from\s+['"][^'"]+\?v=/.test(source),name+' has a manual module version');for(const m of source.matchAll(/(?:from\s*|import\s*\()\s*['"](\.[^'"]+)['"]/g)){const url=new URL(m[1],new URL('../'+name,import.meta.url));const relative=decodeURI(url.pathname.slice(new URL('../',import.meta.url).pathname.length));assert.ok(modules.includes(relative),name+' missing dependency '+relative);}}
  for(const name of [...config.styles,...config.preloadImages])assert.ok((await readFile(new URL('../'+name,import.meta.url))).length>0);
 });
 test('asset helper reads the active release without hardcoded versions and preserves Node fallback',()=>{

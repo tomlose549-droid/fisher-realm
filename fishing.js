@@ -11,6 +11,13 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   const distanceLabel=document.querySelector('#fish-distance'),distancePoint=new THREE.Vector3();
   let lastDistanceText='';
   const meters=document.querySelector('#fishing-meters'),lineFill=document.querySelector('#line-fill'),lineValue=document.querySelector('#line-value'),staminaFill=document.querySelector('#stamina-fill'),staminaValue=document.querySelector('#stamina-value'),phaseLabel=document.querySelector('#fish-phase');
+  const lineMeter=document.querySelector('#line-meter'),staminaMeter=document.querySelector('#stamina-meter');
+  const setText=(node,value)=>{if(node.textContent!==value)node.textContent=value;};
+  const hidden=(node,value)=>{if(node.hidden!==value)node.hidden=value;};
+  const styles=new WeakMap();
+  const style=(node,name,value)=>{let values=styles.get(node);if(!values){values=new Map();styles.set(node,values);}if(values.get(name)!==value){node.style.setProperty(name,value);values.set(name,value);}};
+  const attr=(node,name,value)=>{value=String(value);if(node.getAttribute(name)!==value)node.setAttribute(name,value);};
+  let lastLineColor=null,lastShoreYaw=null;
   const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.7,...extra});
   const add=(geo,mat,parent,p,s)=>{const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);parent.add(m);return m;};
   const axisY=new THREE.Vector3(0,1,0);
@@ -44,6 +51,7 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     if(wet===null)return Infinity;
     let dry=wet-.5;for(let i=0;i<20;i++){const d=(dry+wet)*.5;if(insideWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d))wet=d;else dry=d;}return wet;
   }
+  function updateShore(){const yaw=session.fishYaw;if(yaw!==lastShoreYaw){shorelineDistance=findShore(yaw);lastShoreYaw=yaw;}}
   // Motion uses the actual fish position. Effects stop at the shoreline when the
   // allowed final ten meters include the player's dry-bank clearing.
   function surfaceTarget(distance=session.distance){
@@ -56,15 +64,14 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   }
   // Project after the main camera has moved so the label stays on the water point.
   function updateDistanceLabel(){
-    distanceLabel.hidden=true;
-    if(!['waiting','bite','fighting'].includes(session.state))return;
+    if(!['waiting','bite','fighting'].includes(session.state)){hidden(distanceLabel,true);return;}
     distancePoint.copy(surfaceTarget());distancePoint.y=.12;distancePoint.project(camera);
-    if(distancePoint.z<-1||distancePoint.z>1||Math.abs(distancePoint.x)>1||Math.abs(distancePoint.y)>1)return;
+    if(distancePoint.z<-1||distancePoint.z>1||Math.abs(distancePoint.x)>1||Math.abs(distancePoint.y)>1){hidden(distanceLabel,true);return;}
     const text=session.distance.toFixed(1)+' 米';
     if(text!==lastDistanceText){distanceLabel.textContent=text;lastDistanceText=text;}
-    distanceLabel.style.left=((distancePoint.x+1)*50)+'%';
-    distanceLabel.style.top=((1-distancePoint.y)*50)+'%';
-    distanceLabel.hidden=false;
+    style(distanceLabel,'left',((distancePoint.x+1)*50)+'%');
+    style(distanceLabel,'top',((1-distancePoint.y)*50)+'%');
+    hidden(distanceLabel,false);
   }
   function retrieval(age){
     const progress=THREE.MathUtils.clamp(age/FISHING.recastDelay,0,1);
@@ -104,9 +111,9 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
   }
   function update(t){
     session.advance(t);
-    if(['fighting','caught'].includes(session.state))shorelineDistance=findShore(session.fishYaw);
+    if(['fighting','caught'].includes(session.state))updateShore();
     for(const event of session.drainEvents()){
-      if(event.type==='cast'){shorelineDistance=findShore(session.fishYaw);lastTrailAt=-Infinity;retrievalProgress=0;}
+      if(event.type==='cast'){updateShore();lastTrailAt=-Infinity;retrievalProgress=0;}
       if(event.type==='hooked'){sounds.play('hooked');pointerX=null;waterEffects.pulse('hook',surfaceTarget(),event.at);onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
       if(event.type==='missed'){toast('鱼脱钩了 · 按空格重新抛竿');onReady(session.castYaw);}
       if(event.type==='failed'){
@@ -134,18 +141,18 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     }
     waterEffects.update(t);
     const resource=session.snapshot(t);
-    line.material.color.set(resource.lineColor);
-    meters.hidden=!['fighting','caught'].includes(session.state);
-    meters.style.setProperty('--line-color',resource.lineColor);
-    lineFill.style.width=resource.durability+'%';lineValue.textContent=resource.durability.toFixed(1)+' / 100';
-    staminaFill.style.width=(resource.fishStamina/resource.fishStaminaMaximum*100)+'%';staminaValue.textContent=resource.fishStamina.toFixed(1)+' / '+resource.fishStaminaMaximum;
-    document.querySelector('#line-meter').setAttribute('aria-valuenow',resource.durability.toFixed(1));
-    document.querySelector('#stamina-meter').setAttribute('aria-valuemax',resource.fishStaminaMaximum);
-    document.querySelector('#stamina-meter').setAttribute('aria-valuenow',resource.fishStamina.toFixed(1));
-    if(session.struggling)phaseLabel.textContent=(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒';
-    else phaseLabel.textContent=session.fishPhase==='exhausted'?'耐力耗尽 · 永久休息':session.fishPhase==='switch-pause'?'换边停顿 · '+resource.phaseRemaining.toFixed(1)+' 秒':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中';
-    notice.textContent=(session.lastCatchName||session.profile.name)+'已被钓';notice.style.color=session.lastCatchColor;
-    const opacity=session.noticeOpacity(t);notice.style.opacity=String(opacity);notice.hidden=opacity===0;
+    if(lastLineColor!==resource.lineColor){line.material.color.set(resource.lineColor);lastLineColor=resource.lineColor;}
+    hidden(meters,!['fighting','caught'].includes(session.state));
+    style(meters,'--line-color',resource.lineColor);
+    style(lineFill,'width',resource.durability+'%');setText(lineValue,resource.durability.toFixed(1)+' / 100');
+    style(staminaFill,'width',(resource.fishStamina/resource.fishStaminaMaximum*100)+'%');setText(staminaValue,resource.fishStamina.toFixed(1)+' / '+resource.fishStaminaMaximum);
+    attr(lineMeter,'aria-valuenow',resource.durability.toFixed(1));
+    attr(staminaMeter,'aria-valuemax',resource.fishStaminaMaximum);
+    attr(staminaMeter,'aria-valuenow',resource.fishStamina.toFixed(1));
+    if(session.struggling)setText(phaseLabel,(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒');
+    else setText(phaseLabel,session.fishPhase==='exhausted'?'耐力耗尽 · 永久休息':session.fishPhase==='switch-pause'?'换边停顿 · '+resource.phaseRemaining.toFixed(1)+' 秒':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中');
+    setText(notice,(session.lastCatchName||session.profile.name)+'已被钓');style(notice,'color',session.lastCatchColor);
+    const opacity=session.noticeOpacity(t);style(notice,'opacity',String(opacity));hidden(notice,opacity===0);
     const stage=session.state;
     let text='空格抛竿 · 23 米';
     if(stage==='casting')text='抛竿中…';
@@ -153,7 +160,7 @@ export function createFishing({scene,camera,player,canvas,idleRod,toast,onReady,
     if(stage==='bite')text=`鱼线在动 · 按任意键提竿  ${Math.max(0,session.hookDeadline-t).toFixed(2)} 秒`;
     if(stage==='fighting')text=`${session.reeling?'正在收线':'按住左键收线'} · ${session.distance.toFixed(2)} 米 · 效率 ${Math.round(session.efficiency*100)}%`;
     if(stage==='caught')text='收竿中…';
-    if(text!==lastStatus){status.textContent=text;lastStatus=text;}status.dataset.state=stage;
+    if(text!==lastStatus){status.textContent=text;lastStatus=text;}attr(status,'data-state',stage);
     if(stage==='idle'){rod.visible=line.visible=marker.visible=false;idleRod.visible=true;canvas.style.cursor='grab';return;}
     idleRod.visible=false;rod.visible=line.visible=true;canvas.style.cursor=stage==='fighting'?'crosshair':'grab';
     handOffset.set(.34,-.47,-.12).applyAxisAngle(axisY,session.castYaw);rod.position.copy(player).add(handOffset);

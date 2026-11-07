@@ -1,0 +1,31 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path');
+const root=path.resolve(__dirname,'../..'),mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.png':'image/png','.wav':'audio/wav'};
+const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname.slice(1))||'index.html',f=path.resolve(root,name);if(path.relative(root,f).startsWith('..'))return res.writeHead(403).end();res.writeHead(200,{'Content-Type':mime[path.extname(f)]||'application/octet-stream'}).end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
+async function ready(p,url){await p.goto(url,{waitUntil:'networkidle'});await p.waitForFunction(()=>window.lakeside);await p.locator('#loading').waitFor({state:'hidden'});}
+const state=p=>p.evaluate(()=>window.lakeside.getState());
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port+'/',b=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',args:['--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader'],chromiumSandbox:false}),reports=[];
+try{
+const c=await b.newContext({viewport:{width:1440,height:960}});try{const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await ready(p,url);await p.waitForTimeout(150);
+await p.evaluate(()=>{window.__hudMutations=0;const observer=new MutationObserver(r=>window.__hudMutations+=r.length);for(const id of ['fishing-status','fishing-meters','catch-notice','fish-distance'])observer.observe(document.getElementById(id),{attributes:true,childList:true,subtree:true,characterData:true});});
+const idle=(await state(p)).frames;await p.waitForTimeout(600);const idleFrames=(await state(p)).frames-idle;assert.ok(idleFrames>0);assert.equal(await p.evaluate(()=>window.__hudMutations),0);
+for(const kind of ['guide','bag','help','owner']){
+ if(kind==='guide'){await p.locator('#settings-toggle').click();await p.locator('#fish-guide-toggle').click();}
+ if(kind==='bag')await p.locator('#backpack-toggle').click();
+ if(kind==='help')await p.locator('#help').click();
+ if(kind==='owner'){await p.locator('#settings-toggle').click();await p.locator('#realm-command').fill('realm owner');}
+ await p.waitForFunction(()=>window.lakeside.getState().paused);await p.waitForTimeout(150);const before=await state(p);await p.waitForTimeout(600);const after=await state(p);assert.equal(after.frames,before.frames,kind);assert.deepEqual(after.fishing,before.fishing,kind);assert.equal(after.adaptiveScale,before.adaptiveScale);
+ await p.setViewportSize({width:1360,height:850});await p.waitForTimeout(180);const resized=await state(p);assert.equal(resized.frames,after.frames+1,kind+' resize redraw');await p.waitForTimeout(160);assert.equal((await state(p)).frames,resized.frames);
+ // Switching dialogs must not resume rendering behind the new modal.
+ if(kind==='guide'){await p.evaluate(()=>document.getElementById('backpack-toggle').click());await p.waitForTimeout(150);const switched=await state(p);await p.waitForTimeout(150);assert.equal((await state(p)).frames,switched.frames);assert.equal(switched.paused,true);await p.locator('#inventory-close').click();}
+ else await p.locator(kind==='bag'?'#inventory-close':kind==='help'?'#help-dialog .close':'#owner-close').click();
+ await p.waitForFunction(f=>!window.lakeside.getState().paused&&window.lakeside.getState().frames>f,resized.frames);await p.setViewportSize({width:1440,height:960});
+}
+assert.deepEqual(errors,[]);reports.push({scenario:'render-and-hud',idleFrames,idleHudMutations:0,pausedNewFrames:0,resizeFrames:1,modalHandoff:true,resume:true,errors});console.log('checked render-and-hud');
+}finally{await c.close();}
+for(const recovery of ['focus','close']){const c=await b.newContext();try{const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.addInitScript(()=>{window.__blockDiscovery=true;const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='fisher-realm-discoveries-v1'&&window.__blockDiscovery)throw new DOMException('quota','QuotaExceededError');return set.call(this,k,v);};if(!localStorage.getItem('fisher-realm-inventory-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify({version:1,items:[{name:'toString',x:0,y:0},{name:'罗非鱼',x:0,y:0}]}));});
+await ready(p,url);assert.deepEqual((await state(p)).inventory.items.map(i=>i.name),['罗非鱼']);assert.equal(await p.evaluate(()=>localStorage.getItem('fisher-realm-discoveries-v1')),null);await p.locator('#settings-toggle').click();await p.locator('#fish-guide-toggle').click();assert.equal(await p.locator('.guide-summary').count(),1);
+await p.evaluate(()=>window.__blockDiscovery=false);if(recovery==='focus')await p.evaluate(()=>window.dispatchEvent(new Event('focus')));else await p.locator('#fish-guide-close').click();await p.waitForFunction(()=>localStorage.getItem('fisher-realm-discoveries-v1')!==null);assert.deepEqual(await p.evaluate(()=>JSON.parse(localStorage.getItem('fisher-realm-discoveries-v1')).fishIds),['TILAPIA']);
+if(recovery==='focus')await p.locator('#fish-guide-close').click();await p.locator('#settings-toggle').click();await p.locator('#realm-command').fill('clear');await p.locator('#realm-command').press('Enter');await p.reload({waitUntil:'networkidle'});await p.locator('#loading').waitFor({state:'hidden'});assert.equal((await state(p)).inventory.items.length,0);await p.locator('#settings-toggle').click();await p.locator('#fish-guide-toggle').click();assert.equal(await p.locator('.guide-summary').count(),1);assert.deepEqual(errors,[]);reports.push({scenario:'save-recovery-'+recovery,invalidItemFiltered:true,pendingSaved:true,clearAndReloadRetainUnlock:true,errors});console.log('checked save-recovery-'+recovery);
+}finally{await c.close();}}
+console.log(JSON.stringify(reports));
+}finally{await b.close();await new Promise(r=>server.close(r));}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});

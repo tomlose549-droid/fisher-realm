@@ -19,7 +19,7 @@ if(!releaseVersion()){
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 let adaptiveScale=1;
-function applyResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,fine?1.4:1)*adaptiveScale);renderer.setSize(innerWidth,innerHeight);}
+function applyResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,fine?1.4:1)*adaptiveScale);renderer.setSize(innerWidth,innerHeight);sceneDirty=true;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -54,15 +54,19 @@ function dismissWelcome() { if (!explored) { explored = true; document.querySele
 function reset() { if(fishing.isActive()){toast('本轮结束后可重置视角');return;}targetYaw = 0; targetPitch = -.065; toast('已回到面向池塘的初始视角'); }
 function stopDragging() { dragging = false; touchId = null; canvas.style.cursor = 'grab'; }
 const gameTime=new GameTime();
+let sceneDirty=true;
 // Closing a previous modal queues its close event; only the last modal may resume.
 function prepareModal(){
   setSettingsOpen(false);keys.clear();stopDragging();fishing.release();
   if(!gameTime.paused){gameTime.pause();fishing.update(gameTime.now());fishing.pauseAudio();}
   for(const open of document.querySelectorAll('dialog[open]'))open.close();
+  sceneDirty=true;
 }
-function finishModal(){if(!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();}}
+function finishModal(){discoveries.flush();if(!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;}}
 const inventory=createInventory({toast,onOpen:prepareModal,onClose:finishModal});
 const discoveries=createFishDiscoveries({items:inventory.snapshot().items,onSaveError:()=>toast('图鉴解锁记录暂未保存，本次游戏仍可查看')});
+window.addEventListener('focus',()=>discoveries.flush());
+window.addEventListener('pagehide',()=>discoveries.flush());
 const fishing=createFishing({scene,camera,player:cameraOrigin,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=-.065;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -146,8 +150,11 @@ function animate(now){
   if(contextLost)return;
   requestAnimationFrame(animate);
   if(document.hidden){nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
+  // Keep the last canvas as a static backdrop; resize requests one fresh frame.
+  if(gameTime.paused&&!sceneDirty){clock.update();nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
   if(now<nextFrame)return;
   nextFrame+=FRAME_MS;if(nextFrame<=now)nextFrame=now+FRAME_MS;
+  const refreshScene=sceneDirty;sceneDirty=false;
   clock.update();const dt=gameTime.paused?0:Math.min(clock.getDelta(),.12);elapsed+=dt;
   fishing.update(gameTime.now(now/1000));ownerPanel.update();const tracked=fishing.view();
   if(tracked){targetYaw=yaw+Math.atan2(Math.sin(tracked.yaw-yaw),Math.cos(tracked.yaw-yaw));targetPitch=tracked.pitch;}
@@ -161,7 +168,7 @@ function animate(now){
   for(const r of ripples){const phase=(elapsed*.14+r.userData.phase)%1;r.scale.setScalar(.3+phase*2);r.material.opacity=(1-phase)*.08;}
   for(const b of birds){const o=b.userData.origin;b.position.x=o.x+Math.sin(elapsed*.035+b.userData.phase)*8;b.position.y=o.y+Math.sin(elapsed*2+b.userData.phase)*.12;b.rotation.z=Math.sin(elapsed*3+b.userData.phase)*.1;}
   vegetationTime.value=elapsed;waterUniforms.time.value=elapsed;
-  if(frame>0&&frame%(fine?2:4)===0){
+  if(refreshScene||(frame>0&&frame%(fine?2:4)===0)){
     reflectionCamera.copy(camera,false);reflectionCamera.position.y=2*water.position.y-camera.position.y;
     camera.getWorldDirection(lookDirection);lookTarget.copy(camera.position).add(lookDirection);lookTarget.y=2*water.position.y-lookTarget.y;
     reflectionCamera.up.set(0,-1,0);reflectionCamera.lookAt(lookTarget);reflectionCamera.updateMatrixWorld();
@@ -171,6 +178,7 @@ function animate(now){
     water.visible=true;fishing.restoreReflection();
   }
   renderer.render(scene,camera);frame++;sampleFrames++;
+  if(gameTime.paused){sampleStart=now;sampleFrames=0;return;}
   if(frame===3){sampleStart=performance.now();sampleFrames=0;}
   if(now-sampleStart>=2000){
     measuredFps=sampleFrames*1000/(now-sampleStart);sampleStart=now;sampleFrames=0;

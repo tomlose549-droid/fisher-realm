@@ -5,7 +5,7 @@ const root=path.resolve(__dirname, '..');
 
 function networkFailure(error) {
   if(error.killFailed) return false;
-  return error.timedOut || /timed? out|could not resolve host|couldn't connect|failed to connect|connection (?:reset|closed|refused)|TLS|SSL|schannel|RPC failed|remote end hung up/i.test(error.message);
+  return error.timedOut || /timed? out|could not resolve host|couldn't connect|failed to connect|connection (?:was )?(?:reset|closed|refused)|TLS|SSL|schannel|RPC failed|remote end hung up/i.test(error.message);
 }
 
 async function apiPush({git, api, branch, head, main}) {

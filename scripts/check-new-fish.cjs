@@ -41,7 +41,8 @@ async function main() {
     return run(step.command, step.args, {cwd:root, timeoutMs:step.timeoutMs});
   });
   const resources=['fish-data.js', fish.inventory.image && 'fish-images/'+fish.inventory.image,
-    fish.inventory.image && 'fish-images/thumbnails/'+fish.inventory.image.replace(/\.[^./]+$/, '.webp')].filter(Boolean);
+    fish.inventory.image && 'fish-images/thumbnails/'+fish.inventory.image.replace(/\.[^./]+$/, '.webp'),
+    fish.inventory.image && 'fish-images/thumbnails/'+fish.inventory.image.replace(/\.[^./]+$/, '.webp.meta.json')].filter(Boolean);
   const report={fish:fish.id, name:fish.name, checkedAt:new Date().toISOString(), configuration:fish,
     fingerprints:Object.fromEntries(resources.map(file=>[file, fs.existsSync(path.join(root,file)) ?
       createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex') : null])), ...result};

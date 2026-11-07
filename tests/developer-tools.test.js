@@ -42,7 +42,7 @@ test('timeout terminates descendants rather than leaving a late background write
 test('authentication and rejected history do not trigger network retry',()=>{
   for(const message of ['Authentication failed','non-fast-forward','Permission denied'])
     assert.equal(network.networkFailure(new Error(message)),false);
-  for(const message of ['SSL connection failed','Could not resolve host','Connection reset'])
+  for(const message of ['SSL connection failed','Could not resolve host','Connection reset','Recv failure: Connection was reset'])
     assert.equal(network.networkFailure(new Error(message)),true);
   assert.equal(network.networkFailure({timedOut:true}),true);
   assert.equal(network.networkFailure({timedOut:true,killFailed:true}),false);

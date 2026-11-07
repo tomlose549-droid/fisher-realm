@@ -49,6 +49,61 @@ class ThumbnailTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 tool.asset_paths(Path(folder), '../outside.png')
 
+    def test_legacy_crop_is_adopted_without_touching_thumbnail_then_skipped(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / 'source.png'
+            target = Path(folder) / 'thumb.webp'
+            image = Image.new('RGBA', (1000, 500), (0, 0, 0, 0))
+            image.paste((20, 80, 140, 255), (100, 200, 900, 300))
+            image.save(source)
+            tool.thumbnail(image, True).save(target, 'WEBP', lossless=True, method=6, exact=True)
+            before = (target.read_bytes(), target.stat().st_mtime_ns)
+            checked = tool.update_thumbnail(source, target, image, check=True)
+            self.assertFalse(checked['recorded'])
+            self.assertFalse(target.with_suffix('.webp.meta.json').exists())
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'adopted')
+            self.assertEqual((target.read_bytes(), target.stat().st_mtime_ns), before)
+            self.assertTrue(tool.read_record(target)['settings']['cropTransparent'])
+            metadata_time = target.with_suffix('.webp.meta.json').stat().st_mtime_ns
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'skipped')
+            self.assertEqual(target.with_suffix('.webp.meta.json').stat().st_mtime_ns, metadata_time)
+
+    def test_changed_source_settings_corruption_and_missing_file_rebuild_only_target(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / 'source.png'
+            target = Path(folder) / 'thumb.webp'
+            image = Image.new('RGBA', (1000, 500), (0, 0, 0, 0))
+            image.paste((20, 80, 140, 255), (100, 200, 900, 300))
+            image.save(source)
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'rebuilt')
+            original_source = source.read_bytes()
+            before = (target.read_bytes(), target.stat().st_mtime_ns)
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'skipped')
+            self.assertEqual((target.read_bytes(), target.stat().st_mtime_ns), before)
+            self.assertEqual(tool.update_thumbnail(source, target, image, crop=True)['action'], 'rebuilt')
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'skipped')
+            self.assertEqual(source.read_bytes(), original_source)
+            image.paste((80, 10, 30, 255), (400, 210, 500, 250))
+            image.save(source)
+            with self.assertRaisesRegex(ValueError, 'stale'):
+                tool.update_thumbnail(source, target, image, check=True)
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'rebuilt')
+            # Same valid shape, wrong content: the thumbnail hash must catch it.
+            altered = tool.thumbnail(image, True)
+            altered.putpixel((10, 10), (255, 0, 0, 255))
+            altered.save(target, 'WEBP', lossless=True, exact=True)
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'rebuilt')
+            target.write_bytes(b'broken webp')
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'rebuilt')
+            target.unlink()
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'rebuilt')
+            self.assertEqual(tool.update_thumbnail(source, target, image, force=True)['action'], 'rebuilt')
+            metadata = target.with_suffix('.webp.meta.json')
+            metadata.write_text('{broken json', encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'Invalid thumbnail record'):
+                tool.update_thumbnail(source, target, image, check=True)
+            self.assertEqual(tool.update_thumbnail(source, target, image)['action'], 'adopted')
+
     def test_cli_only_writes_selected_thumbnail_and_check_is_read_only(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -67,6 +122,10 @@ class ThumbnailTests(unittest.TestCase):
             subprocess.run(command, check=True, capture_output=True)
             target = assets / 'thumbnails' / 'A.webp'
             self.assertTrue(target.exists())
+            self.assertFalse((assets / 'thumbnails' / 'B.webp').exists())
+            self.assertFalse((assets / 'thumbnails' / 'B.webp.meta.json').exists())
+            bulk = subprocess.run([sys.executable, str(root / 'scripts' / SCRIPT.name)], capture_output=True)
+            self.assertNotEqual(bulk.returncode, 0)
             self.assertFalse((assets / 'thumbnails' / 'B.webp').exists())
             before = (target.read_bytes(), target.stat().st_mtime_ns)
             subprocess.run(command + ['--check'], check=True, capture_output=True)

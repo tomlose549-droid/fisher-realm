@@ -2,9 +2,11 @@
 
 使用经用户同意的本地 Python/Pillow 工具，从统一鱼种配置的图片生成。原图及透明底原图均保留原路径，不覆盖。
 
-运行：`python scripts/build-inventory-thumbnails.py`（开发时需要 Pillow 与 Node；游戏运行不需要 Python）。最长512像素、最高384像素，保持原始宽高比与透明通道，WebP采用无损编码。
+运行：`python scripts/build-inventory-thumbnails.py --fish 新鱼ID`（开发时需要 Pillow 与 Node；游戏运行不需要 Python）。生成必须指定本次新鱼，不处理原有鱼的缩略图。最长512像素、最高384像素，保持原始宽高比与透明通道，WebP采用无损编码。
 
-新增鱼默认同时准备缩略图，只处理本次鱼：`python scripts/build-inventory-thumbnails.py --fish AMERICAN_EEL`，也可用鱼的中文名称；加 `--check` 只检查、不写文件，加 `--inspect` 只检查原图透明度与可见范围，必要时加 `--crop-transparent` 裁掉近透明留白再等比缩小。详见 `scripts/NEW-FISH-WORKFLOW.md`。
+新增鱼默认同时准备缩略图，只处理本次鱼，也可用鱼的中文名称；加 `--check` 只检查、不写文件，加 `--inspect` 只检查原图透明度与可见范围，必要时加 `--crop-transparent` 裁掉近透明留白再等比缩小。详见 `scripts/NEW-FISH-WORKFLOW.md`。
+
+本次鱼的 `.webp.meta.json` 记录原图与缩略图 SHA-256、尺寸和处理设置，应随缩略图提交。原图、设置和成品均未变且图片检查正常时输出 `skipped`，不改文件或时间；原图/设置变化、成品丢失或损坏则重建。默认继承已记录的裁剪方式，明确用 `--no-crop-transparent` 可取消裁剪，`--force` 可强制重建。若指定的鱼已有无记录缩略图，只有与当前原图生成结果逐像素一致才输出 `adopted` 并仅建立记录，不改图；不允许借新增鱼任务批量补建旧图记录。检查和 inspect 模式从不写入图或记录。
 
 目录保持原图相对路径结构，扩展名统一为webp。加载器保留缩略图缺失时回退原图的兼容能力；新增有图鱼的验收必须确认缩略图实际加载，不能依赖回退当作完成。
 

@@ -19,8 +19,13 @@ export function createFishDiscoveries({items=[],storage,onSaveError=()=>{}}={}){
   let saved;
   try{storage??=globalThis.localStorage;saved=JSON.parse(storage?.getItem(DISCOVERIES_KEY)??'null');}catch{}
   const model=new FishDiscoveries(saved);
-  function save(){try{if(!storage)throw new Error('Storage unavailable');storage.setItem(DISCOVERIES_KEY,JSON.stringify(model.serialize()));}catch{onSaveError();}}
+  let pending=false,warned=false;
+  function flush(){
+    if(!pending)return true;
+    try{storage??=globalThis.localStorage;if(!storage)throw new Error('Storage unavailable');storage.setItem(DISCOVERIES_KEY,JSON.stringify(model.serialize()));pending=false;warned=false;return true;}
+    catch{if(!warned){warned=true;onSaveError();}return false;}
+  }
   // Existing inventory is the only reliable evidence available in older saves.
-  if(model.seed(items))save();
-  return {has:id=>model.has(id),unlock(name){if(!model.unlock(name))return false;save();return true;}};
+  pending=model.seed(items);flush();
+  return {has:id=>model.has(id),flush,unlock(name){const added=model.unlock(name);if(added)pending=true;flush();return added;}};
 }

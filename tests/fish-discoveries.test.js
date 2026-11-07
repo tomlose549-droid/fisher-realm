@@ -37,3 +37,17 @@ test('blocked storage keeps session unlocks and reports failed persistence witho
   let failures=0;const storage={getItem(){throw new Error('blocked');},setItem(){throw new Error('quota');}};
   const d=createFishDiscoveries({storage,onSaveError:()=>failures++});assert.equal(d.unlock(FISH_DATA[0].name),true);assert.equal(d.has(FISH_DATA[0].id),true);assert.equal(failures,1);assert.equal(d.unlock(FISH_DATA[0].name),false);assert.equal(failures,1);
 });
+
+test('failed discovery save retries on duplicate catch and persists after inventory is cleared',()=>{
+  const storage=memory();let blocked=true,warnings=0,writes=0;const original=storage.setItem;
+  storage.setItem=(key,value)=>{writes++;if(blocked)throw Error('quota');original(key,value);};
+  const d=createFishDiscoveries({storage,onSaveError:()=>warnings++});d.unlock(FISH_DATA[0].name);assert.equal(warnings,1);assert.equal(d.has(FISH_DATA[0].id),true);
+  blocked=false;assert.equal(d.unlock(FISH_DATA[0].name),false);assert.equal(writes,2);
+  assert.equal(createFishDiscoveries({items:[],storage}).has(FISH_DATA[0].id),true);d.flush();assert.equal(writes,2);
+});
+test('explicit flush retries failed migration, deduplicates warnings and stops writing after success',()=>{
+  const storage=memory();let blocked=true,warnings=0,writes=0;const original=storage.setItem;
+  storage.setItem=(key,value)=>{writes++;if(blocked)throw Error('blocked');original(key,value);};
+  const d=createFishDiscoveries({items:[{name:FISH_DATA[0].name}],storage,onSaveError:()=>warnings++});assert.equal(d.flush(),false);assert.equal(warnings,1);
+  blocked=false;assert.equal(d.flush(),true);const before=writes;d.flush();assert.equal(writes,before);assert.equal(createFishDiscoveries({storage}).has(FISH_DATA[0].id),true);
+});

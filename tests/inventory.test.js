@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from '../inventory-rules.js';
 import {GameTime} from '../game-time.js';
 import {FishingSession} from '../fishing-rules.js';
+
+test('inventory rejects inherited property names and malformed names while retaining valid fish',()=>{
+ const invalid=['toString','constructor','__proto__','hasOwnProperty',{},[],null,42];
+ const raw=invalid.map(name=>({name,x:0,y:0}));const b=new FishInventory({version:1,items:[...raw,null,{name:'罗非鱼',x:0,y:0}]});
+ assert.deepEqual(b.items.map(i=>i.name),['罗非鱼']);const before=b.serialize();for(const name of invalid){assert.equal(b.add(name),null);assert.equal(b.fits({name},0,0),false);}assert.deepEqual(b.serialize(),before);
+});
 test('bag is five columns by three rows and fish sizes cannot rotate',()=>{assert.equal(BAG_WIDTH,5);assert.equal(BAG_HEIGHT,3);for(const name of ['罗非鱼','蓝鳃太阳鱼','红耳太阳鱼'])assert.deepEqual([FISH_ITEMS[name].h,FISH_ITEMS[name].w],[1,2]);assert.equal(FISH_ITEMS['黑莓鲈'].w,3);assert.equal(FISH_ITEMS['金色闪光鲦'].w,1);});
 test('row-major automatic packing fills fifteen single cells then overflows to pile',()=>{const b=new FishInventory();for(let i=0;i<16;i++)b.add('金色闪光鲦');assert.equal(b.items.filter(i=>i.x!==null).length,15);assert.equal(b.items[15].x,null);assert.deepEqual(b.items.slice(0,6).map(i=>[i.x,i.y]),[[0,0],[1,0],[2,0],[3,0],[4,0],[0,1]]);});
 test('two-cell fish cannot wrap into the next row; three-wide fish fill remaining spaces',()=>{const b=new FishInventory();for(let i=0;i<6;i++)b.add('罗非鱼');assert.equal(b.add('罗非鱼').x,null);const c=new FishInventory();c.add('黑莓鲈');assert.deepEqual([c.add('罗非鱼').x,c.items[1].y],[3,0]);});

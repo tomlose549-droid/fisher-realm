@@ -30,7 +30,8 @@ const originalRequests=()=>requests.filter(n=>n.startsWith('fish-images/')&&!n.i
 try{
  const c=await b.newContext({viewport:{width:1440,height:960}});try{const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.addInitScript(s=>localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(s)),saved);
  await ready(p,url);requests.length=0;await open(p);assert.equal((await state(p)).paused,true);assert.equal(await p.locator('#fish-guide-search').evaluate(e=>e===document.activeElement),true);
- await p.waitForFunction(()=>document.querySelectorAll('.guide-thumbnail[data-image-state=ready]').length===19);
+ for(const row of await p.locator('.guide-summary').all()){await row.scrollIntoViewIfNeeded();await p.waitForFunction(id=>document.querySelector('[data-guide-fish-id=\"'+id+'\"] .guide-thumbnail')?.dataset.imageState==='ready',await row.evaluate(e=>e.parentElement.dataset.guideFishId));}
+ await p.locator('.guide-scroll').evaluate(e=>e.scrollTop=0);
  assert.equal(originalRequests().length,0);assert.equal(await p.locator('.guide-fish[open]').count(),0);
  const fish=await p.evaluate(async()=>(await import('./fish-data.js')).FISH_DATA);assert.deepEqual(await p.locator('.guide-info h3').allTextContents(),fish.map(f=>f.name));
  for(const f of fish){const row=p.locator(`[data-guide-fish-id="${f.id}"]`);assert.equal(await row.locator('.guide-swatch').count(),2);const colors=await row.locator('.guide-swatch').evaluateAll(a=>a.map(e=>e.style.backgroundColor));const expected=await p.evaluate(f=>[f.catchColor??'#d3d3d3',f.inventory.color].map(color=>{const e=document.createElement('i');e.style.backgroundColor=color;return e.style.backgroundColor}),f);assert.deepEqual(colors,expected);assert.ok((await row.locator('summary').textContent()).includes(`力量 ${f.strength.amount} 点/${f.strength.interval}秒`));}

@@ -10,13 +10,14 @@ import {FISH_ITEMS,FishInventory} from '../inventory-rules.js';
 const baseline=JSON.parse(await readFile(new URL('./fixtures/fish-baseline-v0251.json',import.meta.url),'utf8'));
 const clone=v=>structuredClone(v);
 
-test('all pre-refactor profiles, order, legacy exports and inventory values remain exact',()=>{
- assert.deepEqual(rules.FISH_SPECIES.slice(0,baseline.profiles.length),baseline.profiles);
+test('pre-refactor profiles remain exact except the approved catch color synchronization',()=>{
+ const catchColors={'罗非鱼':'#808080','蓝鳃太阳鱼':'#008000','金色闪光鲦':'#0000ff','大口黑鲈':'#0000ff','弓鳍鱼':'#0000ff'};
+ assert.deepEqual(rules.FISH_SPECIES.slice(0,baseline.profiles.length),baseline.profiles.map(p=>catchColors[p.name]?{...p,catchColor:catchColors[p.name]}:p));
  // The separately requested Florida gar image fix is the only approved metadata delta.
  for(const [name,item]of Object.entries(baseline.items))assert.deepEqual(FISH_ITEMS[name],name==='佛罗里达雀鳝'?{...item,image:'cutouts/florida-gar.png'}:item);
  for(const [i,data]of FISH_DATA.entries()){assert.equal(rules[data.id]??FISH_CATALOG.byId[data.id],rules.FISH_SPECIES[i]);assert.deepEqual(FISH_ITEMS[data.name],data.inventory);}
  assert.equal(rules.TILAPIA.struggle.firstDuration,3.9);assert.equal(rules.TILAPIA.struggle.durations,undefined);
- assert.equal(rules.TILAPIA.catchColor,undefined);assert.equal(rules.BLUEGILL.catchColor,undefined);
+ for(const fish of FISH_DATA)assert.equal(fish.catchColor,fish.inventory.color,fish.name);
 });
 
 test('all catalog fish have matching assets, valid intervals and automatic owner/save support',async()=>{

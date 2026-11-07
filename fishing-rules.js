@@ -4,7 +4,10 @@ export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,h
 export const FISH_SPECIES=FISH_CATALOG.profiles;
 // Preserve named exports consumed by existing callers and species-specific tests.
 export const {TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER,NILE_TILAPIA,COMMON_CARP,EUROPEAN_PERCH,WHITE_CATFISH,CHANNEL_CATFISH,LARGEMOUTH_BASS,CHAIN_PICKEREL,LEOPARD_PLECO,LONGNOSE_GAR,MAYAN_CICHLID,OSCAR,FLORIDA_GAR,YELLOW_BULLHEAD,BOWFIN}=FISH_CATALOG.byId;
-export function pickFish(unit){return FISH_SPECIES[Math.min(FISH_SPECIES.length-1,Math.max(0,Math.floor(unit*FISH_SPECIES.length)))];}
+export function pickFish(unit,pool=FISH_SPECIES){
+  if(!Array.isArray(pool)||!pool.length)throw new TypeError('Expected a nonempty fish pool');
+  return pool[Math.min(pool.length-1,Math.max(0,Math.floor(unit*pool.length)))];
+}
 const PHASES=['first','second','third','fourth','fifth'];
 const EPS=1e-9,STEP=.01;
 export function signedAngle(a){return Math.atan2(Math.sin(a),Math.cos(a));}
@@ -21,7 +24,9 @@ function circleCrossing(x,z,dx,dz,r,entering){
   return null;
 }
 export class FishingSession{
-  constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true}={}){
+  constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true,fishPool=FISH_SPECIES}={}){
+    if(!Array.isArray(fishPool)||!fishPool.length)throw new TypeError('Expected a nonempty fish pool');
+    this.fishPool=Object.freeze([...fishPool]);
     this.random=random;this.randomSpecies=randomSpecies;this.profile=fish;this.player={x:player.x,z:player.z};this.isWater=isWater;
     this.phaseIndex=0;this.lastCatchName=null;this.lastCatchColor=DEFAULT_CATCH_COLOR;
     this.forcedFish=null;this.forcedRemaining=0;this.forcedCastFish=null;
@@ -51,7 +56,7 @@ export class FishingSession{
     this.advance(now);if(this.state!=='idle')return false;
     this.forcedCastFish=this.forcedRemaining>0?this.forcedFish:null;
     if(this.forcedCastFish)this.profile=this.forcedCastFish;
-    else if(this.randomSpecies)this.profile=pickFish(this.randomUnit());
+    else if(this.randomSpecies)this.profile=pickFish(this.randomUnit(),this.fishPool);
     this.state='casting';this.castYaw=yaw;this.rodYaw=yaw;
     this.fishX=this.player.x-Math.sin(yaw)*FISHING.distance;this.fishZ=this.player.z-Math.cos(yaw)*FISHING.distance;
     this.castAt=now;this.biteAt=now+FISHING.minWait+this.randomUnit()*(FISHING.maxWait-FISHING.minWait);this.hookDeadline=this.biteAt+FISHING.hookWindow;

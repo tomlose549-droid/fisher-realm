@@ -4,6 +4,8 @@
 
 [外网试玩](https://tomlose549-droid.github.io/fisher-realm/) · GitHub Pages，无需登录。
 
+地图接口已整理为独立地图上下文、场景生命周期与公共钓鱼接口，目前仍只有现有池塘。后续开发约定见 [maps/README.md](maps/README.md)，地图菜单与鱼种归属编辑留待后续开发。
+
 ## Windows 一键试玩
 
 1. 如收到 ZIP，请先完整解压到普通文件夹。

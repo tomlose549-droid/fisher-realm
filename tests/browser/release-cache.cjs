@@ -11,9 +11,10 @@ const server=http.createServer((req,res)=>{try{
  if(path.relative(root,file).startsWith('..')){res.writeHead(403).end();return;}
  if(name==='package.json'){
   if(failure==='manifest'){res.writeHead(503).end('Unavailable');return;}
-  const data={...manifest,version};if(failure==='invalid')data.version='bad-version';
+  const data={...manifest,version,fisherRealm:{...manifest.fisherRealm,modules:[...manifest.fisherRealm.modules,'maps/__lazy-test.js']}};if(failure==='invalid')data.version='bad-version';
   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'public,max-age=31536000'}).end(JSON.stringify(data));return;
  }
+ if(name==='maps/__lazy-test.js'){res.writeHead(200,{'Content-Type':'text/javascript','Cache-Control':'public,max-age=31536000'}).end('export const version='+JSON.stringify(url.searchParams.get('v'))+';');return;}
  if(failure==='style'&&name==='style.css'){res.writeHead(503).end('Unavailable');return;}
  if(failure==='loader'&&name==='release-loader.js'){res.writeHead(503).end('Unavailable');return;}
  let data=fs.readFileSync(file);
@@ -33,6 +34,11 @@ const server=http.createServer((req,res)=>{try{
   assert.equal(await p.locator('#game-version').textContent(),'V'+version);
   assert.equal(await p.evaluate(async()=>{const m=await import('./fish-data.js');return m.FISH_DATA.find(f=>f.id==='OSCAR').stamina;}),version==='91.0.0'?55:56);
   assert.equal(await p.evaluate(()=>getComputedStyle(document.body).getPropertyValue('--release-test').trim()),'"'+version+'"');
+  assert.ok(!requests.some(r=>r.path==='/fisher-realm/maps/__lazy-test.js'&&new URLSearchParams(r.query).get('v')===version),'registered map module was eagerly downloaded');
+  assert.equal(await p.evaluate(async()=> (await import('./maps/__lazy-test.js')).version),version);
+  // Explicitly request optional/compatibility modules to verify their import-map
+  // versions without requiring the game to eagerly download unused maps.
+  await p.evaluate(async names=>{for(const name of names)await import(new URL(name,document.baseURI).href);},manifest.fisherRealm.modules);
   if(version==='91.0.0'){await p.evaluate(s=>localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(s)),saved);await p.close();continue;}
   assert.deepEqual(await p.evaluate(()=>window.lakeside.getState().inventory.items),saved.items);
   await p.locator('#loading').waitFor({state:'hidden'});await p.locator('#backpack-toggle').click();await p.waitForFunction(()=>[...document.querySelectorAll('.inventory-fish')].every(e=>e.dataset.imageState==='ready'));
@@ -49,6 +55,6 @@ const server=http.createServer((req,res)=>{try{
   await p.goto(url,{waitUntil:'domcontentloaded'});await p.locator('#error').waitFor({state:'visible'});
   assert.equal(await p.evaluate(()=>typeof window.lakeside),'undefined');assert.ok(!requests.slice(start).some(r=>r.path.endsWith('/main.js')));reports.push({failure:scenario,errorVisible:true,gameNotStarted:true});if(scenario==='manifest'){failure=null;await p.locator('#error button').click();await p.waitForFunction(v=>window.lakeside?.getState().version===v,version);reports.push({retryAfterFailure:true});}await p.close();
  }
- await context.close();console.log(JSON.stringify({reports,allModuleVersions:true,allAudioVersions:true,uncachedManifest:true,subdirectory:true}));
+ await context.close();console.log(JSON.stringify({reports,allModuleVersions:true,lazyModuleVersions:true,noEagerLazyDownload:true,allAudioVersions:true,uncachedManifest:true,subdirectory:true}));
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

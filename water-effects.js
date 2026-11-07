@@ -1,7 +1,8 @@
 import * as THREE from './vendor/three.module.js';
+import {createResourceScope} from './scene-resources.js';
 
 // Fixed-size pools: casts and continuous reeling never create more meshes at runtime.
-export function createWaterEffects(scene){
+export function createWaterEffects(scene,{waterLevel=0}={}){
   const root=new THREE.Group();root.name='fishing-water-ripples';scene.add(root);
   const geometry=new THREE.RingGeometry(.91,1,64);
   const presets={
@@ -29,13 +30,15 @@ export function createWaterEffects(scene){
     pool.push({group,rings,at:-Infinity,kind:null,settings:null,strength:1});
   }
   function pulse(kind,position,time,strength=1){
+    if(resources.disposed)return;
     const settings=presets[kind];if(!settings)return;
     const slot=pool[cursor];cursor=(cursor+1)%pool.length;
     slot.at=time;slot.kind=kind;slot.settings=settings;slot.strength=strength;
-    slot.group.position.set(position.x,-.023,position.z);slot.group.visible=true;
-    counts[kind]++;last[kind]={at:time,position:[position.x,-.023,position.z],radius:settings.radius*strength};
+    slot.group.position.set(position.x,waterLevel+.012,position.z);slot.group.visible=true;
+    counts[kind]++;last[kind]={at:time,position:[position.x,waterLevel+.012,position.z],radius:settings.radius*strength};
   }
   function update(time){
+    if(resources.disposed)return;
     for(const slot of pool){
       if(!slot.settings)continue;
       const age=time-slot.at,s=slot.settings;
@@ -51,5 +54,6 @@ export function createWaterEffects(scene){
       }
     }
   }
-  return{pulse,update,hide(){root.visible=false;},show(){root.visible=true;},snapshot(){return {emitted:{...counts},last:{...last},active:pool.filter(s=>s.group.visible).length,poolSize:pool.length};}};
+  const resources=createResourceScope(root);
+  return{pulse,update,dispose:()=>resources.dispose(),hide(){root.visible=false;},show(){root.visible=true;},snapshot(){return {emitted:{...counts},last:{...last},active:pool.filter(s=>s.group.visible).length,poolSize:pool.length};}};
 }

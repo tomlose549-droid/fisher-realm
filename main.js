@@ -1,3 +1,5 @@
+import {preloadInventoryImages} from './inventory-images.js';
+import {FISH_DATA} from './fish-data.js';
 import {renderFishHelp} from './fish-help.js';
 import {createFishGuide} from './fish-guide.js';
 import {createFishDiscoveries} from './fish-discoveries.js';
@@ -189,4 +191,9 @@ function animate(now){
 animate(performance.now());
 document.querySelector('#loading').classList.add('done');
 setTimeout(()=>{document.querySelector('#loading').hidden=true;},750);
+// Warm discovered thumbnails only, after the scene is usable.
+setTimeout(()=>{
+  const warmup=()=>preloadInventoryImages(FISH_DATA.filter(fish=>discoveries.has(fish.id)).map(fish=>fish.inventory.image));
+  if(globalThis.requestIdleCallback)requestIdleCallback(warmup,{timeout:3000});else warmup();
+},1500);
 window.lakeside={getState:()=>({paused:gameTime.paused,inventory:inventory.snapshot(),version:releaseVersion(),scene:'summer-pond',fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs,treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};

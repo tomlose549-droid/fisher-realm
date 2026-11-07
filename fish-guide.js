@@ -18,7 +18,8 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
     search=doc.querySelector('#fish-guide-search'),count=doc.querySelector('#fish-guide-count'),
     empty=doc.querySelector('#fish-guide-empty'),toggle=doc.querySelector('#fish-guide-toggle');
   const catalog=buildFishGuide(entries);
-  let cards=[];
+  let cards=[],imageCleanups=[];
+  function watchImage(...args){imageCleanups.push(loadInventoryImage(...args));}
   function el(tag,className,text){const e=doc.createElement(tag);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e;}
   function picture(fish,className){
     const wrap=el('div',className),image=el('img'),status=el('span','guide-image-status');
@@ -55,8 +56,8 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
       if(fish.image){
         // Keep a separate thumbnail under the original until the latter has loaded.
         const preview=thumb.image.cloneNode(false);preview.className='guide-preview';preview.alt='';preview.hidden=true;large.wrap.prepend(preview);
-        loadInventoryImage(preview,inventoryImageSources(fish.image)[0],state=>{if(state==='ready')preview.hidden=false;});
-        loadInventoryImage(large.image,inventoryImageSources(fish.image)[1],state=>{
+        watchImage(preview,inventoryImageSources(fish.image)[0],state=>{if(state==='ready')preview.hidden=false;});
+        watchImage(large.image,inventoryImageSources(fish.image)[1],state=>{
           large.wrap.dataset.imageState=state;large.wrap.setAttribute('aria-busy',String(state==='loading'));
           large.status.textContent=state==='loading'?'原图加载中…':state==='error'?'原图加载失败，保留可用缩略图；重新打开图鉴可重试':'';
         });
@@ -70,7 +71,7 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
       details.open=opening;if(opening)expand();
     });
     details.addEventListener('toggle',()=>{if(!details.open)return;for(const other of cards)if(other!==details&&other.open)other.open=false;expand();});
-    return {details,loadThumb(){if(fish.image)loadInventoryImage(thumb.image,inventoryImageSources(fish.image)[0],state=>{
+    return {details,loadThumb(){if(fish.image)watchImage(thumb.image,inventoryImageSources(fish.image)[0],state=>{
       thumb.wrap.dataset.imageState=state;thumb.wrap.setAttribute('aria-busy',String(state==='loading'));
       thumb.status.textContent=state==='loading'?'图片加载中…':state==='error'?'缩略图加载失败':'';
     });}};
@@ -94,6 +95,6 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
   search.addEventListener('input',filter);
   doc.querySelector('#fish-guide-close').addEventListener('click',()=>dialog.close());
   dialog.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dialog.close();}});
-  dialog.addEventListener('close',()=>{for(const card of cards)if(card.open)card.open=false;onClose();if(!doc.querySelector('dialog[open]'))doc.querySelector('#settings-toggle').focus({preventScroll:true});});
+  dialog.addEventListener('close',()=>{for(const cleanup of imageCleanups)cleanup();imageCleanups=[];for(const card of cards)if(card.open)card.open=false;onClose();if(!doc.querySelector('dialog[open]'))doc.querySelector('#settings-toggle').focus({preventScroll:true});});
   return {open,isOpen:()=>dialog.open};
 }

@@ -5,7 +5,7 @@ const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 const rad=d=>d*Math.PI/180;
 function fight(fish={...BLUEGILL,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
 test('bluegill profile and species selection boundary',()=>{
-  assert.deepEqual(BLUEGILL,{name:'蓝鳃太阳鱼',strength:{amount:2,interval:.11},restDuration:4.2,speed:5.6,stamina:56,struggle:{minAngle:35,maxAngle:41,durations:[3,.9,1.6,4.2]},specials:[]});
+  assert.deepEqual(BLUEGILL,{name:'蓝鳃太阳鱼',catchColor:'#008000',strength:{amount:2,interval:.11},restDuration:4.2,speed:5.6,stamina:56,struggle:{minAngle:35,maxAngle:41,durations:[3,.9,1.6,4.2]},specials:[]});
   for(const r of [0,1/FISH_SPECIES.length-1e-9])assert.equal(pickFish(r),TILAPIA);for(const r of [1/FISH_SPECIES.length,2/FISH_SPECIES.length-1e-9])assert.equal(pickFish(r),BLUEGILL);
 });
 test('four timed legs alternate, reroll angles against the fixed baseline, then rest 4.2 s',()=>{

@@ -17,5 +17,5 @@ test('redear damage is 3 per .13 s and retains regeneration and stamina tiers',(
 test('redear third and fourth legs drain resources but rest does not',()=>{for(const t of [8.9,10.3]){const f=fight();f.advance(t);f.setRodYaw(f.struggleYaw,t);f.setReeling(true,t);f.advance(t+.28);close(f.durability,94);close(f.fishStamina,42);}const f=fight();f.advance(13.3);f.setReeling(true,13.3);f.advance(14.3);close(f.durability,100);close(f.fishStamina,45);});
 test('green catch color stays with the catch across recasting, and the next tilapia catch returns to grey',()=>{
   const f=fight({...REDEAR,stamina:0});f.setReeling(true,6);f.advance(11);assert.equal(f.lastCatchColor,'#90ee90');assert.equal(f.lastCatchName,'红耳太阳鱼');f.advance(12);
-  f.profile={...TILAPIA,stamina:0};f.cast(13,0);assert.equal(f.snapshot(13).lastCatchColor,'#90ee90');f.hook(19);f.setReeling(true,19);f.advance(24);assert.equal(f.lastCatchName,'罗非鱼');assert.equal(f.lastCatchColor,'#d3d3d3');
+  f.profile={...TILAPIA,stamina:0};f.cast(13,0);assert.equal(f.snapshot(13).lastCatchColor,'#90ee90');f.hook(19);f.setReeling(true,19);f.advance(24);assert.equal(f.lastCatchName,'罗非鱼');assert.equal(f.lastCatchColor,'#808080');
 });

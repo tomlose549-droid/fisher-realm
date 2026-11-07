@@ -30,7 +30,7 @@ async function main() {
   const {buildFishHelp} = await import(pathToFileURL(path.join(root, 'fish-help.js')).href);
   const fish = FISH_DATA.find(f => f.id === selector || f.name === selector);
   assert.ok(fish, `Unknown fish: ${selector}`);
-  const help = buildFishHelp().profiles.find(f => f.id === fish.id);
+  const help = buildFishHelp([fish]).profiles[0];
   const sourcePath = fish.inventory.image && '/fish-images/' + fish.inventory.image;
   const thumbPath = fish.inventory.image && '/fish-images/thumbnails/' + fish.inventory.image.replace(/\.[^./]+$/, '.webp');
   for (const asset of [sourcePath, thumbPath].filter(Boolean))
@@ -130,6 +130,8 @@ async function main() {
         assert.equal((await page.evaluate(() => window.lakeside.getState())).inventory.items.length, saved ? 2 : 0);
         if (saved) assert.deepEqual(await page.evaluate(() => JSON.parse(
           localStorage.getItem('fisher-realm-discoveries-v1')).fishIds), [fish.id]);
+        assert.ok(requests.filter(p=>p.startsWith('/fish-images/')).every(p=>p===thumbPath||p===sourcePath),
+          'Selected-fish acceptance must not request any old fish images');
         assert.deepEqual(errors, []);
         console.log(JSON.stringify({fish:fish.id, scenario:saved ? 'bag-pile-unlocked' : 'fresh-locked',
           catalog:FISH_DATA.length, result:'passed'}));

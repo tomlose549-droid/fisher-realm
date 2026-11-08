@@ -3,7 +3,7 @@
 const fs=require('node:fs'), path=require('node:path'), {pathToFileURL}=require('node:url');
 const root=path.resolve(__dirname,'..');
 const COLORS=Object.freeze({grey:'#808080',gray:'#808080',green:'#008000','light green':'#90ee90',
-  white:'#ffffff',blue:'#0000ff',turquoise:'#40e0d0','dark purple':'#301934',violet:'#ee82ee'});
+  white:'#ffffff',blue:'#0000ff',turquoise:'#40e0d0','dark purple':'#301934',violet:'#ee82ee',indigo:'#4b0082'});
 
 function fields(object, names, label) {
   if(!object || typeof object!=='object' || Array.isArray(object)) throw Error(`${label}：应填写对象`);

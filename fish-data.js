@@ -64,7 +64,8 @@ export const FISH_DATA=freeze([
   {"id":"WALKING_CATFISH","name":"行走鲶","catchColor":"#40e0d0","strength":{"amount":6,"interval":0.16},"restDuration":0.8,"speed":3.2,"stamina":46,"struggle":{"minAngle":30,"maxAngle":37,"durations":[4.1,1.5]},"specials":[],"inventory":{"w":3,"h":1,"color":"#40e0d0","image":"cutouts/walking-catfish.png"}},
   {"id":"JACK_DEMPSEY","name":"杰克登普西慈鲷","catchColor":"#00008b","strength":{"amount":3,"interval":0.12},"restDuration":4.3,"speed":5.3,"stamina":55,"struggle":{"minAngle":33,"maxAngle":42,"durations":[6.3,3]},"specials":[],"inventory":{"w":2,"h":2,"color":"#00008b","image":"cutouts/jack-dempsey.png"}},
   {"id":"PEACOCK_BASS","name":"孔雀鲈","catchColor":"#00008b","strength":{"amount":4,"interval":0.19},"restDuration":3.2,"speed":5.6,"stamina":64,"struggle":{"minAngle":33,"maxAngle":70,"durations":[6,3.5,4.3]},"specials":[],"inventory":{"w":3,"h":1,"color":"#00008b","image":"cutouts/peacock-bass.png"}},
-  {"id":"AFRICAN_JEWEL_CICHLID","name":"非洲宝石慈鲷","catchColor":"#0000ff","strength":{"amount":3,"interval":0.15},"restDuration":4.3,"speed":5,"stamina":56,"struggle":{"minAngle":34,"maxAngle":42,"durations":[6.1,3]},"specials":[],"inventory":{"w":2,"h":1,"color":"#0000ff","image":"cutouts/african-jewel-cichlid.png"}}
+  {"id":"AFRICAN_JEWEL_CICHLID","name":"非洲宝石慈鲷","catchColor":"#0000ff","strength":{"amount":3,"interval":0.15},"restDuration":4.3,"speed":5,"stamina":56,"struggle":{"minAngle":34,"maxAngle":42,"durations":[6.1,3]},"specials":[],"inventory":{"w":2,"h":1,"color":"#0000ff","image":"cutouts/african-jewel-cichlid.png"}},
+  {"id":"LAKE_SUCKER","name":"湖吸口鱼","catchColor":"#40e0d0","strength":{"amount":5,"interval":0.18},"restDuration":2.2,"speed":4,"stamina":42,"struggle":{"minAngle":30,"maxAngle":36,"durations":[4.2,1.3]},"specials":[],"inventory":{"w":3,"h":1,"color":"#40e0d0","image":"cutouts/lake-sucker.png"}}
 ]);
 
 export const FISH_CATALOG=createFishCatalog(FISH_DATA);

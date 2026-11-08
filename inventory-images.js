@@ -3,30 +3,43 @@ import {assetUrl} from './release-assets.js';
 // Share downloads across cards, rerenders and background warmup.
 // Reserve three of the four slots for visible cards; warmup uses at most one.
 const downloads=new Map(),queue=[];
-let active=0,backgroundActive=0;
+let active=0,backgroundActive=0,retryId=0;
+const BACKGROUND_TIMEOUT=8000,VISIBLE_TIMEOUT=45000;
 function pump(){
   while(active<4){
     let index=queue.findIndex(job=>job.record.priority===0);
     if(index<0){if(backgroundActive>=1||!queue.length)return;index=0;}
     const job=queue.splice(index,1)[0],background=job.record.priority>0;
     active++;if(background)backgroundActive++;
-    readImage(job.record.src,job.record.priority,job.attempt).then(job.resolve,job.reject).finally(()=>{
+    readImage(job.record,job.attempt).then(job.resolve,job.reject).finally(()=>{
       active--;if(background)backgroundActive--;pump();
     });
   }
 }
-function readImage(src,priority,attempt){return new Promise((resolve,reject)=>{
-  const image=new Image();let timer;
-  image.decoding='async';image.fetchPriority=priority?'low':'high';
-  const finish=error=>{clearTimeout(timer);image.onload=null;image.onerror=null;if(error){image.src='';reject(error);}else resolve(image);};
+function readImage(record,attempt){return new Promise((resolve,reject)=>{
+  const image=new Image();let timer,settled=false;
+  image.decoding='async';image.fetchPriority=record.priority?'low':'high';
+  const finish=error=>{
+    if(settled)return;settled=true;clearTimeout(timer);
+    if(record.promote===promote)delete record.promote;
+    image.onload=null;image.onerror=null;if(error){image.src='';reject(error);}else resolve(image);
+  };
+  function armTimeout(ms){clearTimeout(timer);timer=setTimeout(()=>{const error=new Error('Image request timed out');error.code='IMAGE_TIMEOUT';finish(error);},ms);}
+  function promote(){if(settled)return;image.fetchPriority='high';armTimeout(VISIBLE_TIMEOUT);}
+  record.promote=promote;
   image.onload=()=>finish();image.onerror=()=>finish(new Error('Image request failed'));
-  timer=setTimeout(()=>{const error=new Error('Image request timed out');error.code='IMAGE_TIMEOUT';finish(error);},8000);
-  image.src=src+(attempt?(src.includes('?')?'&':'?')+'retry='+attempt:'');
+  armTimeout(record.priority?BACKGROUND_TIMEOUT:VISIBLE_TIMEOUT);
+  const retry=record.retryToken?record.retryToken+'-'+attempt:attempt;
+  image.src=record.src+(retry?(record.src.includes('?')?'&':'?')+'retry='+encodeURIComponent(retry):'');
 });}
-function sharedImage(src,priority=0){
+function sharedImage(src,priority=0,retryToken=null){
   const existing=downloads.get(src);
-  if(existing){existing.priority=Math.min(existing.priority,priority);pump();return existing.promise;}
-  const record={src,priority,ready:false};
+  if(existing){
+    const promoted=existing.priority>priority;
+    existing.priority=Math.min(existing.priority,priority);if(promoted)existing.promote?.();
+    pump();return existing.promise;
+  }
+  const record={src,priority,ready:false,retryToken};
   record.promise=(async()=>{
     for(let attempt=0;attempt<2;attempt++){
       try{
@@ -52,17 +65,17 @@ export function preloadInventoryImages(images){
 }
 export function loadInventoryImage(img,src,onState){
   const sources=Array.isArray(src)?src:[src];
-  let cancelled=false,started=false,observer,state;
+  let cancelled=false,started=false,observer,state,retryToken=null;
   const update=next=>{if(!cancelled&&state!==next){state=next;onState(next);}};
   update('loading');
   async function start(){
-    if(started||cancelled)return;started=true;observer?.disconnect();
+    if(started||cancelled||!img.isConnected)return;started=true;observer?.disconnect();update('loading');
     for(const source of sources){
       if(cancelled||!img.isConnected)return;
       try{
-        const ready=await sharedImage(source);
+        const ready=await sharedImage(source,0,retryToken);
         if(cancelled||!img.isConnected)return;
-        img.onload=()=>update('ready');img.onerror=()=>update('error');img.src=ready.src;
+        img.onload=()=>update('ready');img.onerror=()=>{if(downloads.get(source)?.ready)downloads.delete(source);update('error');};img.src=ready.src;
         if(img.complete&&img.naturalWidth>0)update('ready');return;
       }catch(error){
         // Slow connections should not fall back to multi-megabyte originals.
@@ -74,5 +87,12 @@ export function loadInventoryImage(img,src,onState){
   }
   if(sources.some(source=>downloads.get(source)?.ready)||typeof IntersectionObserver==='undefined')queueMicrotask(start);
   else{observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))start();},{rootMargin:'64px'});observer.observe(img.parentElement??img);}
-  return ()=>{cancelled=true;observer?.disconnect();img.onload=null;img.onerror=null;};
+  const cleanup=()=>{cancelled=true;observer?.disconnect();img.onload=null;img.onerror=null;};
+  // Retry in place so selection, inventory placement and guide expansion stay intact.
+  cleanup.retry=()=>{
+    if(cancelled||!img.isConnected||state!=='error')return;
+    img.onload=null;img.onerror=null;started=false;
+    retryToken='manual-'+Date.now().toString(36)+'-'+ ++retryId;start();
+  };
+  return cleanup;
 }

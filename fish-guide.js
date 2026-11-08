@@ -19,13 +19,20 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
     empty=doc.querySelector('#fish-guide-empty'),toggle=doc.querySelector('#fish-guide-toggle');
   const catalog=buildFishGuide(entries);
   let cards=[],imageCleanups=[];
-  function watchImage(...args){imageCleanups.push(loadInventoryImage(...args));}
+  function watchImage(image,source,onState,retryButton){
+    const cleanup=loadInventoryImage(image,source,state=>{onState(state);if(retryButton)retryButton.hidden=state!=='error';});
+    const retry=event=>{event.preventDefault();event.stopPropagation();cleanup.retry();};
+    retryButton?.addEventListener('click',retry);
+    imageCleanups.push(()=>{cleanup();retryButton?.removeEventListener('click',retry);});
+  }
   function el(tag,className,text){const e=doc.createElement(tag);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e;}
   function picture(fish,className){
-    const wrap=el('div',className),image=el('img'),status=el('span','guide-image-status');
-    image.alt=fish.name;image.draggable=false;image.decoding='async';wrap.append(image,status);
+    const wrap=el('div',className),image=el('img'),message=el('span','guide-image-status'),status=el('span','guide-image-message'),retry=el('button','guide-image-retry','点击重试');
+    retry.type='button';retry.hidden=true;retry.setAttribute('aria-label',fish.name+(className==='guide-large-image'?'原图':'缩略图')+'加载失败，点击重试');
+    message.append(status,retry);
+    image.alt=fish.name;image.draggable=false;image.decoding='async';wrap.append(image,message);
     if(!fish.image){wrap.dataset.imageState='missing';image.hidden=true;status.textContent='暂无图片';}
-    return {wrap,image,status};
+    return {wrap,image,status,retry};
   }
   function swatch(label,color){
     const row=el('span','guide-color'),chip=el('i','guide-swatch');
@@ -59,8 +66,8 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
         watchImage(preview,inventoryImageSources(fish.image)[0],state=>{if(state==='ready')preview.hidden=false;});
         watchImage(large.image,inventoryImageSources(fish.image)[1],state=>{
           large.wrap.dataset.imageState=state;large.wrap.setAttribute('aria-busy',String(state==='loading'));
-          large.status.textContent=state==='loading'?'原图加载中…':state==='error'?'原图加载失败，保留可用缩略图；重新打开图鉴可重试':'';
-        });
+          large.status.textContent=state==='loading'?'原图加载中…':state==='error'?'原图加载失败，保留可用缩略图':'';
+        },large.retry);
       }
     }
     // Keyboard activation also emits click. Select synchronously so rapid clicks
@@ -74,7 +81,7 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
     return {details,loadThumb(){if(fish.image)watchImage(thumb.image,inventoryImageSources(fish.image)[0],state=>{
       thumb.wrap.dataset.imageState=state;thumb.wrap.setAttribute('aria-busy',String(state==='loading'));
       thumb.status.textContent=state==='loading'?'图片加载中…':state==='error'?'缩略图加载失败':'';
-    });}};
+    },thumb.retry);}};
   }
   function filter(){
     const term=search.value.trim(),unlocked=catalog.fish.filter(f=>isDiscovered(f.id)).length;let shown=0;

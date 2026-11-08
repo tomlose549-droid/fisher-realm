@@ -59,7 +59,8 @@ export const FISH_DATA=freeze([
   {"id":"YELLOW_BULLHEAD","name":"黄鲶","catchColor":"#008000","strength":{"amount":6,"interval":0.17},"restDuration":0.9,"speed":3.1,"stamina":41,"struggle":{"minAngle":33,"maxAngle":36,"durations":[4,1.5]},"specials":[],"inventory":{"w":3,"h":1,"color":"#008000","image":"cutouts/yellow-bullhead.webp"}},
   {"id":"BOWFIN","name":"弓鳍鱼","catchColor":"#0000ff","strength":{"amount":3,"interval":0.11},"restDuration":4.2,"speed":5.3,"stamina":45,"struggle":{"minAngle":31,"maxAngle":40,"durations":[1.9,0.9,1.8,0.5,1]},"specials":[],"inventory":{"w":2,"h":1,"color":"#0000ff","image":"cutouts/bowfin.webp"}},
   {"id":"AMERICAN_EEL","name":"美洲鳗鲡","catchColor":"#40e0d0","strength":{"amount":3,"interval":0.38},"restDuration":4,"speed":8,"stamina":56,"struggle":{"minAngle":30,"maxAngle":60,"durations":[4,4,4]},"specials":[],"inventory":{"w":5,"h":1,"color":"#40e0d0","image":"cutouts/american-eel.png"}},
-  {"id":"REDFIN_PICKEREL","name":"红鳍狗鱼","catchColor":"#00008b","strength":{"amount":2,"interval":0.12},"restDuration":4.8,"speed":7,"stamina":76,"struggle":{"minAngle":52,"maxAngle":65,"durations":[7.6]},"specials":[],"inventory":{"w":2,"h":1,"color":"#00008b","image":"cutouts/redfin-pickerel.png"}}
+  {"id":"REDFIN_PICKEREL","name":"红鳍狗鱼","catchColor":"#00008b","strength":{"amount":2,"interval":0.12},"restDuration":4.8,"speed":7,"stamina":76,"struggle":{"minAngle":52,"maxAngle":65,"durations":[7.6]},"specials":[],"inventory":{"w":2,"h":1,"color":"#00008b","image":"cutouts/redfin-pickerel.png"}},
+  {"id":"GRASS_CARP","name":"草鱼","catchColor":"#90ee90","strength":{"amount":3,"interval":0.15},"restDuration":4.1,"speed":5.7,"stamina":47,"struggle":{"minAngle":38,"maxAngle":42,"durations":[3.1,4.5]},"specials":[],"inventory":{"w":3,"h":1,"color":"#90ee90","image":"cutouts/grass-carp.png"}}
 ]);
 
 export const FISH_CATALOG=createFishCatalog(FISH_DATA);

@@ -22,7 +22,7 @@
 .inventory-fish-no-image span{position:static;color:var(--fish-label-color,#294137);text-shadow:none;background:none;font-size:12px;white-space:normal;text-align:center;line-height:1.4}
 
 /* Expose image loading instead of silently leaving a name-only card. */
-.inventory-fish[data-image-state=loading]::after,.inventory-fish[data-image-state=error]::after{position:absolute;inset:3px 3px 18px;display:grid;place-items:center;font-size:10px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;z-index:1}.inventory-fish[data-image-state=loading]::after{content:'图片加载中…'}.inventory-fish[data-image-state=error]::after{content:'图片未加载，重开背包可重试'}.inventory-fish[data-image-state=loading] img,.inventory-fish[data-image-state=error] img{visibility:hidden}
+.inventory-fish[data-image-state=loading]::after,.inventory-fish[data-image-state=error]::after{position:absolute;inset:3px 3px 18px;display:grid;place-items:center;font-size:10px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;z-index:1}.inventory-fish[data-image-state=loading]::after{content:'图片加载中…'}.inventory-fish[data-image-state=error]::after{content:'图片未加载，点击重试'}.inventory-fish[data-image-state=loading] img,.inventory-fish[data-image-state=error] img{visibility:hidden}
 
 /* Fish details are generated from the shared catalog. */
 
@@ -56,7 +56,7 @@
 .guide-thumbnail{height:66px;position:relative;display:grid;place-items:center;border-radius:7px;background:#e5eadb0b;overflow:hidden}
 .guide-thumbnail img{width:100%;height:100%;object-fit:contain}
 .guide-image-status{font-size:10px;color:#e3e8d9;line-height:1.6;text-align:center;padding:4px;overflow-wrap:anywhere}
-.guide-thumbnail .guide-image-status{position:absolute;inset:0;display:grid;place-items:center;background:#183d35c4}
+.guide-thumbnail .guide-image-status{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;background:#183d35c4}
 .guide-thumbnail[data-image-state=ready] .guide-image-status{display:none}
 .guide-thumbnail:not([data-image-state=ready]) img{visibility:hidden}
 .guide-detail{padding:8px 4px 20px;display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,1.4fr);align-items:start;gap:24px}
@@ -77,3 +77,5 @@
 @media(max-width:600px){#fish-guide-dialog{padding:20px 16px 13px}.guide-header{gap:8px}.guide-header h2{font-size:23px}.guide-header .inventory-eyebrow{font-size:7px;letter-spacing:1px}#fish-guide-close{font-size:10px;padding:8px 10px}.guide-summary{grid-template-columns:78px minmax(0,1fr);gap:11px;padding:13px 2px}.guide-info h3{font-size:14px}.guide-stats{font-size:10px;gap:3px 10px}.guide-colors{grid-column:1/-1;flex-direction:row;justify-content:flex-end;gap:20px}.guide-color{font-size:10px;gap:8px}.guide-swatch{width:18px;height:18px}.guide-detail{grid-template-columns:1fr;gap:16px}.guide-large-image{min-height:140px;max-height:260px;aspect-ratio:4/3}.guide-meta{font-size:10px}.guide-scroll{padding-right:3px}}
 @media(max-height:500px){#fish-guide-dialog{padding-top:14px}.guide-header h2{margin-bottom:10px;font-size:21px}.guide-toolbar label{display:none}#fish-guide-search{padding:8px 10px}.guide-meta{margin-top:6px}}
 #help-dialog{width:min(560px,calc(100% - 28px));max-height:calc(100dvh - 28px);overflow:auto}.help-fish-heading{font-size:14px;font-weight:500;margin-top:22px}.help-fish-entry{border-top:1px solid #26473e26;padding:10px 0}.help-fish-entry summary{cursor:pointer;font-size:14px;color:#26473e}.help-fish-entry p{margin:8px 0;overflow-wrap:anywhere}@media(max-width:560px){#help-dialog{padding:28px 20px}.help-fish-entry p{font-size:11px}}
+
+.guide-image-retry{font:inherit;color:#f2efdf;background:#355c50;border:1px solid #d5dec47a;border-radius:5px;padding:3px 9px;cursor:pointer;margin:3px 5px}.guide-image-retry:hover{background:#477261}

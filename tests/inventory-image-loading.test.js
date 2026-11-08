@@ -33,19 +33,59 @@ test('visible fish bypass warmup queue, share downloads and reuse completed imag
  const count=requests.length;loader.loadInventoryImage(target(),'visible-a',()=>{});await flush();assert.equal(requests.length,count);
 });
 
-test('stalled warmup frees capacity after 8 seconds; foreground retry queues behind waiting fish and avoids original fallback',async t=>{
+test('stalled warmup frees its slot after 8 seconds while slow visible images keep loading',async t=>{
  imageGlobal(t);t.mock.timers.enable({apis:['setTimeout']});
  const {requests,loader,target}=await setup(t);
  loader.preloadInventoryImages(['stalled-background.png','next-background.png']);
  for(const src of ['stalled-a','stalled-b','stalled-c'])loader.loadInventoryImage(target(),[src,'large-original-'+src],()=>{});
- let finalState;loader.loadInventoryImage(target(),'next-visible',state=>finalState=state);
  await flush();assert.equal(requests.length,4);
- t.mock.timers.tick(8000);await flush();assert.ok(requests.some(r=>r.src==='next-visible'));
- assert.ok(requests.some(r=>r.src.includes('next-background.webp')));
- requests.find(r=>r.src==='next-visible').succeed();requests.find(r=>r.src.includes('next-background.webp')).succeed();await flush();
- t.mock.timers.tick(500);await flush();assert.equal(requests.filter(r=>r.src.includes('retry=1')).length,3);
  t.mock.timers.tick(8000);await flush();
- assert.equal(finalState,'ready');assert.ok(!requests.some(r=>r.src.includes('large-original')));
+ assert.ok(requests.some(r=>r.src.includes('next-background.webp')));
+ assert.equal(requests.filter(r=>r.src.startsWith('stalled-')).length,3);
+ requests.find(r=>r.src.includes('next-background.webp')).succeed();
+ t.mock.timers.tick(22000);await flush();
+ for(const request of requests.filter(r=>r.src.startsWith('stalled-')))request.succeed();
+ await flush();assert.ok(!requests.some(r=>r.src.includes('large-original')));
+});
+
+test('visible timeout stays bounded at 45 seconds, retries once and avoids a large-original fallback',async t=>{
+ imageGlobal(t);t.mock.timers.enable({apis:['setTimeout']});
+ const {requests,loader,target}=await setup(t);let state;
+ loader.loadInventoryImage(target(),['slow-thumb','large-original'],value=>state=value);await flush();
+ t.mock.timers.tick(44999);await flush();assert.equal(state,'loading');assert.equal(requests.length,1);
+ t.mock.timers.tick(1);await flush();assert.equal(requests[0].src,'');
+ t.mock.timers.tick(500);await flush();assert.equal(requests[1].src,'slow-thumb?retry=1');
+ t.mock.timers.tick(45000);await flush();assert.equal(state,'error');assert.equal(requests.length,2);
+});
+
+test('a background request becoming visible gets high priority and a fresh foreground deadline',async t=>{
+ imageGlobal(t);t.mock.timers.enable({apis:['setTimeout']});
+ const {requests,loader,target}=await setup(t);
+ loader.preloadInventoryImages(['promoted.png']);t.mock.timers.tick(7900);await flush();
+ let state;const src=loader.inventoryImageSources('promoted.png')[0];
+ loader.loadInventoryImage(target(),src,value=>state=value);await flush();
+ assert.equal(requests.length,1);assert.equal(requests[0].fetchPriority,'high');
+ t.mock.timers.tick(44200);await flush();assert.equal(state,'loading');assert.notEqual(requests[0].src,'');
+ requests[0].succeed();await flush();assert.equal(state,'ready');assert.equal(requests.length,1);
+});
+
+test('failed images can retry in place with a fresh URL and share the successful result',async t=>{
+ imageGlobal(t);const {requests,loader,target}=await setup(t);const states=[];
+ const cleanup=loader.loadInventoryImage(target(),'retry-thumb?v=1',value=>states.push(value));await flush();
+ requests[0].fail();await flush();assert.equal(states.at(-1),'error');
+ cleanup.retry();cleanup.retry();await flush();assert.equal(requests.length,2);
+ assert.match(requests[1].src,/retry-thumb\?v=1&retry=manual-/);
+ requests[1].succeed();await flush();assert.deepEqual(states,['loading','error','loading','ready']);
+ loader.loadInventoryImage(target(),'retry-thumb?v=1',()=>{});await flush();assert.equal(requests.length,2);
+ cleanup();cleanup.retry();await flush();assert.equal(requests.length,2);
+});
+
+test('a display-image error invalidates the completed request so manual retry can recover',async t=>{
+ imageGlobal(t);const {requests,loader,target}=await setup(t);const img=target();let state;
+ const cleanup=loader.loadInventoryImage(img,'display-failure',value=>state=value);await flush();
+ requests[0].succeed();await flush();assert.equal(state,'ready');
+ img.onerror();assert.equal(state,'error');cleanup.retry();await flush();assert.equal(requests.length,2);
+ requests[1].succeed();await flush();assert.equal(state,'ready');
 });
 
 test('offscreen cards wait for visibility and detached observers are cancelled',async t=>{

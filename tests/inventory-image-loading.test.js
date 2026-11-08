@@ -69,6 +69,19 @@ test('a background request becoming visible gets high priority and a fresh foreg
  requests[0].succeed();await flush();assert.equal(state,'ready');assert.equal(requests.length,1);
 });
 
+test('expanded originals can load for 90 seconds and still have a bounded 120-second deadline',async t=>{
+ imageGlobal(t);t.mock.timers.enable({apis:['setTimeout']});
+ const {requests,loader,target}=await setup(t);let state;
+ loader.loadInventoryImage(target(),'https://game.test/fish-images/cutouts/large.png',value=>state=value);await flush();
+ t.mock.timers.tick(90000);await flush();assert.equal(state,'loading');assert.equal(requests.length,1);assert.notEqual(requests[0].src,'');
+ requests[0].succeed();await flush();assert.equal(state,'ready');
+ loader.loadInventoryImage(target(),'https://game.test/fish-images/cutouts/stalled.png',value=>state=value);await flush();
+ t.mock.timers.tick(119999);await flush();assert.equal(state,'loading');
+ t.mock.timers.tick(1);await flush();assert.equal(requests[1].src,'');
+ t.mock.timers.tick(500);await flush();assert.ok(requests[2].src.endsWith('?retry=1'));
+ t.mock.timers.tick(120000);await flush();assert.equal(state,'error');
+});
+
 test('failed images can retry in place with a fresh URL and share the successful result',async t=>{
  imageGlobal(t);const {requests,loader,target}=await setup(t);const states=[];
  const cleanup=loader.loadInventoryImage(target(),'retry-thumb?v=1',value=>states.push(value));await flush();

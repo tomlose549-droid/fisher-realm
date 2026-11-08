@@ -4,7 +4,7 @@ import {assetUrl} from './release-assets.js';
 // Reserve three of the four slots for visible cards; warmup uses at most one.
 const downloads=new Map(),queue=[];
 let active=0,backgroundActive=0,retryId=0;
-const BACKGROUND_TIMEOUT=8000,VISIBLE_TIMEOUT=45000;
+const BACKGROUND_TIMEOUT=8000,VISIBLE_TIMEOUT=45000,LARGE_IMAGE_TIMEOUT=120000;
 function pump(){
   while(active<4){
     let index=queue.findIndex(job=>job.record.priority===0);
@@ -18,6 +18,8 @@ function pump(){
 }
 function readImage(record,attempt){return new Promise((resolve,reject)=>{
   const image=new Image();let timer,settled=false;
+  // Expanded guide originals can be much larger; their thumbnail stays visible.
+  const visibleTimeout=record.src.includes('/fish-images/')&&!record.src.includes('/fish-images/thumbnails/')?LARGE_IMAGE_TIMEOUT:VISIBLE_TIMEOUT;
   image.decoding='async';image.fetchPriority=record.priority?'low':'high';
   const finish=error=>{
     if(settled)return;settled=true;clearTimeout(timer);
@@ -25,10 +27,10 @@ function readImage(record,attempt){return new Promise((resolve,reject)=>{
     image.onload=null;image.onerror=null;if(error){image.src='';reject(error);}else resolve(image);
   };
   function armTimeout(ms){clearTimeout(timer);timer=setTimeout(()=>{const error=new Error('Image request timed out');error.code='IMAGE_TIMEOUT';finish(error);},ms);}
-  function promote(){if(settled)return;image.fetchPriority='high';armTimeout(VISIBLE_TIMEOUT);}
+  function promote(){if(settled)return;image.fetchPriority='high';armTimeout(visibleTimeout);}
   record.promote=promote;
   image.onload=()=>finish();image.onerror=()=>finish(new Error('Image request failed'));
-  armTimeout(record.priority?BACKGROUND_TIMEOUT:VISIBLE_TIMEOUT);
+  armTimeout(record.priority?BACKGROUND_TIMEOUT:visibleTimeout);
   const retry=record.retryToken?record.retryToken+'-'+attempt:attempt;
   image.src=record.src+(retry?(record.src.includes('?')?'&':'?')+'retry='+encodeURIComponent(retry):'');
 });}

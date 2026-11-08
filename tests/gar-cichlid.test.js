@@ -7,7 +7,7 @@ function fight(fish,random=()=>0){const f=new FishingSession(random,{fish});f.ca
 test('gar and cichlid join the random and owner catalogs with exact profiles',()=>{
 
   for(const [fish,index,expected] of [
-    [LONGNOSE_GAR,13,{name:'长吻雀鳝',catchColor:'#ee82ee',strength:{amount:4,interval:.16},restDuration:4.5,speed:6.5,stamina:90,struggle:{minAngle:46,maxAngle:59,durations:[4.5,2,1.5,1,.8]},specials:[]}],
+    [LONGNOSE_GAR,13,{name:'长吻雀鳝',catchColor:'#4b0082',strength:{amount:4,interval:.16},restDuration:4.5,speed:6.5,stamina:90,struggle:{minAngle:46,maxAngle:59,durations:[4.5,2,1.5,1,.8]},specials:[]}],
     [MAYAN_CICHLID,14,{name:'玛雅慈鲷',catchColor:'#008000',strength:{amount:3,interval:.15},restDuration:4.1,speed:5,stamina:54,struggle:{minAngle:34,maxAngle:42,durations:[6.2,3.1]},specials:[]}]
   ]){assert.deepEqual(fish,expected);assert.equal(pickFish(index/FISH_SPECIES.length),fish);assert.equal(pickFish((index+1)/FISH_SPECIES.length-1e-9),fish);const f=new FishingSession(()=>0);assert.equal(f.setForcedFish(fish.name),true);f.cast(0,0);assert.equal(f.profile,fish);assert.equal(f.fishStamina,expected.stamina);assert.deepEqual(f.ownerState,{fishName:fish.name,remaining:10});}
   assert.equal(pickFish(15/FISH_SPECIES.length-1e-9),MAYAN_CICHLID);
@@ -34,6 +34,6 @@ test('fifth-leg exhaustion cancels future movement and catches keep each new nam
   for(const fish of [LONGNOSE_GAR,MAYAN_CICHLID]){const c=fight({...fish,stamina:0});c.setReeling(true,6);c.advance(11);assert.equal(c.lastCatchName,fish.name);assert.equal(c.lastCatchColor,fish.catchColor);}
 });
 test('one-by-four and two-by-two packing, overflow, whole-fish replacement and save roundtrip',()=>{
-  assert.deepEqual(FISH_ITEMS['长吻雀鳝'],{w:4,h:1,color:'#ee82ee',image:'cutouts/longnose-gar.png'});assert.deepEqual(FISH_ITEMS['玛雅慈鲷'],{w:2,h:2,color:'#008000',image:'cutouts/mayan-cichlid.png'});
+  assert.deepEqual(FISH_ITEMS['长吻雀鳝'],{w:4,h:1,color:'#4b0082',image:'cutouts/longnose-gar.png'});assert.deepEqual(FISH_ITEMS['玛雅慈鲷'],{w:2,h:2,color:'#008000',image:'cutouts/mayan-cichlid.png'});
   const b=new FishInventory(),gars=Array.from({length:4},()=>b.add('长吻雀鳝')),c=b.add('玛雅慈鲷');assert.deepEqual(gars.slice(0,3).map(i=>[i.x,i.y]),[[0,0],[0,1],[0,2]]);assert.equal(gars[3].x,null);assert.equal(c.x,null);assert.equal(b.moveToBag(c.id,3,1),true);assert.equal(gars[1].x,null);assert.equal(gars[2].x,null);assert.deepEqual([gars[0].x,gars[0].y],[0,0]);assert.equal(b.moveToBag(gars[3].id,2,0),false);assert.equal(b.moveToBag(c.id,4,1),false);assert.deepEqual(new FishInventory(b.serialize()).serialize(),b.serialize());assert.equal(b.clearAll(),5);assert.equal(b.items.length,0);
 });

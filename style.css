@@ -122,3 +122,25 @@ dialog:has(>.coin-balance){position:fixed;padding-top:53px}
 #rich-message,#warehouse-unlock-message{font-size:14px;line-height:1.6}
 @media(max-width:800px){.coin-hud{left:25px;top:85px}.location{top:121px}#warehouse-dialog{padding:53px 16px 16px}.warehouse-layout{grid-template-columns:1fr;gap:20px}#warehouse-bag{max-width:350px}.warehouse-grid-scroll{overflow:auto}#warehouse-grid{min-width:400px}#warehouse-tabs{min-width:0;gap:3px}.warehouse-tab{font-size:11px}.warehouse-footer{align-items:center}#warehouse-count{font-size:11px}}
 @media(max-width:480px){.coin-hud{left:18px;top:76px}.warehouse-footer{gap:10px}#warehouse-sale{min-width:85px;padding:10px}#warehouse-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}}
+
+/* Three independent local save slots. */
+.save-settings-actions{margin-top:10px}
+.save-current-label{font-size:11px;line-height:1.5;color:#b9cdb6;margin:4px 0 8px}
+#save-select-dialog{width:min(620px,calc(100vw - 32px));box-sizing:border-box}
+#save-select-title,#save-confirm-title{margin-top:0}
+#save-list{display:grid;gap:12px}
+.save-slot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid #26473e40;border-radius:12px;background:#ffffff40}
+.save-slot h3{margin:0 0 6px;font-size:17px}
+.save-slot p{margin:0;font-size:12px;line-height:1.7}
+.save-slot-actions{display:flex;gap:8px;flex-shrink:0}
+.save-slot-actions button{border:1px solid #26473e55;color:#26473e;background:#dbe1cd55;border-radius:18px;padding:7px 13px;cursor:pointer;font:inherit;font-size:12px}
+.save-slot-actions button[data-save-action=delete]{border-color:#a34e4344;color:#914f43;background:#f1d3ca44}
+.save-slot-actions button:disabled{opacity:.4;cursor:not-allowed}
+.save-note{font-size:12px;line-height:1.7;opacity:.75}
+#save-confirm-description{font-size:14px;line-height:1.8}
+#save-confirm-message,#save-select-status{font-size:13px;line-height:1.7;color:#914f43}
+.save-confirm-actions{flex-wrap:wrap}
+.save-confirm-actions [hidden]{display:none}
+#save-confirm-apply.danger{background:#984d43;color:#fff4eb}
+#save-confirm-apply:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:480px){.save-slot{flex-wrap:wrap;padding:12px;gap:12px}.save-slot-actions{margin-left:auto}.save-slot p{font-size:11px}.save-confirm-actions{gap:8px}.save-confirm-actions button{font-size:12px}}

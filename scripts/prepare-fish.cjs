@@ -14,15 +14,18 @@ function fields(object, names, label) {
 async function prepare(input, entries) {
   const {FISH_DATA,createFishCatalog}=await import(pathToFileURL(path.join(root,'fish-data.js')).href);
   entries??=FISH_DATA;
-  fields(input,['标识','名称','颜色','力量','速度米每秒','耐力','休息秒','挣扎','背包','特殊属性'],'鱼种');
+  fields(input,['标识','名称','品质','颜色','力量','速度米每秒','耐力','休息秒','挣扎','背包','特殊属性'],'鱼种');
   fields(input.力量,['间隔秒','降低韧性'],'力量');
   fields(input.挣扎,['最小角度','最大角度','每段秒','换边停顿秒'],'挣扎');
   fields(input.背包,['高','宽','图片'],'背包');
+  const quality=input.品质;
+  const {FISH_QUALITIES}=await import(pathToFileURL(path.join(root,'fish-data.js')).href);
+  if(!FISH_QUALITIES.includes(quality))throw Error('品质：请明确填写已有品质；不能从十六进制颜色推断品质');
   const color=typeof input.颜色==='string' ? COLORS[input.颜色.trim().toLowerCase()] ?? input.颜色 : null;
   if(typeof color!=='string' || !/^#[0-9a-f]{6}$/i.test(color)) throw Error('颜色：请填已有英文颜色名或六位十六进制颜色');
   const pause=input.挣扎.换边停顿秒;
   if(!Number.isFinite(pause) || pause<0) throw Error('换边停顿秒：必须是大于或等于0的数字');
-  const fish={id:input.标识,name:input.名称,catchColor:color.toLowerCase(),
+  const fish={id:input.标识,name:input.名称,quality,catchColor:color.toLowerCase(),
     strength:{amount:input.力量.降低韧性,interval:input.力量.间隔秒},
     restDuration:input.休息秒,speed:input.速度米每秒,stamina:input.耐力,
     struggle:{minAngle:input.挣扎.最小角度,maxAngle:input.挣扎.最大角度,durations:input.挣扎.每段秒},
@@ -48,6 +51,7 @@ async function main() {
   // An exclusive create prevents accidentally overwriting the catalog or an existing draft.
   if(output) fs.writeFileSync(output,text,{flag:'wx'});
   else process.stdout.write(text);
+  console.error('新增鱼还需确认当前地图概率及从哪些现有鱼调整，保持100%；未确认不得自动平分或发布。');
   console.error('参数检查通过：已生成待核对配置，未修改鱼种名单。');
   if(!fish.inventory.image) console.error('缺少图片：允许先接入属性；补图时须同时准备缩略图。');
   else if(!fs.existsSync(path.join(root,'fish-images',fish.inventory.image))) console.error('图片文件尚不存在：素材未完成。');

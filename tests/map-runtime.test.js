@@ -1,3 +1,5 @@
+import {createEncounterTable} from '../fish-encounters.js';
+import {FISH_DATA} from '../fish-data.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
@@ -15,7 +17,7 @@ test('only the current map is registered; all fish remain available and configur
   const map=getMapContext();assert.deepEqual(map.spawn.position,[0,1.78,32]);assert.equal(map.spawn.pitch,-.065);
   assert.equal(map.waterLevel,-.035);
   for(const [x,z]of [[0,-14],[0,32],[60,0]])assert.equal(map.isWater(x,z),isPondWater(x,z));
-  assert.equal(map.fishPool,FISH_CATALOG.profiles);assert.equal(getMapFishPool(),FISH_CATALOG.profiles);
+  assert.deepEqual(map.fishPool,FISH_CATALOG.profiles);assert.equal(getMapFishPool(),map.encounters.fishPool);
   assert.throws(()=>getMapDefinition('not-a-map'),/Unknown map/);
   assert.throws(()=>map.spawn.position[0]=100,TypeError);
 });
@@ -61,10 +63,10 @@ test('failed map construction preserves a non-default shared camera and renderer
 });
 
 test('random encounters accept an injected pool without changing global inventory/catalog identity',()=>{
-  const original=FISH_CATALOG.profiles,pool=[original.at(-1)],session=new FishingSession(()=>.5,{randomSpecies:true,fishPool:pool});
+  const original=FISH_CATALOG.profiles,pool=[original.at(-1)],encounters=createEncounterTable([{id:FISH_DATA.at(-1).id,percent:100}],{requireAll:false}),session=new FishingSession(()=>.5,{randomSpecies:true,fishPool:pool,encounters});
   pool[0]=original[0];session.cast(0,0);assert.equal(session.profile,original.at(-1));
-  assert.equal(pickFish(0,[original[1]]),original[1]);assert.equal(pickFish(1,[original[1]]),original[1]);
-  assert.equal(getMapFishPool(),original);assert.throws(()=>pickFish(0,[]),/nonempty/);
+  assert.equal(pickFish(0,[original[1]],createEncounterTable([{id:'BLUEGILL',percent:100}],{requireAll:false})),original[1]);assert.equal(pickFish(1,[original[1]],createEncounterTable([{id:'BLUEGILL',percent:100}],{requireAll:false})),original[1]);
+  assert.deepEqual(getMapFishPool(),original);assert.throws(()=>pickFish(0,[]),/nonempty/);
   assert.throws(()=>new FishingSession(()=>0,{fishPool:[]}),/nonempty/);
 });
 

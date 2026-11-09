@@ -1,3 +1,4 @@
+import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LONGNOSE_GAR,MAYAN_CICHLID,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
@@ -9,8 +10,8 @@ test('gar and cichlid join the random and owner catalogs with exact profiles',()
   for(const [fish,index,expected] of [
     [LONGNOSE_GAR,13,{name:'长吻雀鳝',catchColor:'#4b0082',strength:{amount:4,interval:.16},restDuration:4.5,speed:6.5,stamina:90,struggle:{minAngle:46,maxAngle:59,durations:[4.5,2,1.5,1,.8]},specials:[]}],
     [MAYAN_CICHLID,14,{name:'玛雅慈鲷',catchColor:'#008000',strength:{amount:3,interval:.15},restDuration:4.1,speed:5,stamina:54,struggle:{minAngle:34,maxAngle:42,durations:[6.2,3.1]},specials:[]}]
-  ]){assert.deepEqual(fish,expected);assert.equal(pickFish(index/FISH_SPECIES.length),fish);assert.equal(pickFish((index+1)/FISH_SPECIES.length-1e-9),fish);const f=new FishingSession(()=>0);assert.equal(f.setForcedFish(fish.name),true);f.cast(0,0);assert.equal(f.profile,fish);assert.equal(f.fishStamina,expected.stamina);assert.deepEqual(f.ownerState,{fishName:fish.name,remaining:10});}
-  assert.equal(pickFish(15/FISH_SPECIES.length-1e-9),MAYAN_CICHLID);
+  ]){assert.deepEqual(fish,expected);assert.equal(pickFish(unitForFish(FISH_SPECIES[index],0)),fish);assert.equal(pickFish(unitForFish(FISH_SPECIES[index],1-1e-7)),fish);const f=new FishingSession(()=>0);assert.equal(f.setForcedFish(fish.name),true);f.cast(0,0);assert.equal(f.profile,fish);assert.equal(f.fishStamina,expected.stamina);assert.deepEqual(f.ownerState,{fishName:fish.name,remaining:10});}
+  assert.equal(pickFish(unitForFish(FISH_SPECIES[14],1-1e-7)),MAYAN_CICHLID);
 });
 test('both new fish move at requested speeds and lateral endpoint angles on either side',()=>{
   for(const fish of [LONGNOSE_GAR,MAYAN_CICHLID])for(const side of [0,1])for(const sample of [0,1]){const rolls=[0,side,sample],f=fight(fish,()=>rolls.shift()??0),a=sample?fish.struggle.maxAngle:fish.struggle.minAngle;f.advance(7);close(f.fishX,(side?1:-1)*fish.speed*Math.cos(rad(a)));close(f.fishZ,-23-fish.speed*Math.sin(rad(a)));}

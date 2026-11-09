@@ -14,8 +14,10 @@ async function checkFish(selector) {
   assert.ok(data,`Unknown fish: ${selector}`);
   const expected=createFishCatalog([data]).byId[data.id],profile=FISH_CATALOG.byId[data.id];
   assert.deepEqual(profile,expected);assert.deepEqual(FISH_ITEMS[data.name],data.inventory);
-  const index=FISH_DATA.findIndex(f=>f.id===data.id);
-  assert.equal(pickFish((index+.5)/FISH_SPECIES.length),profile);
+  const {getMapEncounterTable}=await load('map-registry.js');
+  const range=getMapEncounterTable().ranges.find(r=>r.id===data.id);
+  assert.ok(range&&range.units>0,'Confirm the new fish probability before acceptance');
+  assert.equal(pickFish((range.start+range.end)/20000),profile);
   const owner=new FishingSession(()=>0);
   assert.equal(owner.setForcedFish(data.name),true);owner.cast(0,0);
   assert.equal(owner.profile,profile);assert.equal(owner.fishStamina,data.stamina);

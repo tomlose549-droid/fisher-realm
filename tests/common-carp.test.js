@@ -1,3 +1,4 @@
+import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {COMMON_CARP,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
@@ -5,7 +6,7 @@ import {FishInventory,FISH_ITEMS} from '../inventory-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish=COMMON_CARP,random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);assert.equal(f.hook(6),true);return f;}
 test('common carp has its own random encounter slot, owner override, 46 stamina and no special behavior',()=>{
- assert.ok(FISH_SPECIES.includes(COMMON_CARP));assert.equal(pickFish(6/FISH_SPECIES.length),COMMON_CARP);assert.equal(pickFish(7/FISH_SPECIES.length-1e-9),COMMON_CARP);const f=new FishingSession(()=>0,{randomSpecies:true});assert.equal(f.setForcedFish('普通鲤鱼'),true);f.cast(0,0);assert.equal(f.profile,COMMON_CARP);assert.equal(f.fishStamina,46);assert.deepEqual(COMMON_CARP.specials,[]);
+ assert.ok(FISH_SPECIES.includes(COMMON_CARP));assert.equal(pickFish(unitForFish(FISH_SPECIES[6],0)),COMMON_CARP);assert.equal(pickFish(unitForFish(FISH_SPECIES[6],1-1e-7)),COMMON_CARP);const f=new FishingSession(()=>0,{randomSpecies:true});assert.equal(f.setForcedFish('普通鲤鱼'),true);f.cast(0,0);assert.equal(f.profile,COMMON_CARP);assert.equal(f.fishStamina,46);assert.deepEqual(COMMON_CARP.specials,[]);
 });
 test('common carp swims 4.1 m each second at both lateral angle endpoints on either side',()=>{
  for(const side of [0,1])for(const sample of [0,1]){const rolls=[0,side,sample],f=fight(COMMON_CARP,()=>rolls.shift()??0),a=sample?45:36;close(f.struggleYaw,(side?-1:1)*rad(90-a));f.advance(7);close(f.fishX,(side?1:-1)*4.1*Math.cos(rad(a)));close(f.fishZ,-23-4.1*Math.sin(rad(a)));}

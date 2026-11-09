@@ -1,12 +1,15 @@
 import {FISH_CATALOG,DEFAULT_CATCH_COLOR} from './fish-data.js';
+import {getMapEncounterTable} from './map-registry.js';
 // Meters, radians, monotonic seconds; resource ticks are independent of rendering.
 export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,hookWindow:1.45,baseSpeed:3.75,catchDistance:1.25,recastDelay:.8,noticeDelay:.3,noticeFadeAt:4.5,noticeFadeDuration:.6,maxDistance:50,landGraceDistance:10,lineMaximum:100,regenDelay:.95,regenInterval:.1,regenAmount:2.5});
 export const FISH_SPECIES=FISH_CATALOG.profiles;
 // Preserve named exports consumed by existing callers and species-specific tests.
 export const {TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER,NILE_TILAPIA,COMMON_CARP,EUROPEAN_PERCH,WHITE_CATFISH,CHANNEL_CATFISH,LARGEMOUTH_BASS,CHAIN_PICKEREL,LEOPARD_PLECO,LONGNOSE_GAR,MAYAN_CICHLID,OSCAR,FLORIDA_GAR,YELLOW_BULLHEAD,BOWFIN}=FISH_CATALOG.byId;
-export function pickFish(unit,pool=FISH_SPECIES){
+export function pickFish(unit,pool=FISH_SPECIES,encounters=pool===FISH_SPECIES?getMapEncounterTable():null){
   if(!Array.isArray(pool)||!pool.length)throw new TypeError('Expected a nonempty fish pool');
-  return pool[Math.min(pool.length-1,Math.max(0,Math.floor(unit*pool.length)))];
+  if(!encounters||pool.length!==encounters.fishPool.length||pool.some((f,i)=>f.name!==encounters.fishPool[i].name))throw new TypeError('Fish pool requires its matching probability table');
+  const selected=encounters.pick(unit);
+  return pool.find(f=>f.name===selected.name);
 }
 const PHASES=['first','second','third','fourth','fifth'];
 const EPS=1e-9,STEP=.01;
@@ -24,9 +27,11 @@ function circleCrossing(x,z,dx,dz,r,entering){
   return null;
 }
 export class FishingSession{
-  constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true,fishPool=FISH_SPECIES}={}){
+  constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true,fishPool=FISH_SPECIES,encounters=fishPool===FISH_SPECIES?getMapEncounterTable():null}={}){
     if(!Array.isArray(fishPool)||!fishPool.length)throw new TypeError('Expected a nonempty fish pool');
     this.fishPool=Object.freeze([...fishPool]);
+    this.encounters=encounters;
+    if(randomSpecies)pickFish(0,this.fishPool,encounters);
     this.random=random;this.randomSpecies=randomSpecies;this.profile=fish;this.player={x:player.x,z:player.z};this.isWater=isWater;
     this.phaseIndex=0;this.lastCatchName=null;this.lastCatchColor=DEFAULT_CATCH_COLOR;
     this.forcedFish=null;this.forcedRemaining=0;this.forcedCastFish=null;
@@ -56,7 +61,7 @@ export class FishingSession{
     this.advance(now);if(this.state!=='idle')return false;
     this.forcedCastFish=this.forcedRemaining>0?this.forcedFish:null;
     if(this.forcedCastFish)this.profile=this.forcedCastFish;
-    else if(this.randomSpecies)this.profile=pickFish(this.randomUnit(),this.fishPool);
+    else if(this.randomSpecies)this.profile=pickFish(this.randomUnit(),this.fishPool,this.encounters);
     this.state='casting';this.castYaw=yaw;this.rodYaw=yaw;
     this.fishX=this.player.x-Math.sin(yaw)*FISHING.distance;this.fishZ=this.player.z-Math.cos(yaw)*FISHING.distance;
     this.castAt=now;this.biteAt=now+FISHING.minWait+this.randomUnit()*(FISHING.maxWait-FISHING.minWait);this.hookDeadline=this.biteAt+FISHING.hookWindow;

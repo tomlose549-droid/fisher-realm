@@ -109,8 +109,8 @@ document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
 const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onOpen:prepareModal});
 document.querySelector('#owner-dialog').addEventListener('close',finishModal);
-createFishGuide({onOpen:prepareModal,onClose:finishModal,isDiscovered:id=>discoveries.has(id)});
-document.querySelector('#help').addEventListener('click',()=>{prepareModal();renderFishHelp();dialog.showModal();});
+createFishGuide({onOpen:prepareModal,onClose:finishModal,isDiscovered:id=>discoveries.has(id),encounters:map.context.encounters});
+document.querySelector('#help').addEventListener('click',()=>{prepareModal();renderFishHelp(document,FISH_DATA,map.context.encounters);dialog.showModal();});
 dialog.addEventListener('close',finishModal);
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{

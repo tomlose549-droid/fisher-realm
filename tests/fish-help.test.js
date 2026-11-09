@@ -4,8 +4,8 @@ import {readFile} from 'node:fs/promises';
 import {FISH_DATA,DEFAULT_CATCH_COLOR} from '../fish-data.js';
 import {buildFishHelp} from '../fish-help.js';
 
-test('help names, order, count and equal probability come from every catalog entry',()=>{
- const help=buildFishHelp();assert.equal(help.count,FISH_DATA.length);assert.deepEqual(help.profiles.map(f=>f.name),FISH_DATA.map(f=>f.name));assert.ok(help.summary.includes('1/'+FISH_DATA.length));assert.ok(help.summary.includes((100/FISH_DATA.length).toFixed(2)+'%'));
+test('help names, order, count and configured probability come from every catalog entry',()=>{
+ const help=buildFishHelp();assert.equal(help.count,FISH_DATA.length);assert.deepEqual(help.profiles.map(f=>f.name),FISH_DATA.map(f=>f.name));assert.ok(help.summary.includes('独立随机'));assert.equal(help.profiles[0].probability,15);
  for(const [i,fish] of FISH_DATA.entries()){const text=help.profiles[i].lines.join('\n');for(const value of [fish.strength.amount,fish.strength.interval,fish.restDuration,fish.speed,fish.stamina])assert.ok(text.includes(String(value)));assert.ok(text.includes(`高${fish.inventory.h}格×宽${fish.inventory.w}格`));assert.equal(help.profiles[i].catchColor,fish.catchColor??DEFAULT_CATCH_COLOR);assert.equal(help.profiles[i].inventoryColor,fish.inventory.color);}
 });
 test('changing one configuration updates help parameters, sizes, colors, angle and segment text',()=>{
@@ -13,7 +13,7 @@ test('changing one configuration updates help parameters, sizes, colors, angle a
  const text=buildFishHelp([fish]).profiles[0].lines.join('\n');for(const expected of ['每0.18秒降低7点','每秒8.1米','耐力：99','每轮2.7秒','27°–40°','2、3、4秒','共3段','停顿0.25秒','高2格×宽4格','#123456','#654321'])assert.ok(text.includes(expected),expected);assert.ok(!text.includes('3.9秒'));
 });
 test('adding an ordinary fish updates count, list, probability and profiles without editing help',()=>{
- const fish={...structuredClone(FISH_DATA[0]),id:'TEMP_HELP',name:'临时帮助测试鱼'};const h=buildFishHelp([...FISH_DATA,fish]);assert.equal(h.count,FISH_DATA.length+1);assert.ok(h.summary.includes(fish.name));assert.ok(h.summary.includes('1/'+h.count));assert.equal(h.profiles.at(-1).name,fish.name);assert.equal(FISH_DATA.length,h.count-1);
+ const fish={...structuredClone(FISH_DATA[0]),id:'TEMP_HELP',name:'临时帮助测试鱼'};const h=buildFishHelp([...FISH_DATA,fish]);assert.equal(h.count,FISH_DATA.length+1);assert.ok(h.summary.includes(fish.name));assert.equal(h.profiles.at(-1).probability,null);assert.ok(h.profiles.at(-1).probabilityText.includes('未配置'));assert.equal(h.profiles.at(-1).name,fish.name);assert.equal(FISH_DATA.length,h.count-1);
 });
 test('legacy two-stage, one-stage and five-stage durations describe the actual engine order',()=>{
  const tilapia=buildFishHelp([FISH_DATA[0]]).profiles[0].lines[1];assert.ok(tilapia.includes('3.9、3.4秒'));

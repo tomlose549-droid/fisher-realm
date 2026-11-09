@@ -1,3 +1,4 @@
+import {SUMMER_POND_ENCOUNTERS} from '../maps/summer-pond-fish.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {FISH_DATA,DEFAULT_CATCH_COLOR} from '../fish-data.js';
@@ -11,7 +12,7 @@ test('guide uses all catalog fish in encounter order with two independent actual
     assert.equal(entry.catchColor,fish.catchColor??DEFAULT_CATCH_COLOR);assert.equal(entry.inventoryColor,fish.inventory.color);
     assert.deepEqual(entry.strength,fish.strength);assert.equal(entry.stamina,fish.stamina);assert.equal(entry.speed,fish.speed);
     assert.equal(entry.restDuration,fish.restDuration);assert.deepEqual([entry.height,entry.width],[fish.inventory.h,fish.inventory.w]);
-    assert.equal(entry.probability,`1/${FISH_DATA.length}（约${(100/FISH_DATA.length).toFixed(2)}%）`);
+    assert.equal(entry.probability,SUMMER_POND_ENCOUNTERS.probabilityFor(fish.id)+'%');
   }
 });
 
@@ -21,7 +22,7 @@ test('new and changed fish automatically update guide fields, probability and mi
   assert.equal(result.count,FISH_DATA.length+1);assert.equal(f.name,extra.name);assert.equal(f.image,null);assert.equal(f.stamina,99);assert.equal(f.speed,8.1);assert.equal(f.restDuration,2.7);assert.deepEqual(f.strength,extra.strength);
   assert.equal(f.catchColor,'#123456');assert.equal(f.inventoryColor,'#654321');assert.deepEqual([f.height,f.width],[2,4]);
   for(const text of ['27°–40°','2、3、4秒','停顿0.25秒','休息2.7秒'])assert.ok(f.movement.includes(text),text);
-  assert.equal(f.specials,extra.specials[0]);assert.ok(f.probability.includes('1/'+result.count));
+  assert.equal(f.specials,extra.specials[0]);assert.equal(f.probability,'未配置（需先确认分配）');
 });
 
 test('guide describes legacy, single and five legs without inventing special behavior',()=>{

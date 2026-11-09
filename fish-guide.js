@@ -3,21 +3,21 @@ import {buildFishHelp} from './fish-help.js';
 import {inventoryImageSources,loadInventoryImage} from './inventory-images.js';
 
 // The guide and help describe the same catalog, including legacy two-leg timings.
-export function buildFishGuide(entries=FISH_DATA){
-  const help=buildFishHelp(entries);
+export function buildFishGuide(entries=FISH_DATA,encounters){
+  const help=buildFishHelp(entries,encounters);
   return {count:help.count,fish:entries.map((fish,i)=>({
     ...help.profiles[i],strength:{...fish.strength},stamina:fish.stamina,speed:fish.speed,
     restDuration:fish.restDuration,image:fish.inventory.image,width:fish.inventory.w,height:fish.inventory.h,
     movement:help.profiles[i].lines[1],specials:fish.specials.length?fish.specials.join('；'):'无',
-    probability:`1/${help.count}（约${(100/help.count).toFixed(2)}%）`
+    probability:help.profiles[i].probabilityText
   }))};
 }
 
-export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=FISH_DATA,doc=document}){
+export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=FISH_DATA,encounters,doc=document}){
   const dialog=doc.querySelector('#fish-guide-dialog'),list=doc.querySelector('#fish-guide-list'),
     search=doc.querySelector('#fish-guide-search'),count=doc.querySelector('#fish-guide-count'),
     empty=doc.querySelector('#fish-guide-empty'),toggle=doc.querySelector('#fish-guide-toggle');
-  const catalog=buildFishGuide(entries);
+  const catalog=buildFishGuide(entries,encounters);
   let cards=[],imageCleanups=[];
   function watchImage(image,source,onState,retryButton){
     const cleanup=loadInventoryImage(image,source,state=>{onState(state);if(retryButton)retryButton.hidden=state!=='error';});
@@ -57,7 +57,7 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
     function expand(){
       if(expanded)return;expanded=true;
       const body=el('div','guide-detail'),large=picture(fish,'guide-large-image'),data=el('div','guide-detail-data'),fields=el('dl','guide-fields');
-      fields.append(field('每轮休息',fish.restDuration+' 秒'),field('背包尺寸',`高 ${fish.height} 格 × 宽 ${fish.width} 格，不旋转`),field('普通随机遇鱼概率',fish.probability),field('特殊属性',fish.specials));
+      fields.append(field('每轮休息',fish.restDuration+' 秒'),field('背包尺寸',`高 ${fish.height} 格 × 宽 ${fish.width} 格，不旋转`),field('当前地图遇鱼概率',fish.probability),field('特殊属性',fish.specials));
       data.append(el('h4','','游戏设定'),fields,el('h4','','挣扎轨迹'),el('p','guide-movement',fish.movement),el('p','guide-angle-note','角度从正左或正右朝本轮正前方计算：0°为横向，90°为正前方。每轮以起始时玩家指向鱼的方向为固定正前方。'));
       body.append(large.wrap,data);details.append(body);
       if(fish.image){

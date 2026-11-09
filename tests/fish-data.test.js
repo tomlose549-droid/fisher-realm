@@ -1,3 +1,5 @@
+import {copyCatalogSandbox} from './helpers/catalog-sandbox.js';
+import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,mkdtemp,writeFile,copyFile,rm} from 'node:fs/promises';
@@ -23,7 +25,7 @@ test('pre-refactor profiles remain exact except the approved catch color synchro
 test('all catalog fish have matching assets, valid intervals and automatic owner/save support',async()=>{
  assert.equal(rules.FISH_SPECIES.length,FISH_DATA.length);assert.equal(Object.keys(FISH_ITEMS).length,FISH_DATA.length);
  for(const [i,data]of FISH_DATA.entries()){
-  assert.equal(rules.pickFish(i/FISH_DATA.length),rules.FISH_SPECIES[i]);assert.equal(rules.pickFish((i+1)/FISH_DATA.length-1e-9),rules.FISH_SPECIES[i]);
+  assert.equal(rules.pickFish(unitForFish(FISH_DATA[i],0)),rules.FISH_SPECIES[i]);assert.equal(rules.pickFish(unitForFish(FISH_DATA[i],1-1e-7)),rules.FISH_SPECIES[i]);
   const f=new rules.FishingSession(()=>0);assert.equal(f.setForcedFish(data.name),true);f.cast(0,0);assert.equal(f.profile,rules.FISH_SPECIES[i]);assert.equal(f.fishStamina,data.stamina);
   const b=new FishInventory();b.add(data.name);assert.deepEqual(new FishInventory(b.serialize()).serialize(),b.serialize());
   if(data.inventory.image)assert.ok((await readFile(new URL('../fish-images/'+data.inventory.image,import.meta.url))).length>0);
@@ -40,13 +42,11 @@ test('validation rejects duplicate identities, invalid resources, unsupported le
  assert.ok(Object.isFrozen(FISH_DATA[0].struggle));assert.ok(Object.isFrozen(FISH_CATALOG.profiles[0].strength));
 });
 
-test('adding one data entry alone supports encounters, owner selection, catch, packing and old saves',async t=>{
+test('adding metadata and an explicit map probability supports encounters, owner selection, catch, packing and old saves',async t=>{
  const temp=await mkdtemp(join(tmpdir(),'fisher-catalog-'));
  t.after(async()=>{assert.equal(dirname(resolve(temp)),resolve(tmpdir()));assert.ok(basename(temp).startsWith('fisher-catalog-'));await rm(temp,{recursive:true,force:true});});
- const extra={id:'TEST_FISH',name:'仅配置测试鱼',strength:{amount:2,interval:.2},restDuration:3,speed:2,stamina:12,struggle:{minAngle:35,maxAngle:40,durations:[1,2,1,2,1]},specials:[],catchColor:'#90ee90',inventory:{w:2,h:1,color:'#008000',image:null}};
- for(const name of ['fishing-rules.js','inventory-rules.js'])await copyFile(new URL('../'+name,import.meta.url),join(temp,name));
- const source=await readFile(new URL('../fish-data.js',import.meta.url),'utf8');
- await writeFile(join(temp,'fish-data.js'),source.replace('createFishCatalog(FISH_DATA);',`createFishCatalog([...FISH_DATA,${JSON.stringify(extra)}]);`));await writeFile(join(temp,'package.json'),'{"type":"module"}');
+ const extra={id:'TEST_FISH',name:'仅配置测试鱼',quality:'green',strength:{amount:2,interval:.2},restDuration:3,speed:2,stamina:12,struggle:{minAngle:35,maxAngle:40,durations:[1,2,1,2,1]},specials:[],catchColor:'#90ee90',inventory:{w:2,h:1,color:'#008000',image:null}};
+ await copyCatalogSandbox(temp,extra);
  const r=await import(pathToFileURL(join(temp,'fishing-rules.js'))),inv=await import(pathToFileURL(join(temp,'inventory-rules.js')));
  assert.equal(r.FISH_SPECIES.length,FISH_DATA.length+1);assert.equal(r.pickFish(1).name,extra.name);assert.deepEqual(inv.FISH_ITEMS[extra.name],extra.inventory);
  const f=new r.FishingSession(()=>0);assert.equal(f.setForcedFish(extra.name),true);f.cast(0,0);assert.equal(f.hook(6),true);assert.equal(f.profile.name,extra.name);assert.equal(f.fishStamina,12);

@@ -1,6 +1,6 @@
 {
   "name": "lakeside-fishing",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "private": true,
   "type": "module",
   "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
@@ -22,6 +22,8 @@
       "fishing.js",
       "fishing-rules.js",
       "fish-data.js",
+      "fish-encounters.js",
+      "maps/summer-pond-fish.js",
       "fishing-audio.js",
       "pond-boundary.js",
       "pond-scene.js",

@@ -8,14 +8,14 @@ import {execFileSync,spawnSync} from 'node:child_process';
 import tool from '../scripts/prepare-fish.cjs';
 import {FISH_DATA} from '../fish-data.js';
 
-const sample=()=>({'标识':'TEMPLATE_TEST_FISH','名称':'模板测试鱼','颜色':'turquoise',
+const sample=()=>({'标识':'TEMPLATE_TEST_FISH','名称':'模板测试鱼','品质':'turquoise','颜色':'turquoise',
   '力量':{'间隔秒':.38,'降低韧性':3},'速度米每秒':8,'耐力':56,'休息秒':4,
   '挣扎':{'最小角度':30,'最大角度':60,'每段秒':[4,4,4],'换边停顿秒':0},
   '背包':{'高':1,'宽':5,'图片':null},'特殊属性':[]});
 
 test('Chinese template converts exact units, height/width and shared catch/bag color',async()=>{
   assert.deepEqual(await tool.prepare(sample()),{
-    id:'TEMPLATE_TEST_FISH',name:'模板测试鱼',catchColor:'#40e0d0',
+    id:'TEMPLATE_TEST_FISH',name:'模板测试鱼',quality:'turquoise',catchColor:'#40e0d0',
     strength:{amount:3,interval:.38},restDuration:4,speed:8,stamina:56,
     struggle:{minAngle:30,maxAngle:60,durations:[4,4,4]},specials:[],
     inventory:{w:5,h:1,color:'#40e0d0',image:null}
@@ -33,6 +33,12 @@ test('missing values, ambiguous speed units, unsupported behavior and invalid ba
   }
   const blank=JSON.parse(await readFile(new URL('../scripts/fish-template.json',import.meta.url),'utf8'));
   await assert.rejects(tool.prepare(blank));
+});
+
+test('quality is independent of a custom display color and cannot be guessed from a hex value',async()=>{
+  const input=sample();input.品质='green';input.颜色='#123456';
+  const fish=await tool.prepare(input);assert.equal(fish.quality,'green');assert.equal(fish.catchColor,'#123456');
+  delete input.品质;await assert.rejects(tool.prepare(input),/品质/);
 });
 
 test('template rejects duplicate identities using the real catalog without editing it',async()=>{

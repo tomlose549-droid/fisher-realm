@@ -85,7 +85,8 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
     try{
       window.Audio=class{constructor(){this.paused=true;this.ended=false;}pause(){this.paused=true;}play(){this.paused=false;return Promise.resolve();}removeAttribute(){}load(){}};
       Math.random=()=>0;
-      const context={...base,waterLevel:7,spawn:{position:position.toArray(),yaw:0,pitch:-.065},isWater:()=>true,fishPool:pool};
+      const {createEncounterTable}=await import('./fish-encounters.js');
+      const context={...base,encounters:createEncounterTable([{id:'TILAPIA',percent:100}],{requireAll:false}),waterLevel:7,spawn:{position:position.toArray(),yaw:0,pitch:-.065},isWater:()=>true,fishPool:pool};
       fishing=createFishing({scene:ownScene,camera:ownCamera,player:position,mapContext:context,canvas:{setPointerCapture(){},focus(){},style:{}},idleRod:equipment.root,toast(){},onReady(){},onCast(){},onHook(){},onCaught:name=>catches.push(name),getTime:()=>clock});
       check(fishing.key({code:'Space',repeat:false}),'cast input rejected');clock=1;fishing.update(clock);
       const waiting=fishing.getState();check(waiting.fishName===pool[0].name,'injected fish pool ignored');

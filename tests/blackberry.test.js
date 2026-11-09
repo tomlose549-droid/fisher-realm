@@ -1,3 +1,4 @@
+import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {BLACKBERRY_BASS,TILAPIA,BLUEGILL,REDEAR,pickFish,FISH_SPECIES,FishingSession} from '../fishing-rules.js';
@@ -5,7 +6,7 @@ const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI
 function fight(fish={...BLACKBERRY_BASS,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
 test('blackberry profile, white notice and thirteen-species encounter ranges',()=>{
   assert.deepEqual(BLACKBERRY_BASS,{name:'黑莓鲈',catchColor:'#ffffff',strength:{amount:3,interval:.23},restDuration:5,speed:5,stamina:42,struggle:{minAngle:45,maxAngle:63,durations:[3.5,3.5,3.4],switchPause:.3},specials:['换边前停顿0.3秒']});
-  for(const [v,fish]of [[0,TILAPIA],[1/FISH_SPECIES.length-1e-9,TILAPIA],[1/FISH_SPECIES.length,BLUEGILL],[2/FISH_SPECIES.length-1e-9,BLUEGILL],[2/FISH_SPECIES.length,REDEAR],[3/FISH_SPECIES.length-1e-9,REDEAR],[3/FISH_SPECIES.length,BLACKBERRY_BASS],[4/FISH_SPECIES.length-1e-9,BLACKBERRY_BASS]])assert.equal(pickFish(v),fish);
+  for(const [v,fish]of [[0,TILAPIA],[unitForFish(FISH_SPECIES[0],1-1e-7),TILAPIA],[unitForFish(FISH_SPECIES[1],0),BLUEGILL],[unitForFish(FISH_SPECIES[1],1-1e-7),BLUEGILL],[unitForFish(FISH_SPECIES[2],0),REDEAR],[unitForFish(FISH_SPECIES[2],1-1e-7),REDEAR],[unitForFish(FISH_SPECIES[3],0),BLACKBERRY_BASS],[unitForFish(FISH_SPECIES[3],1-1e-7),BLACKBERRY_BASS]])assert.equal(pickFish(v),fish);
 });
 test('only the two actual switches pause .3 s; rest starts immediately after leg three',()=>{
   const values=[0,0,0,.5,1],f=fight({...BLACKBERRY_BASS,speed:.01},()=>values.shift()??0),base=f.roundYaw;close(f.struggleYaw-base,rad(45));

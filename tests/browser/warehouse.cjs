@@ -1,3 +1,4 @@
+const {readInPage,readSavedSection}=require('./save-fixture.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const root=path.resolve(__dirname,'../..'),key='fisher-realm-inventory-v1';
@@ -15,10 +16,10 @@ async function main(){
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
     browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',args:['--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});
     const context=await browser.newContext({viewport:{width:1440,height:1050}});
-    await context.addInitScript(({key,legacy})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(legacy));},{key,legacy});
+    await context.addInitScript(({key,legacy})=>{if(!localStorage.getItem('fisher-realm-save-slots-v1')&&!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(legacy));},{key,legacy});
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     const state=()=>page.evaluate(()=>window.lakeside.getState());
-    const disk=()=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+    const disk=()=>readSavedSection(page,key);
     async function loaded(){await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);}
     async function command(text){await page.locator('#settings-toggle').click();await page.locator('#realm-command').fill(text);if(text!=='realm owner')await page.locator('#realm-command').press('Enter');}
     async function rich(value){await command('rich');await page.locator('#rich-amount').fill(String(value));await page.locator('#rich-form .primary').click();await page.locator('#rich-dialog').waitFor({state:'hidden'});}
@@ -64,11 +65,11 @@ async function main(){
     await card('#warehouse-bag','2').click();await cell('#warehouse-grid',0,0).click();
     await page.locator('#warehouse-close').click();await page.locator('#warehouse-toggle').click();assert.equal(await page.locator('#warehouse-sale').getAttribute('aria-pressed'),'false');
     const frozen=await disk();await page.reload({waitUntil:'domcontentloaded'});await loaded();assert.deepEqual(await disk(),frozen);assert.equal((await state()).storage.coins,609);
-    const discoveriesBefore=await page.evaluate(()=>localStorage.getItem('fisher-realm-discoveries-v1'));
+    const discoveriesBefore=await readSavedSection(page,'fisher-realm-discoveries-v1');
     await command('clear');assert.equal((await state()).inventory.items.length,0);assert.equal((await state()).storage.coins,0);assert.equal((await state()).storage.boxes[0].items[0].name,'大口黑鲈');assert.equal((await state()).storage.boxes[9].unlocked,true);
-    assert.equal(await page.evaluate(()=>localStorage.getItem('fisher-realm-discoveries-v1')),discoveriesBefore);
+    assert.deepEqual(await readSavedSection(page,'fisher-realm-discoveries-v1'),discoveriesBefore);
     await page.locator('#settings-toggle').click();await page.locator('#warehouse-toggle').click();
-    await page.evaluate(()=>{window.originalSave=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='fisher-realm-inventory-v1')throw new DOMException('test quota','QuotaExceededError');return window.originalSave.call(this,key,value);};});
+    await page.evaluate(()=>{window.originalSave=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='fisher-realm-save-slots-v1')throw new DOMException('test quota','QuotaExceededError');return window.originalSave.call(this,key,value);};});
     const before=await state(),diskBefore=await disk();await page.locator('#warehouse-sale').click();await card('#warehouse-grid','2').dblclick();
     assert.match(await page.locator('#warehouse-hint').textContent(),/保存失败/);assert.deepEqual((await state()).storage,before.storage);assert.deepEqual(await disk(),diskBefore);
     await page.locator('#warehouse-close').click();await page.locator('#warehouse-toggle').click();

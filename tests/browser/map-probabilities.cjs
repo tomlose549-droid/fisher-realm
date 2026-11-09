@@ -1,3 +1,4 @@
+const {readInPage,readSavedSection}=require('./save-fixture.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {pathToFileURL}=require('node:url');
@@ -16,7 +17,7 @@ async function main(){
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
     browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{}),args:['--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});
     const context=await browser.newContext({viewport:{width:1440,height:960}});
-    await context.addInitScript(saved=>{const random=Math.random;window.encounterTestUnit=null;Math.random=()=>window.encounterTestUnit===null?random():window.encounterTestUnit;if(!localStorage.getItem('fisher-realm-inventory-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(saved));},saved);
+    await context.addInitScript(saved=>{const random=Math.random;window.encounterTestUnit=null;Math.random=()=>window.encounterTestUnit===null?random():window.encounterTestUnit;if(!localStorage.getItem('fisher-realm-save-slots-v1')&&!localStorage.getItem('fisher-realm-inventory-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(saved));},saved);
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
     async function loaded(){await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);}
@@ -44,8 +45,8 @@ async function main(){
     let state=await page.evaluate(()=>window.lakeside.getState());assert.equal(state.fishing.fishName,'长吻雀鳝');assert.equal(state.fishing.ownerMode.remaining,10);
     await page.reload({waitUntil:'domcontentloaded'});await loaded();await page.evaluate(()=>{window.encounterTestUnit=0;});await page.locator('#scene').focus();await page.keyboard.press('Space');
     state=await page.evaluate(()=>window.lakeside.getState());assert.equal(state.fishing.fishName,'罗非鱼');assert.equal(state.fishing.ownerMode.remaining,0);
-    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('fisher-realm-inventory-v1'))),saved);
-    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('fisher-realm-discoveries-v1')).fishIds),['TILAPIA']);
+    assert.deepEqual(await readSavedSection(page,'fisher-realm-inventory-v1'),saved);
+    assert.deepEqual((await readSavedSection(page,'fisher-realm-discoveries-v1')).fishIds,['TILAPIA']);
     assert.deepEqual(errors,[]);console.log(JSON.stringify({result:'passed',weightedCasts:true,helpAll27:true,guideLockedAndChance:true,ownerOverride:true,savesPreserved:true}));
   }finally{if(browser)await browser.close();if(server.listening)await new Promise(resolve=>server.close(resolve));}
 }

@@ -8,14 +8,14 @@ import {execFileSync,spawnSync} from 'node:child_process';
 import tool from '../scripts/prepare-fish.cjs';
 import {FISH_DATA} from '../fish-data.js';
 
-const sample=()=>({'标识':'TEMPLATE_TEST_FISH','名称':'模板测试鱼','品质':'turquoise','颜色':'turquoise',
+const sample=()=>({'标识':'TEMPLATE_TEST_FISH','名称':'模板测试鱼','品质':'turquoise','售价金币':33,'颜色':'turquoise',
   '力量':{'间隔秒':.38,'降低韧性':3},'速度米每秒':8,'耐力':56,'休息秒':4,
   '挣扎':{'最小角度':30,'最大角度':60,'每段秒':[4,4,4],'换边停顿秒':0},
   '背包':{'高':1,'宽':5,'图片':null},'特殊属性':[]});
 
 test('Chinese template converts exact units, height/width and shared catch/bag color',async()=>{
   assert.deepEqual(await tool.prepare(sample()),{
-    id:'TEMPLATE_TEST_FISH',name:'模板测试鱼',quality:'turquoise',catchColor:'#40e0d0',
+    id:'TEMPLATE_TEST_FISH',name:'模板测试鱼',quality:'turquoise',sellPrice:33,catchColor:'#40e0d0',
     strength:{amount:3,interval:.38},restDuration:4,speed:8,stamina:56,
     struggle:{minAngle:30,maxAngle:60,durations:[4,4,4]},specials:[],
     inventory:{w:5,h:1,color:'#40e0d0',image:null}
@@ -25,7 +25,7 @@ test('Chinese template converts exact units, height/width and shared catch/bag c
 });
 
 test('missing values, ambiguous speed units, unsupported behavior and invalid bag shapes fail',async()=>{
-  for(const mutate of [x=>delete x.速度米每秒,x=>x.速度每轮米=8,x=>x.力量.间隔秒=null,
+  for(const mutate of [x=>delete x.售价金币,x=>x.售价金币=null,x=>x.售价金币=-1,x=>x.售价金币=1.5,x=>delete x.速度米每秒,x=>x.速度每轮米=8,x=>x.力量.间隔秒=null,
     x=>x.速度米每秒='8米',x=>x.背包.高=5,x=>x.挣扎.每段秒=[0],
     x=>x.特殊属性=['跳出水面'],x=>x.背包.图片='../outside.png',x=>x.颜色='unknown',
     x=>{x.挣扎.每段秒=[4];x.挣扎.换边停顿秒=.3;x.特殊属性=['换边前停顿0.3秒'];}]) {

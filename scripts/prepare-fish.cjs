@@ -14,7 +14,7 @@ function fields(object, names, label) {
 async function prepare(input, entries) {
   const {FISH_DATA,createFishCatalog}=await import(pathToFileURL(path.join(root,'fish-data.js')).href);
   entries??=FISH_DATA;
-  fields(input,['标识','名称','品质','颜色','力量','速度米每秒','耐力','休息秒','挣扎','背包','特殊属性'],'鱼种');
+  fields(input,['标识','名称','品质','颜色','力量','速度米每秒','耐力','休息秒','挣扎','背包','特殊属性','售价金币'],'鱼种');
   fields(input.力量,['间隔秒','降低韧性'],'力量');
   fields(input.挣扎,['最小角度','最大角度','每段秒','换边停顿秒'],'挣扎');
   fields(input.背包,['高','宽','图片'],'背包');
@@ -25,7 +25,7 @@ async function prepare(input, entries) {
   if(typeof color!=='string' || !/^#[0-9a-f]{6}$/i.test(color)) throw Error('颜色：请填已有英文颜色名或六位十六进制颜色');
   const pause=input.挣扎.换边停顿秒;
   if(!Number.isFinite(pause) || pause<0) throw Error('换边停顿秒：必须是大于或等于0的数字');
-  const fish={id:input.标识,name:input.名称,quality,catchColor:color.toLowerCase(),
+  const fish={id:input.标识,name:input.名称,quality,sellPrice:input.售价金币,catchColor:color.toLowerCase(),
     strength:{amount:input.力量.降低韧性,interval:input.力量.间隔秒},
     restDuration:input.休息秒,speed:input.速度米每秒,stamina:input.耐力,
     struggle:{minAngle:input.挣扎.最小角度,maxAngle:input.挣扎.最大角度,durations:input.挣扎.每段秒},

@@ -12,6 +12,7 @@ async function checkFish(selector) {
   const {buildFishGuide}=await load('fish-guide.js');
   const data=FISH_DATA.find(f=>f.id===selector||f.name===selector);
   assert.ok(data,`Unknown fish: ${selector}`);
+  assert.ok(Number.isSafeInteger(data.sellPrice)&&data.sellPrice>=0,'Confirm the new fish sale price before acceptance');
   const expected=createFishCatalog([data]).byId[data.id],profile=FISH_CATALOG.byId[data.id];
   assert.deepEqual(profile,expected);assert.deepEqual(FISH_ITEMS[data.name],data.inventory);
   const {getMapEncounterTable}=await load('map-registry.js');

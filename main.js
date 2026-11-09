@@ -1,3 +1,5 @@
+import {createPlayerStorage} from './player-storage.js';
+import {createWarehouse,createCoinControls} from './warehouse.js';
 import {preloadInventoryImages} from './inventory-images.js';
 import {FISH_DATA} from './fish-data.js';
 import {renderFishHelp} from './fish-help.js';
@@ -48,11 +50,16 @@ function prepareModal(){
   for(const open of document.querySelectorAll('dialog[open]'))open.close();
   sceneDirty=true;
 }
-function finishModal(){discoveries.flush();if(!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;}}
-const inventory=createInventory({toast,onOpen:prepareModal,onClose:finishModal});
-const discoveries=createFishDiscoveries({items:inventory.snapshot().items,onSaveError:()=>toast('图鉴解锁记录暂未保存，本次游戏仍可查看')});
+function finishModal(){discoveries.flush();playerStorage.flush();if(!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;}}
+const playerStorage=createPlayerStorage({onSaveError:()=>toast('存储空间不足或不可用，请稍后重试保存')});
+const inventory=createInventory({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
+const discoveries=createFishDiscoveries({items:[...playerStorage.model.inventory.items,...playerStorage.model.boxes.flatMap(box=>box.items)],onSaveError:()=>toast('图鉴解锁记录暂未保存，本次游戏仍可查看')});
 window.addEventListener('focus',()=>discoveries.flush());
 window.addEventListener('pagehide',()=>discoveries.flush());
+window.addEventListener('focus',()=>playerStorage.flush());
+window.addEventListener('pagehide',()=>playerStorage.flush());
+createWarehouse({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
+const coinControls=createCoinControls({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const fishing=createFishing({scene,camera,player:cameraOrigin,mapContext:map.context,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=map.context.spawn.pitch;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -107,7 +114,7 @@ async function fullscreen() {
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
-const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onOpen:prepareModal});
+const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onRich:()=>coinControls.openRich(),onOpen:prepareModal});
 document.querySelector('#owner-dialog').addEventListener('close',finishModal);
 createFishGuide({onOpen:prepareModal,onClose:finishModal,isDiscovered:id=>discoveries.has(id),encounters:map.context.encounters});
 document.querySelector('#help').addEventListener('click',()=>{prepareModal();renderFishHelp(document,FISH_DATA,map.context.encounters);dialog.showModal();});
@@ -168,4 +175,4 @@ setTimeout(()=>{
   const warmup=()=>preloadInventoryImages(FISH_DATA.filter(fish=>discoveries.has(fish.id)).map(fish=>fish.inventory.image));
   if(globalThis.requestIdleCallback)requestIdleCallback(warmup,{timeout:3000});else warmup();
 },1500);
-window.lakeside={getState:()=>({paused:gameTime.paused,inventory:inventory.snapshot(),version:releaseVersion(),scene:map.context.id,map:map.getDiagnostics(),fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs:map.getDiagnostics().chairs,treeCount:map.getDiagnostics().treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={getState:()=>({paused:gameTime.paused,inventory:inventory.snapshot(),storage:playerStorage.snapshot().storage,version:releaseVersion(),scene:map.context.id,map:map.getDiagnostics(),fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs:map.getDiagnostics().chairs,treeCount:map.getDiagnostics().treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};

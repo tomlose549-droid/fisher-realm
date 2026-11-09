@@ -9,7 +9,7 @@ import {execFileSync} from 'node:child_process';
 test('appending a fish does not break eel checks; selected-fish rules need no old images',async t=>{
   const temp=await mkdtemp(join(tmpdir(),'fisher-extension-'));
   t.after(async()=>{assert.equal(dirname(resolve(temp)),resolve(tmpdir()));await rm(temp,{recursive:true,force:true});});
-  const extra={id:'EXTENSION_TEST',name:'新增验收测试鱼',quality:'green',catchColor:'#008000',
+  const extra={id:'EXTENSION_TEST',name:'新增验收测试鱼',quality:'green',sellPrice:7,catchColor:'#008000',
     strength:{amount:3,interval:.16},restDuration:1.1,speed:3.4,stamina:47,
     struggle:{minAngle:31,maxAngle:36,durations:[4.4,1.5],switchPause:.3},
     specials:['换边前停顿0.3秒'],inventory:{w:3,h:2,color:'#008000',image:null}};

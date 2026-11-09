@@ -45,7 +45,7 @@ test('validation rejects duplicate identities, invalid resources, unsupported le
 test('adding metadata and an explicit map probability supports encounters, owner selection, catch, packing and old saves',async t=>{
  const temp=await mkdtemp(join(tmpdir(),'fisher-catalog-'));
  t.after(async()=>{assert.equal(dirname(resolve(temp)),resolve(tmpdir()));assert.ok(basename(temp).startsWith('fisher-catalog-'));await rm(temp,{recursive:true,force:true});});
- const extra={id:'TEST_FISH',name:'仅配置测试鱼',quality:'green',strength:{amount:2,interval:.2},restDuration:3,speed:2,stamina:12,struggle:{minAngle:35,maxAngle:40,durations:[1,2,1,2,1]},specials:[],catchColor:'#90ee90',inventory:{w:2,h:1,color:'#008000',image:null}};
+ const extra={id:'TEST_FISH',name:'仅配置测试鱼',quality:'green',sellPrice:7,strength:{amount:2,interval:.2},restDuration:3,speed:2,stamina:12,struggle:{minAngle:35,maxAngle:40,durations:[1,2,1,2,1]},specials:[],catchColor:'#90ee90',inventory:{w:2,h:1,color:'#008000',image:null}};
  await copyCatalogSandbox(temp,extra);
  const r=await import(pathToFileURL(join(temp,'fishing-rules.js'))),inv=await import(pathToFileURL(join(temp,'inventory-rules.js')));
  assert.equal(r.FISH_SPECIES.length,FISH_DATA.length+1);assert.equal(r.pickFish(1).name,extra.name);assert.deepEqual(inv.FISH_ITEMS[extra.name],extra.inventory);

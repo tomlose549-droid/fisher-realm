@@ -1,6 +1,6 @@
 import {FISH_SPECIES} from './fishing-rules.js';
 
-export function createOwnerPanel({fishing,onOpen,toast,onClearAll}){
+export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich}){
   const command=document.querySelector('#realm-command'),message=document.querySelector('#realm-command-message'),dialog=document.querySelector('#owner-dialog'),select=document.querySelector('#owner-fish'),status=document.querySelector('#owner-mode-status');
   for(const fish of FISH_SPECIES){const option=document.createElement('option');option.value=fish.name;option.textContent=fish.name;select.appendChild(option);}
   let lastStatus='';
@@ -11,8 +11,17 @@ export function createOwnerPanel({fishing,onOpen,toast,onClearAll}){
     const mode=fishing.getOwnerState();if(mode.fishName)select.value=mode.fishName;
     dialog.showModal();return true;
   }
-  command.addEventListener('input',()=>{message.textContent=command.value.trim()==='clear'?'按回车清空鱼堆和背包里的全部鱼。':'';open();});
-  document.querySelector('#realm-command-form').addEventListener('submit',event=>{event.preventDefault();if(command.value.trim()==='clear'){command.value='';const result=onClearAll();message.textContent=`已重置鱼堆和背包，共清除 ${result.removed} 条鱼。`+(result.saved?'':'本次未能保存。');if(result.saved)toast(`鱼堆和背包已清空 · ${result.removed} 条鱼`);return;}if(!open())message.textContent='未识别的内容';});
+  command.addEventListener('input',()=>{message.textContent=command.value.trim()==='clear'?'按回车清空鱼堆、背包和金币；仓库与图鉴保留。':'';open();});
+  document.querySelector('#realm-command-form').addEventListener('submit',event=>{
+    event.preventDefault();const value=command.value.trim();
+    if(value==='clear'){
+      command.value='';const result=onClearAll();
+      message.textContent=result.ok?`已重置鱼堆、背包和金币，共清除 ${result.removed} 条鱼。仓库与图鉴保留。`:result.error;
+      if(result.ok)toast(`鱼堆、背包和金币已清空 · ${result.removed} 条鱼`);return;
+    }
+    if(value==='rich'){command.value='';message.textContent='';onRich();return;}
+    if(!open())message.textContent='未识别的内容';
+  });
   document.querySelector('#owner-close').addEventListener('click',()=>dialog.close());
   document.querySelector('#owner-fish-form').addEventListener('submit',event=>{
     event.preventDefault();

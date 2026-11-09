@@ -38,7 +38,7 @@ test('existing saved fish retain their names, positions and dimensions while usi
 
 test('future indigo and violet inputs use the new colors while blue keeps its existing color',async()=>{
   for(const [color,expected] of [['indigo','#00008b'],['violet','#4b0082'],['blue','#0000ff']]){
-    const input={'标识':'PALETTE_TEST','名称':'配色测试鱼','品质':color,'颜色':color,
+    const input={'标识':'PALETTE_TEST','名称':'配色测试鱼','品质':color,'售价金币':7,'颜色':color,
       '力量':{'间隔秒':0.2,'降低韧性':2},'速度米每秒':4,'耐力':40,'休息秒':3,
       '挣扎':{'最小角度':30,'最大角度':40,'每段秒':[4],'换边停顿秒':0},
       '背包':{'高':1,'宽':2,'图片':null},'特殊属性':[]};

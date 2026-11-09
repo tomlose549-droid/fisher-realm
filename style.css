@@ -79,3 +79,46 @@
 #help-dialog{width:min(560px,calc(100% - 28px));max-height:calc(100dvh - 28px);overflow:auto}.help-fish-heading{font-size:14px;font-weight:500;margin-top:22px}.help-fish-entry{border-top:1px solid #26473e26;padding:10px 0}.help-fish-entry summary{cursor:pointer;font-size:14px;color:#26473e}.help-fish-entry p{margin:8px 0;overflow-wrap:anywhere}@media(max-width:560px){#help-dialog{padding:28px 20px}.help-fish-entry p{font-size:11px}}
 
 .guide-image-retry{font:inherit;color:#f2efdf;background:#355c50;border:1px solid #d5dec47a;border-radius:5px;padding:3px 9px;cursor:pointer;margin:3px 5px}.guide-image-retry:hover{background:#477261}
+
+
+/* Economy UI is event-driven; modal grids are built only while open. */
+.settings-buttons{position:relative;display:flex;align-items:center}
+.warehouse-toggle{position:absolute;top:45px;left:50%;transform:translateX(-50%);width:36px;height:36px;background:#244b425e;border:1px solid #e0ebd733;border-radius:50%;opacity:.8}
+.warehouse-toggle:hover{opacity:1;background:#244b42a6}
+.warehouse-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+.settings-panel{top:101px;max-height:calc(100dvh - 155px)}
+.coin-balance{position:absolute;left:20px;top:14px;display:flex;align-items:center;gap:5px;font:500 12px/20px system-ui,"Microsoft YaHei",sans-serif;max-width:calc(100% - 80px);overflow-wrap:anywhere}
+.coin-balance>span:first-child{color:#a77a28;font-size:17px}
+.coin-hud{left:47px;top:111px;z-index:2;padding:3px 10px;border-radius:20px;background:#244b425e;color:#f3ecd3;pointer-events:none}
+.coin-hud>span:first-child{color:#ebcb82}
+dialog:has(>.coin-balance){position:fixed;padding-top:53px}
+#inventory-dialog,#fish-guide-dialog{padding-top:53px}
+#warehouse-dialog{position:fixed;width:min(1180px,calc(100vw - 32px));max-height:calc(100dvh - 28px);box-sizing:border-box;padding:55px 26px 20px;background:#183d35f5;color:#e8eddf;border:1px solid #c7d7b94d;border-radius:18px;overflow:auto}
+#warehouse-dialog>.coin-balance{left:62px;color:#e8eddf}
+#warehouse-close{position:absolute;left:18px;top:13px;width:28px;height:28px;border:1px solid #c7d7b94d;border-radius:50%;background:transparent;color:inherit;font-size:22px;line-height:22px;cursor:pointer}
+.warehouse-header h2{font-size:30px;margin:5px 0 10px;font-weight:400}
+.warehouse-header p{font-size:12px;color:#bed1bd;margin:0 0 20px}
+.warehouse-layout{display:grid;grid-template-columns:minmax(220px,.65fr) minmax(420px,1fr);gap:28px;align-items:start}
+.warehouse-layout>section{min-width:0}
+#warehouse-tabs{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;margin-bottom:12px}
+.warehouse-tab{min-width:0;min-height:32px;background:#a5c6a617;color:#e8eddf;border:1px solid #b9d2ac40;border-radius:7px;font-size:12px;cursor:pointer;padding:3px}
+.warehouse-tab[aria-pressed=true]{border-color:#edce8e;background:#edce8e25}
+.warehouse-tab.locked{color:#c4cdbf;background:#102e294d}
+#warehouse-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(10,minmax(0,1fr));gap:3px;padding:3px;aspect-ratio:1;border:1px solid #c7d7b92b;border-radius:10px;background:#102e294d;isolation:isolate}
+#warehouse-grid .inventory-fish span{font-size:9px}
+.warehouse-footer{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-top:16px}
+#warehouse-hint{font-size:12px;line-height:1.6;margin:0 0 6px;min-height:20px}
+#warehouse-sale{flex:none;min-width:110px;padding:11px 20px;border:1px solid #c7d7b970;border-radius:20px;color:#e8eddf;background:#c7d7b914;cursor:pointer}
+#warehouse-sale[aria-pressed=true]{background:#c582392e;border-color:#edce8e;color:#ffdf9b}
+.selling #warehouse-grid .inventory-fish{cursor:copy}
+.selling #warehouse-grid{border-color:#edce8e}
+#warehouse-dialog .drop-valid{outline:2px solid #a6dbb2}
+#warehouse-dialog .drop-invalid{outline:2px solid #df9c81}
+.economy-actions{display:flex;gap:12px;align-items:center;justify-content:flex-end;margin-top:20px}
+.economy-actions button{cursor:pointer}
+.economy-actions button:not(.primary){border:1px solid #26473e44;background:transparent;color:#26473e;border-radius:20px;padding:10px 18px}
+.economy-actions .primary{margin-top:0}
+#rich-amount{display:block;width:100%;box-sizing:border-box;margin:10px 0;padding:10px;border:1px solid #26473e66;border-radius:8px;font:inherit;color:#26473e;background:#fff8}
+#rich-message,#warehouse-unlock-message{font-size:14px;line-height:1.6}
+@media(max-width:800px){.coin-hud{left:25px;top:85px}.location{top:121px}#warehouse-dialog{padding:53px 16px 16px}.warehouse-layout{grid-template-columns:1fr;gap:20px}#warehouse-bag{max-width:350px}.warehouse-grid-scroll{overflow:auto}#warehouse-grid{min-width:400px}#warehouse-tabs{min-width:0;gap:3px}.warehouse-tab{font-size:11px}.warehouse-footer{align-items:center}#warehouse-count{font-size:11px}}
+@media(max-width:480px){.coin-hud{left:18px;top:76px}.warehouse-footer{gap:10px}#warehouse-sale{min-width:85px;padding:10px}#warehouse-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}}

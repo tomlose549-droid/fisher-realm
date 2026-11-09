@@ -1,6 +1,6 @@
 {
   "name": "lakeside-fishing",
-  "version": "0.39.0",
+  "version": "0.40.0",
   "private": true,
   "type": "module",
   "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
@@ -38,7 +38,11 @@
       "vendor/three.core.js",
       "fish-help.js",
       "fish-guide.js",
-      "fish-discoveries.js"
+      "fish-discoveries.js",
+      "storage-rules.js",
+      "player-storage.js",
+      "item-card.js",
+      "warehouse.js"
     ],
     "styles": [
       "style.css"

@@ -15,3 +15,5 @@
 - 新增鱼按 `scripts/NEW-FISH-WORKFLOW.md` 执行：先同步主分支和保护现有工作；图片先检查透明度/实际背包底色再决定是否重做；缩略图用 `--fish ID或名称` 只处理本次鱼，提交前用 `--check`；浏览器专项运行 `node tests/browser/new-fish.cjs ID或名称`，复用同一脚本，不为每条普通鱼重复搭建验收流程。规则测试与专项验收通过后，无新改动不重复运行。
 - 日常新鱼验收优先用 `node scripts/check-new-fish.cjs ID或名称` 一次串联指定鱼种的素材、规则和浏览器专项，读取 `.qa/new-fish/ID-acceptance.json` 的结果；它不运行旧鱼测试或读取旧鱼图片，失败不得当作完成。规则可单独运行 `node scripts/check-fish-rules.cjs ID或名称`。网络同步/推送用 `node scripts/git-network.cjs fetch或push`，默认20秒超时；先看诊断，必要时加 `--api-fallback`。不得强推、直接推主分支或用未下载的远端 SHA 假装同步完成。
 - 用户继续用中文描述新鱼，由助手填写 `scripts/fish-template.json` 的副本，用 `node scripts/prepare-fish.cjs 输入.json` 检查并生成待核对配置，核对后再追加名单；不得猜测“每轮/每秒”等含义不明的单位或未支持的特殊行为。缩略图生成会以原图/成品内容哈希及处理设置判断复用，并为本次鱼保存 `.webp.meta.json`，应随新图提交；未变化则跳过。此机制不授权处理旧鱼，不得为旧鱼批量补记录。
+
+- 每条新鱼必须提供独立的 `sellPrice`（每条鱼的金币售价），先与用户确认；缺少时不得默认填 0。售价属于物品资料，不改变品质、概率或战斗参数。仓库、金币、背包/鱼堆使用同一份全局存档，交易必须整体保存成功后生效。

@@ -1,10 +1,22 @@
+import {createRefit} from './refit.js';
+import {loadInventoryImage,inventoryImageSources} from './inventory-images.js';
+import {tackleDescription} from './equipment-rules.js';
 import {SHOP_ITEMS} from './item-data.js';
 import {withLure} from './lure-encounters.js';
 
-export function createShop({store,encounters,onOpen,onClose}){
+export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}){
   const dialog=document.querySelector('#shop-dialog'),list=document.querySelector('#shop-products'),status=document.querySelector('#shop-status'),cards=[];
+  const refit=createRefit({store,isFishing});let imageCleanups=[];
+  function stopImages(){for(const stop of imageCleanups)stop();imageCleanups=[];refit.cleanup();}
+  function show(tab){
+    const modifying=tab==='refit';document.querySelector('#shop-products').hidden=modifying;document.querySelector('#refit-panel').hidden=!modifying;
+    document.querySelector('#shop-title').textContent=modifying?'改装':"starter's shop";document.querySelector('#shop-intro').textContent=modifying?'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。':'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。';
+    document.querySelector('#shop-stock-tab').setAttribute('aria-selected',String(!modifying));document.querySelector('#shop-refit-tab').setAttribute('aria-selected',String(modifying));if(modifying)refit.open();else refit.cleanup();
+  }
+  document.querySelector('#shop-stock-tab').addEventListener('click',()=>show('stock'));document.querySelector('#shop-refit-tab').addEventListener('click',()=>show('refit'));
   for(const product of SHOP_ITEMS){
     const card=document.createElement('form');card.className='shop-product';card.dataset.productId=product.id;
+    const picture=document.createElement('div');picture.className='shop-picture';const img=document.createElement('img');img.alt=product.name;img.decoding='async';picture.append(img);
     const heading=document.createElement('h3');heading.textContent=product.name;
     const price=document.createElement('p');price.className='shop-price';price.textContent=`${product.price} 金币 / 个`;
     const detail=document.createElement('p');detail.className='shop-detail';
@@ -13,7 +25,7 @@ export function createShop({store,encounters,onOpen,onClose}){
     if(product.kind==='lure'){
       const table=withLure(encounters,product.name);
       effect.textContent=`灰色概率降低 ${Math.round((1-product.modifiers.grey)*100)}%，白色降低 ${Math.round((1-product.modifiers.white)*100)}%。当前地图：灰 ${Number(table.qualityTotals.grey.toFixed(4))}% · 白 ${Number(table.qualityTotals.white.toFixed(4))}%。放入背包后每竿消耗 1 个。`;
-    }else effect.textContent='目前暂不提供使用效果。';
+    }else effect.textContent=tackleDescription(product.name);
     const quantity=document.createElement('div');quantity.className='shop-quantity';
     const minus=document.createElement('button'),plus=document.createElement('button'),input=document.createElement('input');
     minus.type=plus.type='button';minus.textContent='−';plus.textContent='＋';minus.setAttribute('aria-label',`减少${product.name}数量`);plus.setAttribute('aria-label',`增加${product.name}数量`);
@@ -33,9 +45,9 @@ export function createShop({store,encounters,onOpen,onClose}){
       status.textContent=result.ok?`已购买 ${result.quantity} 个${result.name}，花费 ${result.cost} 金币，已放入仓库。`:result.error;
       status.dataset.state=result.ok?'success':'error';
     });
-    card.append(heading,price,detail,effect,quantity,total,buy);list.append(card);cards.push({input,update});update();
+    card.append(heading,picture,price,detail,effect,quantity,total,buy);list.append(card);cards.push({input,update,img,product,picture});update();
   }
-  document.querySelector('#shop-toggle').addEventListener('click',()=>{onOpen();status.textContent='';for(const card of cards){card.input.value='1';card.update();}dialog.showModal();});
+  document.querySelector('#shop-toggle').addEventListener('click',()=>{onOpen();status.textContent='';for(const card of cards){card.input.value='1';card.update();}dialog.showModal();show('stock');for(const card of cards)imageCleanups.push(loadInventoryImage(card.img,inventoryImageSources(card.product.image),state=>card.picture.dataset.imageState=state));});
   document.querySelector('#shop-close').addEventListener('click',()=>dialog.close());
-  dialog.addEventListener('close',()=>{onClose();if(!document.querySelector('dialog[open]'))document.querySelector('#shop-toggle').focus({preventScroll:true});});
+  dialog.addEventListener('close',()=>{stopImages();onClose();if(!document.querySelector('dialog[open]'))document.querySelector('#shop-toggle').focus({preventScroll:true});});
 }

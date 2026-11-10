@@ -1,3 +1,4 @@
+import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
 import {FishInventory,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js';
 import {ITEMS,SHOP_BY_NAME,isFishName,isShopName,knownItem,quantityOf,quantityFields,stackLimit,unitSalePrice,bestLure} from './item-data.js';
 
@@ -14,7 +15,7 @@ const overlaps=(items,item,x,y)=>items.some(other=>{
 // Bag, pile, coins and all boxes form one transaction and one browser save.
 export class PlayerStorage{
   constructor(saved){
-    this.inventory=new FishInventory();this.coins=0;this.activeBox=0;
+    this.inventory=new FishInventory();this.coins=0;this.activeBox=0;this.equipment={line:null,reel:null};this.pendingCast=null;this.castSequence=0;
     this.boxes=Array.from({length:BOX_COUNT},(_,i)=>({unlocked:i===0,items:[]}));
     const used=new Set();let next=1;
     const restore=raw=>{
@@ -44,16 +45,29 @@ export class PlayerStorage{
       }
       if(Number.isInteger(storage.activeBox)&&this.boxes[storage.activeBox]?.unlocked)this.activeBox=storage.activeBox;
     }
+    if(storage){
+      for(const slot of ['line','reel']){
+        const raw=storage.equipment?.[slot];if(raw==null)continue;
+        if(tackleFor(raw.name)?.slot!==slot||used.has(String(raw.id)))throw Error('已装备物品资料异常，已停止加载以保护存档。');
+        this.equipment[slot]=restore(raw);
+      }
+      if(Number.isSafeInteger(storage.castSequence)&&storage.castSequence>=0)this.castSequence=storage.castSequence;
+      if(storage.pendingCast!=null){
+        const pending=storage.pendingCast;
+        if(!this.equipment.line||pending.lineId!==this.equipment.line.id||!Number.isSafeInteger(pending.id)||pending.id<1||pending.id>this.castSequence||![0,1].includes(pending.normalLoss)||![1,3].includes(pending.brokenLoss))throw Error('鱼线结算资料异常，已停止加载以保护存档。');
+        this.pendingCast={id:pending.id,lineId:pending.lineId,normalLoss:pending.normalLoss,brokenLoss:pending.brokenLoss};
+      }
+    }
     while(used.has(String(next)))next++;this.inventory.nextId=next;
   }
   clone(){
-    const copy=Object.assign(Object.create(PlayerStorage.prototype),structuredClone({coins:this.coins,activeBox:this.activeBox,boxes:this.boxes}));
+    const copy=Object.assign(Object.create(PlayerStorage.prototype),structuredClone({coins:this.coins,activeBox:this.activeBox,boxes:this.boxes,equipment:this.equipment,pendingCast:this.pendingCast,castSequence:this.castSequence}));
     copy.inventory=Object.assign(Object.create(FishInventory.prototype),structuredClone(this.inventory));return copy;
   }
   addFish(name){
     if(!isFishName(name))return {ok:false,error:'未知鱼种'};
     // Find the next unused ID across bag and boxes after migrating older saves.
-    const ids=new Set([...this.inventory.items,...this.boxes.flatMap(b=>b.items)].map(i=>i.id));
+    const ids=new Set([...this.inventory.items,...this.boxes.flatMap(b=>b.items),...Object.values(this.equipment).filter(Boolean)].map(i=>i.id));
     while(ids.has(String(this.inventory.nextId)))this.inventory.nextId++;
     const item=this.inventory.add(name);return item?{ok:true,item}:{ok:false,error:'未知鱼种'};
   }
@@ -99,7 +113,7 @@ export class PlayerStorage{
     if(!Number.isSafeInteger(cost)||cost>this.coins)return {ok:false,error:'金币不足，无法购买。'};
     const boxes=structuredClone(this.boxes),order=[this.activeBox,...boxes.map((_,i)=>i).filter(i=>i!==this.activeBox)].filter(i=>boxes[i].unlocked);
     let remaining=quantity,nextId=this.inventory.nextId;
-    const ids=new Set([...this.inventory.items,...boxes.flatMap(box=>box.items)].map(item=>item.id));
+    const ids=new Set([...this.inventory.items,...boxes.flatMap(box=>box.items),...Object.values(this.equipment).filter(Boolean)].map(item=>item.id));
     if(meta.stackLimit>1)for(const index of order)for(const item of boxes[index].items){
       if(item.name!==name)continue;const moved=Math.min(remaining,meta.stackLimit-quantityOf(item));item.quantity=quantityOf(item)+moved;remaining-=moved;
     }
@@ -108,11 +122,54 @@ export class PlayerStorage{
       for(let y=0;y<BOX_SIZE&&remaining;y++)for(let x=0;x<BOX_SIZE&&remaining;x++){
         const probe={id:'',name};if(!fits(probe,x,y,BOX_SIZE,BOX_SIZE)||overlaps(box.items,probe,x,y))continue;
         while(ids.has(String(nextId)))nextId++;const id=String(nextId++);ids.add(id);
-        const amount=Math.min(remaining,meta.stackLimit);box.items.push({id,name,x,y,...(meta.stackLimit>1?{quantity:amount}:{})});remaining-=amount;
+        const amount=Math.min(remaining,meta.stackLimit);box.items.push({id,name,x,y,...quantityFields({name,...(meta.stackLimit>1?{quantity:amount}:{})})});remaining-=amount;
       }
     }
     if(remaining)return {ok:false,error:'已解锁的仓库空间不足，整批购买已取消。'};
     this.boxes=boxes;this.inventory.nextId=nextId;this.coins-=cost;return {ok:true,name,quantity,cost};
+  }
+  equip(id,source,slot){
+    if(this.pendingCast)return {ok:false,error:'本轮钓鱼结束后才能装卸装备。'};
+    if(!['line','reel'].includes(slot))return {ok:false,error:'无效装备槽。'};
+    const from=source==='bag'?this.inventory.items:this.boxes[source]?.unlocked?this.boxes[source].items:null,item=from?.find(i=>i.id===id&&i.x!==null);
+    if(!item||tackleFor(item.name)?.slot!==slot)return {ok:false,error:'请选择对应类型的装备。'};
+    const old=this.equipment[slot];
+    if(old){
+      const w=source==='bag'?BAG_WIDTH:BOX_SIZE,h=source==='bag'?BAG_HEIGHT:BOX_SIZE;
+      if(!fits(old,item.x,item.y,w,h)||overlaps(from.filter(i=>i.id!==id),old,item.x,item.y))return {ok:false,error:'旧装备无法放回腾出的格子，本次更换已取消。'};
+    }
+    const index=from.indexOf(item),{x,y}=item;from.splice(index,1);if(old)from.splice(index,0,{...old,x,y});
+    this.equipment[slot]={...item,x:null,y:null};return {ok:true,name:item.name,replaced:old?.name??null};
+  }
+  unequip(slot){
+    if(this.pendingCast)return {ok:false,error:'本轮钓鱼结束后才能装卸装备。'};
+    if(!['line','reel'].includes(slot)||!this.equipment[slot])return {ok:false,error:'此槽位没有装备。'};
+    const item=this.equipment[slot],targets=[this.activeBox,...this.boxes.map((_,i)=>i).filter(i=>i!==this.activeBox)].filter(i=>this.boxes[i].unlocked);
+    for(const source of [...targets,'bag']){
+      const to=source==='bag'?this.inventory.items:this.boxes[source].items,w=source==='bag'?BAG_WIDTH:BOX_SIZE,h=source==='bag'?BAG_HEIGHT:BOX_SIZE;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(fits(item,x,y,w,h)&&!overlaps(to,item,x,y)){
+        to.push({...item,x,y});this.equipment[slot]=null;return {ok:true,name:item.name,source};
+      }
+    }
+    return {ok:false,error:'背包与已解锁仓库没有足够空位，无法卸下。'};
+  }
+  tackleStats(){return tackleStats(this.equipment);}
+  beginCast(lureId,unit){
+    if(this.pendingCast)return {ok:false,error:'上一竿耐久尚未结算，请先重试保存。'};
+    if(!this.equipment.line)return {ok:false,error:'没有需要结算的鱼线。'};
+    const loss=wearRoll(unit);if(!Number.isSafeInteger(this.castSequence+1))return {ok:false,error:'存档轮次超出范围。'};
+    if(lureId){const debit=this.consumeLure(lureId);if(!debit.ok)return debit;}
+    this.castSequence++;this.pendingCast={id:this.castSequence,lineId:this.equipment.line.id,...loss};
+    return {ok:true,castId:this.castSequence,equipment:this.tackleStats()};
+  }
+  settleCast(id,outcome){
+    const pending=this.pendingCast;
+    if(!pending||pending.id!==id)return {ok:false,error:'本竿已结算或编号不一致。'};
+    if(this.equipment.line?.id!==pending.lineId)return {ok:false,error:'本竿鱼线资料不一致。'};
+    const item=this.equipment.line,loss=outcome==='line-broken'?pending.brokenLoss:pending.normalLoss;
+    item.lineWear=Math.max(0,item.lineWear-loss);const destroyed=item.lineWear===0;
+    this.pendingCast=null;if(destroyed)this.equipment.line=null;
+    return {ok:true,name:item.name,loss,remaining:item.lineWear,destroyed};
   }
   bestLure(){return bestLure(this.inventory.items);}
   consumeLure(id){
@@ -123,5 +180,5 @@ export class PlayerStorage{
   }
   setCoins(value){if(!validCoins(value))return {ok:false,error:'请输入非负整数，且不超过 9007199254740991。'};this.coins=value;return {ok:true};}
   clearAll(){const removed=this.inventory.items.reduce((sum,item)=>sum+quantityOf(item),0);this.inventory.items=[];this.coins=0;return {ok:true,removed};}
-  serialize(){return {...this.inventory.serialize(),storage:{version:1,coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes)}};}
+  serialize(){return {...this.inventory.serialize(),storage:{version:1,coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes),...((this.equipment.line||this.equipment.reel||this.castSequence)?{equipment:structuredClone(this.equipment),castSequence:this.castSequence,pendingCast:this.pendingCast?{...this.pendingCast}:null}:{})}};}
 }

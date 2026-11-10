@@ -19,7 +19,7 @@ test('six exact products, footprints, qualities, stack caps and rounded per-unit
   assert.deepEqual(SHOP_ITEMS.map(p=>[p.name,p.price,p.sellPrice,p.h,p.w,p.quality,p.stackLimit]),[
     ['1号鱼线',2,1,1,1,'grey',1],['2号鱼线',10,5,1,1,'white',1],['3号鱼线',45,23,1,1,'white',1],
     ['1号亮片',1,1,1,1,'white',100],['2号亮片',3,2,1,1,'light green',100],['1号渔轮-初学者',150,75,2,2,'turquoise',1]
-  ]);assert.ok(SHOP_ITEMS.every(p=>p.image===null&&Object.isFrozen(p)));
+  ]);assert.ok(SHOP_ITEMS.every(p=>typeof p.image==='string'&&Object.isFrozen(p)));
 });
 test('buy packs each line/reel separately, stacks lures to 100 and fills existing stacks before empty cells',()=>{
   const m=funded();m.buy('1号鱼线',2);m.buy('1号渔轮-初学者',2);assert.equal(m.boxes[0].items.length,4);

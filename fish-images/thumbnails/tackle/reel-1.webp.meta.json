@@ -1,0 +1,17 @@
+{
+  "sourceName": "渔轮1.png",
+  "sourceSHA256": "f609c4110432ad75de4f0cb23406da657adff9e43207bc66999cb4d7081257c0",
+  "fullSHA256": "10e262aaa1e2973378864de8ed038122ce9da79d69620e3d93d7a14daf642ad0",
+  "thumbnailSHA256": "c9fe0cad532d3ba1d13af3f33a08950b942af96615b5231eaf33892667a16ca3",
+  "size": [
+    319,
+    384
+  ],
+  "limit": [
+    512,
+    384
+  ],
+  "format": "WEBP",
+  "lossless": true,
+  "background": "edge-connected near-white and selected hollow center; metallic highlights preserved"
+}

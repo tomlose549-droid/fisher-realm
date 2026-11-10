@@ -60,15 +60,14 @@ const playerStorage=createPlayerStorage({storage:saveSlots.storage,onSaveError:(
 const inventory=createInventory({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const discoveries=createFishDiscoveries({storage:saveSlots.storage,items:[...playerStorage.model.inventory.items,...playerStorage.model.boxes.flatMap(box=>box.items)],onSaveError:()=>toast('图鉴解锁记录暂未保存，本次游戏仍可查看')});
 window.addEventListener('focus',()=>discoveries.flush());
-window.addEventListener('pagehide',()=>discoveries.flush());
+window.addEventListener('pagehide',()=>{fishing.interrupt();discoveries.flush();playerStorage.flush();});
 window.addEventListener('focus',()=>playerStorage.flush());
-window.addEventListener('pagehide',()=>playerStorage.flush());
 createWarehouse({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const coinControls=createCoinControls({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const lureCasting=createLureCasting({store:playerStorage,encounters:map.context.encounters});
-createShop({store:playerStorage,encounters:map.context.encounters,onOpen:prepareModal,onClose:finishModal});
-const fishing=createFishing({prepareCast:options=>lureCasting.prepare(options),scene,camera,player:cameraOrigin,mapContext:map.context,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=map.context.spawn.pitch;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
-createSavePanel({saves:saveSlots,onOpen:prepareModal,onClose:finishModal,beforeChange:()=>{const itemsSaved=playerStorage.flush(),guideSaved=discoveries.flush();return itemsSaved&&guideSaved;}});
+createShop({store:playerStorage,encounters:map.context.encounters,onOpen:prepareModal,onClose:finishModal,isFishing:()=>fishing.isActive()});
+const fishing=createFishing({onRoundEnd:outcome=>lureCasting.finish(outcome),prepareCast:options=>lureCasting.prepare(options),scene,camera,player:cameraOrigin,mapContext:map.context,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=map.context.spawn.pitch;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
+createSavePanel({saves:saveSlots,onOpen:prepareModal,onClose:finishModal,beforeChange:action=>{if(action!=='delete')fishing.interrupt();const itemsSaved=playerStorage.flush(),guideSaved=discoveries.flush();return itemsSaved&&guideSaved;}});
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {

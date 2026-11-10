@@ -1,0 +1,17 @@
+{
+  "sourceName": "假饵2.png",
+  "sourceSHA256": "5293cc5d465873215b7ce50c6e9e862b581bc1365b248deab10b09a1a29fddf5",
+  "fullSHA256": "0f697b3fba805ff0811ddce330f9cd69ba2799786399c9951bff2609db507e0b",
+  "thumbnailSHA256": "748f5ab41e3959803c43ace0bebf05ec254478ca841ebe389f833f1e47be1968",
+  "size": [
+    512,
+    121
+  ],
+  "limit": [
+    512,
+    384
+  ],
+  "format": "WEBP",
+  "lossless": true,
+  "background": "edge-connected near-white and selected hollow center; metallic highlights preserved"
+}

@@ -4,7 +4,7 @@ import {createWaterEffects} from './water-effects.js';
 import {createFishingAudio} from './fishing-audio.js';
 import {createResourceScope} from './scene-resources.js';
 
-export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000,prepareCast=()=>({ok:true})}){
+export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000,prepareCast=()=>({ok:true}),onRoundEnd=()=>({})}){
   if(!mapContext||typeof mapContext.isWater!=='function'||!Number.isFinite(mapContext.waterLevel))throw new TypeError('Fishing requires a map context');
   const {waterLevel,isWater,fishPool,encounters}=mapContext,targetY=waterLevel+.095,surfaceY=waterLevel+.06;
   const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater,fishPool,encounters}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
@@ -86,7 +86,7 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
   function key(event){
     if(disposed)return false;
     if(event.repeat)return event.code==='Space';
-    const t=now();session.advance(t);
+    const t=now();update(t);
     if(session.state==='bite'){session.hook(t);return true;}
     if(event.code!=='Space')return false;
     if(session.state==='idle'){
@@ -94,7 +94,7 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
       if(!waterPoint(heading)){toast(mapContext.labels.castHint);return true;}
       const prepared=prepareCast({forced:session.ownerState.remaining>0});
       if(!prepared.ok){toast(prepared.error||'本次未能抛竿，请重试');return true;}
-      session.cast(t,heading,{encounters:prepared.encounters??encounters});activeLure=prepared.lure??null;pointerX=null;onCast();
+      session.cast(t,heading,{encounters:prepared.encounters??encounters,equipment:prepared.equipment});activeLure=prepared.lure??null;pointerX=null;onCast();
     }
     return true;
   }
@@ -123,13 +123,14 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
     session.advance(t);
     if(['fighting','caught'].includes(session.state))updateShore();
     for(const event of session.drainEvents()){
+      const wear=['caught','missed','failed'].includes(event.type)?onRoundEnd(event.reason??event.type):null;
       if(event.type==='cast'){updateShore();lastTrailAt=-Infinity;retrievalProgress=0;}
       if(event.type==='hooked'){sounds.play('hooked');pointerX=null;waterEffects.pulse('hook',surfaceTarget(),event.at);onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
       if(event.type==='missed'){toast('鱼脱钩了 · 按空格重新抛竿');onReady(session.castYaw);}
       if(event.type==='failed'){
         if(event.reason==='line-broken')sounds.play('broken');
         const messages={'line-broken':'鱼线断了','escaped':'鱼跑出 50 米了','landed':'鱼跑到了 10 米外的陆地'};
-        toast((messages[event.reason]||'钓鱼失败')+' · 按空格重新抛竿');onReady(session.castYaw);
+        if(event.reason!=='interrupted')toast((messages[event.reason]||'钓鱼失败')+' · 按空格重新抛竿');onReady(session.castYaw);
       }
       if(event.type==='exhausted')toast('鱼已耗尽耐力 · 现在可安心收线');
       if(event.type==='caught'){
@@ -141,6 +142,7 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
         waterEffects.pulse('catch',retrieveStart,event.at);
       }
       if(event.type==='ready')onReady(session.castYaw);
+      if(wear?.destroyed)toast(`${wear.name}耐久耗尽 · 已卸下，下一竿使用基础鱼线`);
     }
     if(session.active&&session.castAt!==lastLandedCast&&t>=session.castAt+FISHING.flight){
       lastLandedCast=session.castAt;
@@ -154,8 +156,9 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
     if(lastLineColor!==resource.lineColor){line.material.color.set(resource.lineColor);lastLineColor=resource.lineColor;}
     hidden(meters,!['fighting','caught'].includes(session.state));
     style(meters,'--line-color',resource.lineColor);
-    style(lineFill,'width',resource.durability+'%');setText(lineValue,resource.durability.toFixed(1)+' / 100');
+    style(lineFill,'width',(resource.durability/resource.durabilityMaximum*100)+'%');setText(lineValue,resource.durability.toFixed(1)+' / '+resource.durabilityMaximum);
     style(staminaFill,'width',(resource.fishStamina/resource.fishStaminaMaximum*100)+'%');setText(staminaValue,resource.fishStamina.toFixed(1)+' / '+resource.fishStaminaMaximum);
+    attr(lineMeter,'aria-valuemax',resource.durabilityMaximum);
     attr(lineMeter,'aria-valuenow',resource.durability.toFixed(1));
     attr(staminaMeter,'aria-valuemax',resource.fishStaminaMaximum);
     attr(staminaMeter,'aria-valuenow',resource.fishStamina.toFixed(1));
@@ -205,6 +208,7 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
   }
   return {
     key,pointerMove,pointerDown,release,view,update,updateDistanceLabel,
+    interrupt(){if(disposed)return;const t=now();update(t);if(['casting','waiting','bite','fighting'].includes(session.state)){session.fail('interrupted',t);update(t);}},
     pauseAudio:()=>sounds.pause(),resumeAudio:()=>sounds.resume(),
     dispose(){if(disposed)return;disposed=true;waterEffects.dispose();resources.dispose();sounds.dispose();hidden(distanceLabel,true);hidden(meters,true);hidden(notice,true);idleRod.visible=true;},
     setForcedFish:name=>session.setForcedFish(name),getOwnerState:()=>session.ownerState,

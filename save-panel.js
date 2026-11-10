@@ -1,3 +1,4 @@
+import {isFishName,quantityOf} from './item-data.js';
 import {MAX_SAVE_SLOTS} from './save-slots.js';
 
 export function createSavePanel({saves,onOpen,onClose,beforeChange,reload=()=>location.reload()}){
@@ -9,8 +10,8 @@ export function createSavePanel({saves,onOpen,onClose,beforeChange,reload=()=>lo
   function summary(slot){
     const inventory=slot.data.inventory,warehouse=inventory.storage;
     const boxes=Array.isArray(warehouse?.boxes)?warehouse.boxes:[],coins=Number.isSafeInteger(warehouse?.coins)&&warehouse.coins>=0?warehouse.coins:0;
-    const count=inventory.items.length+boxes.reduce((sum,box)=>sum+(Array.isArray(box?.items)?box.items.length:0),0);
-    return `${coins} 金币 · ${count} 条鱼 · 图鉴已解锁 ${slot.data.discoveries.fishIds.length} 种`;
+    const all=[...inventory.items,...boxes.flatMap(box=>Array.isArray(box?.items)?box.items:[])],count=all.filter(item=>isFishName(item.name)).length,gear=all.filter(item=>!isFishName(item.name)).reduce((sum,item)=>sum+quantityOf(item),0);
+    return `${coins} 金币 · ${count} 条鱼${gear?` · ${gear} 件道具`:''} · 图鉴已解锁 ${slot.data.discoveries.fishIds.length} 种`;
   }
   function render(){
     const state=saves.snapshot();list.replaceChildren();

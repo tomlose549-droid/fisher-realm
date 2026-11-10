@@ -1,14 +1,13 @@
 import {loadInventoryImage,inventoryImageSources} from './inventory-images.js';
-import {FISH_ITEMS} from './inventory-rules.js';
-import {FISH_PRICES} from './fish-data.js';
+import {ITEMS,quantityOf,unitSalePrice,isShopName,stackLimit} from './item-data.js';
 
 export function createFishCard(item,{selected=false,positioned=true,canRetry=()=>true}={}){
-  const meta=FISH_ITEMS[item.name],button=document.createElement('button');
+  const meta=ITEMS[item.name],button=document.createElement('button');
   button.type='button';button.className='inventory-fish'+(selected?' selected':'');
-  button.dataset.fishId=item.id;button.dataset.fishWidth=meta.w;
+  button.dataset.itemKind=isShopName(item.name)?meta.kind:'fish';button.dataset.itemName=item.name;button.dataset.fishId=item.id;button.dataset.fishWidth=meta.w;
   button.style.setProperty('--fish-color',meta.color);
   button.style.setProperty('--fish-label-color',['#008000','#0000ff','#301934','#4b0082','#00008b'].includes(meta.color)?'#ffffff':'#294137');
-  const title=`${item.name} · 高${meta.h}格 × 宽${meta.w}格 · 售价 ${FISH_PRICES[item.name]} 金币`;
+  const count=quantityOf(item),title=`${item.name} · 高${meta.h}格 × 宽${meta.w}格 · 售价 ${unitSalePrice(item.name)} 金币 / 个`+(stackLimit(item.name)>1?` · 数量 ${count} / 100 · 整堆售价 ${count*unitSalePrice(item.name)} 金币`:'');
   button.title=title;button.setAttribute('aria-label',title);
   if(positioned){button.style.gridColumn=`${item.x+1} / span ${meta.w}`;button.style.gridRow=`${item.y+1} / span ${meta.h}`;}
   let cleanup=()=>{};
@@ -21,5 +20,6 @@ export function createFishCard(item,{selected=false,positioned=true,canRetry=()=
     button.addEventListener('click',event=>{if(button.dataset.imageState!=='error'||!canRetry())return;event.preventDefault();event.stopPropagation();cleanup.retry();});
   }else button.classList.add('inventory-fish-no-image');
   const name=document.createElement('span');name.textContent=item.name;button.append(name);
+  if(stackLimit(item.name)>1){const badge=document.createElement('b');badge.className='item-quantity';badge.textContent=count;button.append(badge);}
   return {element:button,dispose:cleanup};
 }

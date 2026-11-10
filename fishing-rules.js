@@ -57,11 +57,11 @@ export class FishingSession{
     if(this.state!=='idle'||!fish)return false;
     this.forcedFish=fish;this.forcedRemaining=10;return true;
   }
-  cast(now,yaw){
+  cast(now,yaw,{encounters=this.encounters}={}){
     this.advance(now);if(this.state!=='idle')return false;
     this.forcedCastFish=this.forcedRemaining>0?this.forcedFish:null;
     if(this.forcedCastFish)this.profile=this.forcedCastFish;
-    else if(this.randomSpecies)this.profile=pickFish(this.randomUnit(),this.fishPool,this.encounters);
+    else if(this.randomSpecies)this.profile=pickFish(this.randomUnit(),this.fishPool,encounters);
     this.state='casting';this.castYaw=yaw;this.rodYaw=yaw;
     this.fishX=this.player.x-Math.sin(yaw)*FISHING.distance;this.fishZ=this.player.z-Math.cos(yaw)*FISHING.distance;
     this.castAt=now;this.biteAt=now+FISHING.minWait+this.randomUnit()*(FISHING.maxWait-FISHING.minWait);this.hookDeadline=this.biteAt+FISHING.hookWindow;

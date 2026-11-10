@@ -3,7 +3,7 @@ import {join,dirname} from 'node:path';
 
 // A new fish needs both metadata and a reviewed probability allocation.
 export async function copyCatalogSandbox(temp,extra){
-  for(const file of ['fishing-rules.js','inventory-rules.js','fish-discoveries.js','fish-guide.js',
+  for(const file of ['item-data.js','fishing-rules.js','inventory-rules.js','fish-discoveries.js','fish-guide.js',
     'fish-help.js','fish-encounters.js','map-registry.js','maps/summer-pond.js','inventory-images.js','release-assets.js',
     'tests/american-eel.test.js','tests/helpers/encounter-unit.js','scripts/check-fish-rules.cjs']){
     await mkdir(dirname(join(temp,file)),{recursive:true});

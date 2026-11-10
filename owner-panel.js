@@ -16,8 +16,8 @@ export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich}){
     event.preventDefault();const value=command.value.trim();
     if(value==='clear'){
       command.value='';const result=onClearAll();
-      message.textContent=result.ok?`已重置鱼堆、背包和金币，共清除 ${result.removed} 条鱼。仓库与图鉴保留。`:result.error;
-      if(result.ok)toast(`鱼堆、背包和金币已清空 · ${result.removed} 条鱼`);return;
+      message.textContent=result.ok?`已重置鱼堆、背包和金币，共清除 ${result.removed} 件物品。仓库与图鉴保留。`:result.error;
+      if(result.ok)toast(`鱼堆、背包和金币已清空 · ${result.removed} 件物品`);return;
     }
     if(value==='rich'){command.value='';message.textContent='';onRich();return;}
     if(!open())message.textContent='未识别的内容';

@@ -1,3 +1,5 @@
+import {createShop} from './shop.js';
+import {createLureCasting} from './lure-casting.js';
 import {createSaveSlots} from './save-slots.js';
 import {createSavePanel} from './save-panel.js';
 import {createPlayerStorage} from './player-storage.js';
@@ -63,7 +65,9 @@ window.addEventListener('focus',()=>playerStorage.flush());
 window.addEventListener('pagehide',()=>playerStorage.flush());
 createWarehouse({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const coinControls=createCoinControls({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
-const fishing=createFishing({scene,camera,player:cameraOrigin,mapContext:map.context,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=map.context.spawn.pitch;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
+const lureCasting=createLureCasting({store:playerStorage,encounters:map.context.encounters});
+createShop({store:playerStorage,encounters:map.context.encounters,onOpen:prepareModal,onClose:finishModal});
+const fishing=createFishing({prepareCast:options=>lureCasting.prepare(options),scene,camera,player:cameraOrigin,mapContext:map.context,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=map.context.spawn.pitch;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
 createSavePanel({saves:saveSlots,onOpen:prepareModal,onClose:finishModal,beforeChange:()=>{const itemsSaved=playerStorage.flush(),guideSaved=discoveries.flush();return itemsSaved&&guideSaved;}});
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());

@@ -1,5 +1,5 @@
+import {ITEMS as FISH_ITEMS,isFishName,quantityOf} from './item-data.js';
 import {createFishCard} from './item-card.js';
-import {FISH_ITEMS} from './inventory-rules.js';
 import {BOX_SIZE,BOX_COST} from './storage-rules.js';
 
 export function createWarehouse({store,onOpen,onClose,toast}){
@@ -15,7 +15,7 @@ export function createWarehouse({store,onOpen,onClose,toast}){
   function resetDrag(){drag?.ghost?.remove();drag=null;for(const el of [bag,grid])el.classList.remove('drop-valid','drop-invalid');}
   function select(value){selected=value;for(const card of dialog.querySelectorAll('[data-fish-id]'))card.classList.toggle('selected',card.dataset.fishId===selected?.id);}
   function say(message){hint.textContent=message;}
-  function defaultHint(){say(sale?'出售中：双击右侧仓库里的鱼出售；再点按钮停止。':'拖动鱼在背包与仓库之间转移；也可先点鱼，再点目标格。悬停查看售价。');}
+  function defaultHint(){say(sale?'出售中：双击右侧仓库物品出售（亮片整堆出售）；再点按钮停止。':'拖动物品在背包与仓库之间转移；也可先点鱼，再点目标格；同种亮片可合并。悬停查看售价。');}
   function cells(element,width,height){
     element.replaceChildren();
     for(let y=0;y<height;y++)for(let x=0;x<width;x++){
@@ -41,7 +41,7 @@ export function createWarehouse({store,onOpen,onClose,toast}){
     cells(bag,5,3);cells(grid,BOX_SIZE,BOX_SIZE);
     for(const item of model.inventory.items.filter(i=>i.x!==null))bag.append(card(item,'bag'));
     for(const item of model.boxes[model.activeBox].items)grid.append(card(item,model.activeBox));
-    document.querySelector('#warehouse-count').textContent=`${model.boxes[model.activeBox].items.length} 条鱼 · 10 列 × 10 行`;
+    document.querySelector('#warehouse-count').textContent=`${model.boxes[model.activeBox].items.filter(i=>isFishName(i.name)).length} 条鱼 · ${model.boxes[model.activeBox].items.filter(i=>!isFishName(i.name)).reduce((n,i)=>n+quantityOf(i),0)} 件道具 · 10 × 10`;
     if(focused?.startsWith('warehouse-box-'))document.getElementById(focused)?.focus({preventScroll:true});
   }
   function transfer(id,source,target,x,y){
@@ -100,7 +100,7 @@ export function createWarehouse({store,onOpen,onClose,toast}){
   grid.addEventListener('dblclick',event=>{
     if(!sale)return;const button=event.target.closest('[data-fish-id]');if(!button)return;
     event.preventDefault();const result=store.run('sell',[button.dataset.fishId,store.model.activeBox]);
-    if(result.ok){say(`已出售${result.name}，获得 ${result.price} 金币。`);toast(`+${result.price} 金币 · ${result.name}`);}else say(result.error);
+    if(result.ok){say(`已出售${result.name} × ${result.quantity}，获得 ${result.price} 金币。`);toast(`+${result.price} 金币 · ${result.name}`);}else say(result.error);
   });
   saleButton.addEventListener('click',()=>{resetDrag();select(null);sale=!sale;saleButton.setAttribute('aria-pressed',String(sale));saleButton.textContent=sale?'停止出售':'出售';dialog.classList.toggle('selling',sale);defaultHint();});
   tabs.addEventListener('click',event=>{

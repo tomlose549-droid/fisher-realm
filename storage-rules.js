@@ -1,13 +1,13 @@
-import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js';
-import {FISH_PRICES} from './fish-data.js';
+import {FishInventory,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js';
+import {ITEMS,SHOP_BY_NAME,isFishName,isShopName,knownItem,quantityOf,quantityFields,stackLimit,unitSalePrice,bestLure} from './item-data.js';
 
 export const BOX_SIZE=10,BOX_COUNT=10,BOX_COST=1000;
 export const validCoins=value=>Number.isSafeInteger(value)&&value>=0;
-const known=item=>item&&typeof item.name==='string'&&Object.hasOwn(FISH_ITEMS,item.name);
-const fits=(item,x,y,w,h)=>known(item)&&Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x+FISH_ITEMS[item.name].w<=w&&y+FISH_ITEMS[item.name].h<=h;
+const known=item=>item&&knownItem(item.name);
+const fits=(item,x,y,w,h)=>known(item)&&Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x+ITEMS[item.name].w<=w&&y+ITEMS[item.name].h<=h;
 const overlaps=(items,item,x,y)=>items.some(other=>{
   if(other.id===item.id||other.x===null)return false;
-  const a=FISH_ITEMS[item.name],b=FISH_ITEMS[other.name];
+  const a=ITEMS[item.name],b=ITEMS[other.name];
   return x<other.x+b.w&&x+a.w>other.x&&y<other.y+b.h&&y+a.h>other.y;
 });
 
@@ -21,11 +21,12 @@ export class PlayerStorage{
       if(!known(raw))return null;
       let id=typeof raw.id==='string'&&/^[1-9]\d*$/.test(raw.id)&&Number.isSafeInteger(Number(raw.id))?raw.id:null;
       if(!id||used.has(id)){while(used.has(String(next)))next++;id=String(next++);}
-      used.add(id);return {id,name:raw.name,x:null,y:null};
+      used.add(id);return {id,name:raw.name,x:null,y:null,...quantityFields(raw)};
     };
     if(saved?.version===1&&Array.isArray(saved.items))for(const raw of saved.items){
       const item=restore(raw);if(!item)continue;
       if(fits(item,raw.x,raw.y,BAG_WIDTH,BAG_HEIGHT)&&!overlaps(this.inventory.items,item,raw.x,raw.y)){item.x=raw.x;item.y=raw.y;}
+      if(!isFishName(item.name)&&item.x===null)throw Error('道具位置异常，已停止加载以保护存档。');
       this.inventory.items.push(item);
     }
     const storage=saved?.version===1&&saved.storage?.version===1?saved.storage:null;
@@ -38,7 +39,7 @@ export class PlayerStorage{
           const item=restore(raw);if(!item)continue;
           if(box.unlocked&&fits(item,raw.x,raw.y,BOX_SIZE,BOX_SIZE)&&!overlaps(box.items,item,raw.x,raw.y)){
             item.x=raw.x;item.y=raw.y;box.items.push(item);
-          }else this.inventory.items.push(item); // Recover invalid placements into the pile, never discard a known fish.
+          }else{if(!isFishName(item.name))throw Error('仓库道具位置异常，已停止加载以保护存档。');this.inventory.items.push(item);} // Invalid fish placements recover into the pile.
         }
       }
       if(Number.isInteger(storage.activeBox)&&this.boxes[storage.activeBox]?.unlocked)this.activeBox=storage.activeBox;
@@ -50,6 +51,7 @@ export class PlayerStorage{
     copy.inventory=Object.assign(Object.create(FishInventory.prototype),structuredClone(this.inventory));return copy;
   }
   addFish(name){
+    if(!isFishName(name))return {ok:false,error:'未知鱼种'};
     // Find the next unused ID across bag and boxes after migrating older saves.
     const ids=new Set([...this.inventory.items,...this.boxes.flatMap(b=>b.items)].map(i=>i.id));
     while(ids.has(String(this.inventory.nextId)))this.inventory.nextId++;
@@ -62,14 +64,20 @@ export class PlayerStorage{
     const from=source==='bag'?this.inventory.items:this.boxes[source]?.unlocked?this.boxes[source].items:null;
     const to=target==='bag'?this.inventory.items:this.boxes[target]?.unlocked?this.boxes[target].items:null;
     const item=from?.find(i=>i.id===id&&i.x!==null),w=target==='bag'?BAG_WIDTH:BOX_SIZE,h=target==='bag'?BAG_HEIGHT:BOX_SIZE;
-    if(!item||!to||!fits(item,x,y,w,h)||overlaps(to,item,x,y))return null;
+    if(!item||!to||!fits(item,x,y,w,h))return null;
+    const covered=to.filter(other=>other.id!==id&&other.x!==null&&overlaps([other],item,x,y));
+    if(covered.length){
+      const merge=covered.length===1&&covered[0].name===item.name&&stackLimit(item.name)>1&&covered[0].x===x&&covered[0].y===y&&quantityOf(covered[0])<stackLimit(item.name)?covered[0]:null;
+      return merge?{item,from,to,merge}:null;
+    }
     return {item,from,to};
   }
   canTransfer(id,source,target,x,y){return !!this.placement(id,source,target,x,y);}
   transfer(id,source,target,x,y){
     const placement=this.placement(id,source,target,x,y);
     if(!placement)return {ok:false,error:'这里已被占用或放不下，鱼留在原处。'};
-    const {item,from,to}=placement;
+    const {item,from,to,merge}=placement;
+    if(merge){const moved=Math.min(quantityOf(item),stackLimit(item.name)-quantityOf(merge));merge.quantity=quantityOf(merge)+moved;item.quantity=quantityOf(item)-moved;if(!item.quantity)from.splice(from.indexOf(item),1);return {ok:true,moved,merged:true};}
     if(from!==to){from.splice(from.indexOf(item),1);to.push(item);}item.x=x;item.y=y;return {ok:true};
   }
   selectBox(index){if(!Number.isInteger(index)||!this.boxes[index]?.unlocked)return {ok:false};this.activeBox=index;return {ok:true};}
@@ -81,11 +89,39 @@ export class PlayerStorage{
   sell(id,index){
     const box=this.boxes[index],item=box?.unlocked?box.items.find(i=>i.id===id):null;
     if(!item)return {ok:false,error:'这条鱼已不在仓库中'};
-    const price=FISH_PRICES[item.name];
+    const quantity=quantityOf(item),unitPrice=unitSalePrice(item.name),price=unitPrice*quantity;
     if(!validCoins(price)||!validCoins(this.coins+price))return {ok:false,error:'金币金额超出可保存范围'};
-    box.items.splice(box.items.indexOf(item),1);this.coins+=price;return {ok:true,name:item.name,price};
+    box.items.splice(box.items.indexOf(item),1);this.coins+=price;return {ok:true,name:item.name,price,quantity};
+  }
+  buy(name,quantity){
+    if(!isShopName(name)||!Number.isSafeInteger(quantity)||quantity<1)return {ok:false,error:'请输入正整数购买数量。'};
+    const meta=SHOP_BY_NAME[name],cost=meta.price*quantity;
+    if(!Number.isSafeInteger(cost)||cost>this.coins)return {ok:false,error:'金币不足，无法购买。'};
+    const boxes=structuredClone(this.boxes),order=[this.activeBox,...boxes.map((_,i)=>i).filter(i=>i!==this.activeBox)].filter(i=>boxes[i].unlocked);
+    let remaining=quantity,nextId=this.inventory.nextId;
+    const ids=new Set([...this.inventory.items,...boxes.flatMap(box=>box.items)].map(item=>item.id));
+    if(meta.stackLimit>1)for(const index of order)for(const item of boxes[index].items){
+      if(item.name!==name)continue;const moved=Math.min(remaining,meta.stackLimit-quantityOf(item));item.quantity=quantityOf(item)+moved;remaining-=moved;
+    }
+    for(const index of order){
+      const box=boxes[index];
+      for(let y=0;y<BOX_SIZE&&remaining;y++)for(let x=0;x<BOX_SIZE&&remaining;x++){
+        const probe={id:'',name};if(!fits(probe,x,y,BOX_SIZE,BOX_SIZE)||overlaps(box.items,probe,x,y))continue;
+        while(ids.has(String(nextId)))nextId++;const id=String(nextId++);ids.add(id);
+        const amount=Math.min(remaining,meta.stackLimit);box.items.push({id,name,x,y,...(meta.stackLimit>1?{quantity:amount}:{})});remaining-=amount;
+      }
+    }
+    if(remaining)return {ok:false,error:'已解锁的仓库空间不足，整批购买已取消。'};
+    this.boxes=boxes;this.inventory.nextId=nextId;this.coins-=cost;return {ok:true,name,quantity,cost};
+  }
+  bestLure(){return bestLure(this.inventory.items);}
+  consumeLure(id){
+    const item=this.inventory.items.find(item=>item.id===id&&item.x!==null);
+    if(!item||!isShopName(item.name)||SHOP_BY_NAME[item.name].kind!=='lure'||quantityOf(item)<1)return {ok:false,error:'背包内没有可用亮片。'};
+    const name=item.name;item.quantity=quantityOf(item)-1;if(!item.quantity)this.inventory.items.splice(this.inventory.items.indexOf(item),1);
+    return {ok:true,name,remaining:item.quantity};
   }
   setCoins(value){if(!validCoins(value))return {ok:false,error:'请输入非负整数，且不超过 9007199254740991。'};this.coins=value;return {ok:true};}
-  clearAll(){const removed=this.inventory.items.length;this.inventory.items=[];this.coins=0;return {ok:true,removed};}
+  clearAll(){const removed=this.inventory.items.reduce((sum,item)=>sum+quantityOf(item),0);this.inventory.items=[];this.coins=0;return {ok:true,removed};}
   serialize(){return {...this.inventory.serialize(),storage:{version:1,coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes)}};}
 }

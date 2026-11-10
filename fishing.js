@@ -4,11 +4,11 @@ import {createWaterEffects} from './water-effects.js';
 import {createFishingAudio} from './fishing-audio.js';
 import {createResourceScope} from './scene-resources.js';
 
-export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000}){
+export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000,prepareCast=()=>({ok:true})}){
   if(!mapContext||typeof mapContext.isWater!=='function'||!Number.isFinite(mapContext.waterLevel))throw new TypeError('Fishing requires a map context');
   const {waterLevel,isWater,fishPool,encounters}=mapContext,targetY=waterLevel+.095,surfaceY=waterLevel+.06;
   const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater,fishPool,encounters}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
-  const now=getTime;
+  const now=getTime;let activeLure=null;
   const sounds=createFishingAudio();
   const root=new THREE.Group();root.name='player-fishing';scene.add(root);let disposed=false;
   const distanceLabel=document.querySelector('#fish-distance'),distancePoint=new THREE.Vector3();
@@ -92,7 +92,9 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
     if(session.state==='idle'){
       const heading=camera.rotation.y;
       if(!waterPoint(heading)){toast(mapContext.labels.castHint);return true;}
-      session.cast(t,heading);pointerX=null;onCast();
+      const prepared=prepareCast({forced:session.ownerState.remaining>0});
+      if(!prepared.ok){toast(prepared.error||'本次未能抛竿，请重试');return true;}
+      session.cast(t,heading,{encounters:prepared.encounters??encounters});activeLure=prepared.lure??null;pointerX=null;onCast();
     }
     return true;
   }
@@ -209,6 +211,6 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
     isFighting:()=>!disposed&&session.state==='fighting',isActive:()=>!disposed&&session.active,
     hideReflection(){if(disposed)return;rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
     restoreReflection(){if(disposed)return;const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},
-    getState:()=>({...session.snapshot(now()),visuals:{audio:sounds.snapshot(),fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineColor:line.material.color.getHexString(),lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
+    getState:()=>({...session.snapshot(now()),lure:activeLure,visuals:{audio:sounds.snapshot(),fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineColor:line.material.color.getHexString(),lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
   };
 }

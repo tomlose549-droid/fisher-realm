@@ -1,6 +1,6 @@
 {
   "name": "lakeside-fishing",
-  "version": "0.42.0",
+  "version": "0.43.0",
   "private": true,
   "type": "module",
   "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
@@ -48,7 +48,9 @@
       "item-data.js",
       "lure-encounters.js",
       "lure-casting.js",
-      "shop.js"
+      "shop.js",
+      "equipment-rules.js",
+      "refit.js"
     ],
     "styles": [
       "style.css"

@@ -10,7 +10,8 @@ export function createSavePanel({saves,onOpen,onClose,beforeChange,reload=()=>lo
   function summary(slot){
     const inventory=slot.data.inventory,warehouse=inventory.storage;
     const boxes=Array.isArray(warehouse?.boxes)?warehouse.boxes:[],coins=Number.isSafeInteger(warehouse?.coins)&&warehouse.coins>=0?warehouse.coins:0;
-    const all=[...inventory.items,...boxes.flatMap(box=>Array.isArray(box?.items)?box.items:[])],count=all.filter(item=>isFishName(item.name)).length,gear=all.filter(item=>!isFishName(item.name)).reduce((sum,item)=>sum+quantityOf(item),0);
+    const equipped=Object.values(warehouse?.equipment??{}).filter(Boolean);
+    const all=[...equipped,...inventory.items,...boxes.flatMap(box=>Array.isArray(box?.items)?box.items:[])],count=all.filter(item=>isFishName(item.name)).length,gear=all.filter(item=>!isFishName(item.name)).reduce((sum,item)=>sum+quantityOf(item),0);
     return `${coins} 金币 · ${count} 条鱼${gear?` · ${gear} 件道具`:''} · 图鉴已解锁 ${slot.data.discoveries.fishIds.length} 种`;
   }
   function render(){
@@ -56,7 +57,7 @@ export function createSavePanel({saves,onOpen,onClose,beforeChange,reload=()=>lo
   document.querySelector('#save-confirm-form').addEventListener('submit',event=>{
     event.preventDefault();if(busy||!operation||apply.disabled)return;
     // Settle pending catches/discoveries before changing the active slot or deleting another one.
-    if(!beforeChange()){message.textContent='当前进度尚未保存，已取消操作。请释放浏览器存储空间后重试。';return;}
+    if(!beforeChange(operation.action)){message.textContent='当前进度尚未保存，已取消操作。请释放浏览器存储空间后重试。';return;}
     busy=true;apply.disabled=true;
     const {action,id}=operation,result=action==='create'?saves.create():action==='select'?saves.select(id):saves.remove(id);
     if(!result.ok){busy=false;apply.disabled=false;message.textContent=result.error;return;}

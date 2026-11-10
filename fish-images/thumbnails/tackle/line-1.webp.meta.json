@@ -1,0 +1,17 @@
+{
+  "sourceName": "1级鱼线.png",
+  "sourceSHA256": "986ebf85d959ac5c7eb508867f77b3ce547e8f353d97bf1d1ca2aa76fae82d7e",
+  "fullSHA256": "83f8524b550282920198b22c89b32ffa4fd8df8e1308caa33b5244cbe320f743",
+  "thumbnailSHA256": "afedaaf1b29dd6d90843b04b33ae996926b249b1f2adbfffc5d60f4b79562ccd",
+  "size": [
+    411,
+    384
+  ],
+  "limit": [
+    512,
+    384
+  ],
+  "format": "WEBP",
+  "lossless": true,
+  "background": "edge-connected near-white and selected hollow center; metallic highlights preserved"
+}

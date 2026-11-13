@@ -1,3 +1,4 @@
+import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {createRefit} from './refit.js';
 import {loadInventoryImage,inventoryImageSources} from './inventory-images.js';
 import {tackleDescription} from './equipment-rules.js';
@@ -8,12 +9,38 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
   const dialog=document.querySelector('#shop-dialog'),list=document.querySelector('#shop-products'),status=document.querySelector('#shop-status'),cards=[];
   const refit=createRefit({store,isFishing});let imageCleanups=[];
   function stopImages(){for(const stop of imageCleanups)stop();imageCleanups=[];refit.cleanup();}
-  function show(tab){
-    const modifying=tab==='refit';document.querySelector('#shop-products').hidden=modifying;document.querySelector('#refit-panel').hidden=!modifying;
-    document.querySelector('#shop-title').textContent=modifying?'改装':"starter's shop";document.querySelector('#shop-intro').textContent=modifying?'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。':'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。';
-    document.querySelector('#shop-stock-tab').setAttribute('aria-selected',String(!modifying));document.querySelector('#shop-refit-tab').setAttribute('aria-selected',String(modifying));if(modifying)refit.open();else refit.cleanup();
+  let activeTab='stock',upgrading=false;
+  const upgradeButton=document.querySelector('#backpack-upgrade-buy'),upgradeStatus=document.querySelector('#backpack-upgrade-status');
+  function renderUpgrade(){
+    if(!dialog.open||activeTab!=='backpack')return;
+    const bag=store.model.inventory,next=BACKPACK_LEVELS[bag.level+1];
+    document.querySelector('#backpack-upgrade-level').textContent=`lv${bag.level}`;
+    document.querySelector('#backpack-upgrade-current').textContent=`当前容量：高 ${bag.height} × 宽 ${bag.width}（${bag.height*bag.width} 格）`;
+    document.querySelector('#backpack-upgrade-next').textContent=next?`下一级 lv${next.level}：高 ${next.h} × 宽 ${next.w}（${next.h*next.w} 格）`:'已达到最大容量';
+    upgradeButton.textContent=next?`${next.cost} 金币 · 升级至 lv${next.level}`:'已满级';
+    upgradeButton.disabled=upgrading||!next||store.model.coins<next.cost;
+    if(!upgrading)upgradeStatus.textContent=next&&store.model.coins<next.cost?`金币不足，需要 ${next.cost} 金币。`:'';
   }
-  document.querySelector('#shop-stock-tab').addEventListener('click',()=>show('stock'));document.querySelector('#shop-refit-tab').addEventListener('click',()=>show('refit'));
+  function show(tab){
+    activeTab=tab;
+    for(const [name,panel] of [['stock','shop-products'],['refit','refit-panel'],['backpack','backpack-upgrade-panel']]){
+      document.getElementById(panel).hidden=name!==tab;
+      document.getElementById(`shop-${name}-tab`).setAttribute('aria-selected',String(name===tab));
+    }
+    document.querySelector('#shop-title').textContent={stock:"starter's shop",refit:'改装',backpack:'背包升级'}[tab];
+    document.querySelector('#shop-intro').textContent={stock:'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。',refit:'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。',backpack:'逐级扩充背包，让每次湖畔之行多一份收获。'}[tab];
+    status.textContent='';if(tab==='refit')refit.open();else refit.cleanup();renderUpgrade();
+  }
+  for(const tab of ['stock','refit','backpack'])document.getElementById(`shop-${tab}-tab`).addEventListener('click',()=>show(tab));
+  upgradeButton.addEventListener('click',()=>{
+    if(upgrading||upgradeButton.disabled)return;
+    upgrading=true;upgradeButton.disabled=true;
+    const result=store.run('upgradeBackpack',[store.model.inventory.level]);
+    renderUpgrade();upgradeStatus.textContent=result.ok?`已升级至 lv${result.level}，花费 ${result.cost} 金币，已保存。`:result.error;
+    // Ignore queued double clicks; a deliberate next upgrade is a separate purchase.
+    setTimeout(()=>{upgrading=false;const message=upgradeStatus.textContent;renderUpgrade();upgradeStatus.textContent=message;},450);
+  });
+  store.subscribe(renderUpgrade);
   for(const product of SHOP_ITEMS){
     const card=document.createElement('form');card.className='shop-product';card.dataset.productId=product.id;
     const picture=document.createElement('div');picture.className='shop-picture';const img=document.createElement('img');img.alt=product.name;img.decoding='async';picture.append(img);

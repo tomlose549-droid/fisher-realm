@@ -219,3 +219,18 @@ dialog:has(>.coin-balance){position:fixed;padding-top:53px}
 .inventory-fish[data-image-state]:not([data-item-kind=fish])>span{position:absolute;bottom:2px;left:2px;right:2px;margin:0;white-space:nowrap;font-size:9px;color:#fff;text-shadow:0 1px 3px #000;background:linear-gradient(transparent,#193b3266)}
 @media(max-width:900px){.shop-shell{grid-template-columns:110px minmax(0,1fr);gap:14px}.shop-sidebar{padding:8px 5px}.shop-sidebar button{font-size:11px}.refit-layout{grid-template-columns:1fr}.refit-rod{max-width:380px;margin:auto;width:100%}}
 @media(max-width:600px){.shop-shell{grid-template-columns:1fr;padding-top:39px;gap:15px}.shop-sidebar{position:static;display:grid;grid-template-columns:1fr 1fr}.shop-sidebar button{padding:9px;font-size:13px}.shop-header{padding-top:0}.shop-picture,.shop-picture img{height:90px}.refit-layout{gap:18px}.refit-rod{padding-top:210px}.refit-rod>svg{height:210px}.refit-candidate{gap:7px;padding:8px}.refit-candidate>.inventory-fish{width:54px;height:54px}}
+
+/* One saved backpack size drives both inventory views. */
+.inventory-grid{grid-template-columns:repeat(var(--bag-columns,5),minmax(0,1fr));grid-template-rows:repeat(var(--bag-rows,3),minmax(0,1fr));aspect-ratio:var(--bag-columns,5)/var(--bag-rows,3)}
+#backpack-upgrade-panel[hidden]{display:none}
+#backpack-upgrade-panel{text-align:center;color:#432711;padding:12px 15px 25px;border:1px solid #79532f66;border-radius:12px;background:#e1bd8b66}
+#backpack-upgrade-heading{font-size:22px;margin:4px 0 15px}
+.upgrade-backpack{width:170px;height:190px;fill:#8b663d;stroke:#432b17;stroke-width:5;stroke-linejoin:round;filter:drop-shadow(0 8px 7px #47271033)}
+#backpack-upgrade-level{font-size:32px;font-weight:bold;margin:8px}
+#backpack-upgrade-current,#backpack-upgrade-next{font-size:15px;line-height:1.8}
+#backpack-upgrade-buy{border:1px solid #543218;border-radius:7px;background:#694322;color:#fff0d2;padding:13px 22px;font:inherit;cursor:pointer}
+#backpack-upgrade-buy:disabled{opacity:.5;cursor:default}
+#backpack-upgrade-status{min-height:24px;font-size:14px;line-height:1.7}
+@media(max-width:600px){.shop-sidebar{grid-template-columns:repeat(3,minmax(0,1fr))}.shop-sidebar button{font-size:11px}#inventory-dialog.wide-bag .inventory-layout{grid-template-columns:1fr}.wide-bag .fish-pile{border-right:0;padding-right:0}.wide-bag .fish-pile-list{height:130px}#warehouse-bag{max-width:none}}
+
+#shop-dialog #backpack-upgrade-panel p{color:#432711}

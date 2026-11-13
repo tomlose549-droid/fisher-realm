@@ -1,5 +1,6 @@
 import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
-import {FishInventory,BAG_WIDTH,BAG_HEIGHT} from './inventory-rules.js';
+import {BACKPACK_LEVELS} from './backpack-upgrades.js';
+import {FishInventory} from './inventory-rules.js';
 import {ITEMS,SHOP_BY_NAME,isFishName,isShopName,knownItem,quantityOf,quantityFields,stackLimit,unitSalePrice,bestLure} from './item-data.js';
 
 export const BOX_SIZE=10,BOX_COUNT=10,BOX_COST=1000;
@@ -15,7 +16,7 @@ const overlaps=(items,item,x,y)=>items.some(other=>{
 // Bag, pile, coins and all boxes form one transaction and one browser save.
 export class PlayerStorage{
   constructor(saved){
-    this.inventory=new FishInventory();this.coins=0;this.activeBox=0;this.equipment={line:null,reel:null};this.pendingCast=null;this.castSequence=0;
+    this.inventory=new FishInventory({version:1,backpackLevel:saved?.version===1?saved.backpackLevel:undefined,items:[]});this.coins=0;this.activeBox=0;this.equipment={line:null,reel:null};this.pendingCast=null;this.castSequence=0;
     this.boxes=Array.from({length:BOX_COUNT},(_,i)=>({unlocked:i===0,items:[]}));
     const used=new Set();let next=1;
     const restore=raw=>{
@@ -26,7 +27,7 @@ export class PlayerStorage{
     };
     if(saved?.version===1&&Array.isArray(saved.items))for(const raw of saved.items){
       const item=restore(raw);if(!item)continue;
-      if(fits(item,raw.x,raw.y,BAG_WIDTH,BAG_HEIGHT)&&!overlaps(this.inventory.items,item,raw.x,raw.y)){item.x=raw.x;item.y=raw.y;}
+      if(fits(item,raw.x,raw.y,this.inventory.width,this.inventory.height)&&!overlaps(this.inventory.items,item,raw.x,raw.y)){item.x=raw.x;item.y=raw.y;}
       if(!isFishName(item.name)&&item.x===null)throw Error('道具位置异常，已停止加载以保护存档。');
       this.inventory.items.push(item);
     }
@@ -77,7 +78,7 @@ export class PlayerStorage{
   placement(id,source,target,x,y){
     const from=source==='bag'?this.inventory.items:this.boxes[source]?.unlocked?this.boxes[source].items:null;
     const to=target==='bag'?this.inventory.items:this.boxes[target]?.unlocked?this.boxes[target].items:null;
-    const item=from?.find(i=>i.id===id&&i.x!==null),w=target==='bag'?BAG_WIDTH:BOX_SIZE,h=target==='bag'?BAG_HEIGHT:BOX_SIZE;
+    const item=from?.find(i=>i.id===id&&i.x!==null),w=target==='bag'?this.inventory.width:BOX_SIZE,h=target==='bag'?this.inventory.height:BOX_SIZE;
     if(!item||!to||!fits(item,x,y,w,h))return null;
     const covered=to.filter(other=>other.id!==id&&other.x!==null&&overlaps([other],item,x,y));
     if(covered.length){
@@ -135,7 +136,7 @@ export class PlayerStorage{
     if(!item||tackleFor(item.name)?.slot!==slot)return {ok:false,error:'请选择对应类型的装备。'};
     const old=this.equipment[slot];
     if(old){
-      const w=source==='bag'?BAG_WIDTH:BOX_SIZE,h=source==='bag'?BAG_HEIGHT:BOX_SIZE;
+      const w=source==='bag'?this.inventory.width:BOX_SIZE,h=source==='bag'?this.inventory.height:BOX_SIZE;
       if(!fits(old,item.x,item.y,w,h)||overlaps(from.filter(i=>i.id!==id),old,item.x,item.y))return {ok:false,error:'旧装备无法放回腾出的格子，本次更换已取消。'};
     }
     const index=from.indexOf(item),{x,y}=item;from.splice(index,1);if(old)from.splice(index,0,{...old,x,y});
@@ -146,7 +147,7 @@ export class PlayerStorage{
     if(!['line','reel'].includes(slot)||!this.equipment[slot])return {ok:false,error:'此槽位没有装备。'};
     const item=this.equipment[slot],targets=[this.activeBox,...this.boxes.map((_,i)=>i).filter(i=>i!==this.activeBox)].filter(i=>this.boxes[i].unlocked);
     for(const source of [...targets,'bag']){
-      const to=source==='bag'?this.inventory.items:this.boxes[source].items,w=source==='bag'?BAG_WIDTH:BOX_SIZE,h=source==='bag'?BAG_HEIGHT:BOX_SIZE;
+      const to=source==='bag'?this.inventory.items:this.boxes[source].items,w=source==='bag'?this.inventory.width:BOX_SIZE,h=source==='bag'?this.inventory.height:BOX_SIZE;
       for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(fits(item,x,y,w,h)&&!overlaps(to,item,x,y)){
         to.push({...item,x,y});this.equipment[slot]=null;return {ok:true,name:item.name,source};
       }
@@ -177,6 +178,14 @@ export class PlayerStorage{
     if(!item||!isShopName(item.name)||SHOP_BY_NAME[item.name].kind!=='lure'||quantityOf(item)<1)return {ok:false,error:'背包内没有可用亮片。'};
     const name=item.name;item.quantity=quantityOf(item)-1;if(!item.quantity)this.inventory.items.splice(this.inventory.items.indexOf(item),1);
     return {ok:true,name,remaining:item.quantity};
+  }
+  upgradeBackpack(expectedLevel){
+    const current=this.inventory.level,next=BACKPACK_LEVELS[current+1];
+    if(expectedLevel!==current)return {ok:false,error:'背包等级已变化，请核对后重试。'};
+    if(!next)return {ok:false,error:'背包已满级。'};
+    if(this.coins<next.cost)return {ok:false,error:`金币不足，需要 ${next.cost} 金币。`};
+    this.coins-=next.cost;this.inventory.level=next.level;
+    return {ok:true,level:next.level,cost:next.cost};
   }
   setCoins(value){if(!validCoins(value))return {ok:false,error:'请输入非负整数，且不超过 9007199254740991。'};this.coins=value;return {ok:true};}
   clearAll(){const removed=this.inventory.items.reduce((sum,item)=>sum+quantityOf(item),0);this.inventory.items=[];this.coins=0;return {ok:true,removed};}

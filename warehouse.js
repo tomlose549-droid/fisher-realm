@@ -1,5 +1,6 @@
 import {ITEMS as FISH_ITEMS,isFishName,quantityOf} from './item-data.js';
 import {createFishCard} from './item-card.js';
+import {sizeBackpackGrid} from './backpack-upgrades.js';
 import {BOX_SIZE,BOX_COST} from './storage-rules.js';
 
 export function createWarehouse({store,onOpen,onClose,toast}){
@@ -38,7 +39,7 @@ export function createWarehouse({store,onOpen,onClose,toast}){
       button.setAttribute('aria-pressed',String(index===model.activeBox));button.classList.toggle('locked',!box.unlocked);tabs.append(button);
     });
     document.querySelector('#warehouse-box-title').textContent=`箱子 ${model.activeBox+1}`;
-    cells(bag,5,3);cells(grid,BOX_SIZE,BOX_SIZE);
+    sizeBackpackGrid(bag,model.inventory,document.querySelector('#warehouse-bag-size'));cells(bag,model.inventory.width,model.inventory.height);cells(grid,BOX_SIZE,BOX_SIZE);
     for(const item of model.inventory.items.filter(i=>i.x!==null))bag.append(card(item,'bag'));
     for(const item of model.boxes[model.activeBox].items)grid.append(card(item,model.activeBox));
     document.querySelector('#warehouse-count').textContent=`${model.boxes[model.activeBox].items.filter(i=>isFishName(i.name)).length} 条鱼 · ${model.boxes[model.activeBox].items.filter(i=>!isFishName(i.name)).reduce((n,i)=>n+quantityOf(i),0)} 件道具 · 10 × 10`;

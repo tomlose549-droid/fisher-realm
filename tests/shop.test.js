@@ -12,7 +12,7 @@ import {FishingSession} from '../fishing-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 const owned=m=>[...m.inventory.items,...m.boxes.flatMap(b=>b.items)];
 const count=(m,name)=>owned(m).filter(i=>i.name===name).reduce((n,i)=>n+quantityOf(i),0);
-const funded=()=>{const m=new PlayerStorage();m.setCoins(100000);return m;};
+const funded=()=>{const m=new PlayerStorage();m.quests.mainCompleted=1;m.setCoins(100000);return m;};
 function memory(){const map=new Map();let blocked=false;return {map,set blocked(v){blocked=v;},getItem:k=>map.get(k)??null,setItem(k,v){if(blocked)throw Error('quota');map.set(k,v);},removeItem:k=>map.delete(k)};}
 
 test('six exact products, footprints, qualities, stack caps and rounded per-unit resale values',()=>{
@@ -93,19 +93,19 @@ test('equipment never unlocks a fish guide or enters the fish catalog',()=>{
 });
 test('buy, sell, merge transfer and lure debit all roll back together if persistence fails',()=>{
   for(const method of ['buy','sell','transfer','consumeLure']){
-    const io=memory(),store=createPlayerStorage({storage:io});store.run('setCoins',[1000]);store.run('buy',['2号亮片',101]);const [a,b]=store.model.boxes[0].items;
+    const io=memory(),store=createPlayerStorage({storage:io});store.model.quests.mainCompleted=1;store.run('setCoins',[1000]);store.run('buy',['2号亮片',101]);const [a,b]=store.model.boxes[0].items;
     if(method==='consumeLure')store.run('transfer',[a.id,0,'bag',0,0]);
     const before=store.snapshot(),disk=io.getItem(PLAYER_STORAGE_KEY);io.blocked=true;
     const args={buy:['1号鱼线',1],sell:[a.id,0],transfer:[b.id,0,'bag',0,0],consumeLure:[a.id]}[method];assert.equal(store.run(method,args).ok,false,method);assert.deepEqual(store.snapshot(),before,method);assert.equal(io.getItem(PLAYER_STORAGE_KEY),disk,method);
   }
 });
 test('cast preparation saves one debit, admin casts bypass it and quota failure cannot grant a free effect',()=>{
-  const io=memory(),store=createPlayerStorage({storage:io});store.run('setCoins',[100]);store.run('buy',['2号亮片',2]);const item=store.model.boxes[0].items[0];store.run('transfer',[item.id,0,'bag',0,0]);const cast=createLureCasting({store,encounters:base});
+  const io=memory(),store=createPlayerStorage({storage:io});store.model.quests.mainCompleted=1;store.run('setCoins',[100]);store.run('buy',['2号亮片',2]);const item=store.model.boxes[0].items[0];store.run('transfer',[item.id,0,'bag',0,0]);const cast=createLureCasting({store,encounters:base});
   assert.equal(cast.prepare({forced:true}).encounters,base);assert.equal(count(store.model,'2号亮片'),2);io.blocked=true;assert.equal(cast.prepare().ok,false);assert.equal(count(store.model,'2号亮片'),2);
   io.blocked=false;const first=cast.prepare();assert.equal(first.lure,'2号亮片');assert.equal(count(store.model,'2号亮片'),1);assert.equal(cast.prepare().encounters,first.encounters);assert.equal(cast.prepare().encounters,base);
 });
 test('all products and stack counts survive reload, remain slot-local, and clear preserves warehouse stock',()=>{
-  const io=memory();let slots=createSaveSlots({storage:io}),store=createPlayerStorage({storage:slots.storage});store.run('setCoins',[10000]);for(const p of SHOP_ITEMS)store.run('buy',[p.name,p.stackLimit>1?101:2]);
+  const io=memory();let slots=createSaveSlots({storage:io}),store=createPlayerStorage({storage:slots.storage});store.model.quests.mainCompleted=1;store.run('setCoins',[10000]);for(const p of SHOP_ITEMS)store.run('buy',[p.name,p.stackLimit>1?101:2]);
   const lure=store.model.boxes[0].items.find(i=>i.name==='2号亮片');store.run('transfer',[lure.id,0,'bag',0,0]);const expected=store.snapshot();slots.create();slots=createSaveSlots({storage:io});assert.equal(owned(createPlayerStorage({storage:slots.storage}).model).length,0);slots.select('1');slots=createSaveSlots({storage:io});store=createPlayerStorage({storage:slots.storage});assert.deepEqual(store.snapshot(),expected);
   const boxes=structuredClone(store.model.boxes);store.run('clearAll');assert.equal(store.model.inventory.items.length,0);assert.deepEqual(store.model.boxes,boxes);
 });

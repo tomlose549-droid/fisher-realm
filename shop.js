@@ -1,3 +1,5 @@
+import {createShopQuests} from './shop-quests.js';
+import {shopUnlocked,secondShopUnlocked} from './quest-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {createRefit} from './refit.js';
 import {loadInventoryImage,inventoryImageSources} from './inventory-images.js';
@@ -7,9 +9,26 @@ import {withLure} from './lure-encounters.js';
 
 export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}){
   const dialog=document.querySelector('#shop-dialog'),list=document.querySelector('#shop-products'),status=document.querySelector('#shop-status'),cards=[];
-  const refit=createRefit({store,isFishing});let imageCleanups=[];
-  function stopImages(){for(const stop of imageCleanups)stop();imageCleanups=[];refit.cleanup();}
-  let activeTab='stock',upgrading=false;
+  const refit=createRefit({store,isFishing});
+  function stopImages(){stopProductImages();refit.cleanup();}
+  const quests=createShopQuests({store,onClose});
+  let activeTab='stock',upgrading=false,lastUnlocked=null;
+  const ownerButton=document.querySelector('#shop-owner');
+  function loadProductImages(){for(const card of cards)if(!card.stop){card.stop=loadInventoryImage(card.img,inventoryImageSources(card.product.image),state=>card.picture.dataset.imageState=state);}}
+  function stopProductImages(){for(const card of cards){card.stop?.();card.stop=null;}}
+  function renderStock(){
+    const unlocked=shopUnlocked(store.model.quests);
+    if(activeTab==='stock')document.querySelector('#shop-intro').textContent=unlocked?'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。':'店主正在等候，点击木质人物图标与他交谈。';
+    document.querySelector('#shop-other-tab').hidden=!secondShopUnlocked(store.model.quests);
+    if(lastUnlocked!==unlocked){
+      lastUnlocked=unlocked;for(const card of cards){
+        card.card.replaceChildren();card.card.classList.toggle('shop-product-locked',!unlocked);
+        if(unlocked){card.card.removeAttribute('aria-label');card.card.append(...card.contents);}
+        else{const lock=document.createElement('span');lock.className='shop-product-lock';lock.textContent='🔒';lock.setAttribute('aria-hidden','true');const label=document.createElement('p');label.textContent='尚未解锁';card.card.setAttribute('aria-label','尚未解锁的商品');card.card.append(lock,label);}
+      }
+    }
+    if(dialog.open&&activeTab==='stock'&&unlocked)loadProductImages();else stopProductImages();
+  }
   const upgradeButton=document.querySelector('#backpack-upgrade-buy'),upgradeStatus=document.querySelector('#backpack-upgrade-status');
   function renderUpgrade(){
     if(!dialog.open||activeTab!=='backpack')return;
@@ -22,16 +41,17 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
     if(!upgrading)upgradeStatus.textContent=next&&store.model.coins<next.cost?`金币不足，需要 ${next.cost} 金币。`:'';
   }
   function show(tab){
-    activeTab=tab;
-    for(const [name,panel] of [['stock','shop-products'],['refit','refit-panel'],['backpack','backpack-upgrade-panel']]){
+    if(tab==='other'&&!secondShopUnlocked(store.model.quests))return;
+    activeTab=tab;document.querySelector('.shop-footer>div').hidden=tab==='other';ownerButton.hidden=!['stock','other'].includes(tab);ownerButton.setAttribute('aria-label',tab==='other'?'拜访 shop owner':"拜访 starter's shop owner");
+    for(const [name,panel] of [['stock','shop-products'],['refit','refit-panel'],['backpack','backpack-upgrade-panel'],['other','shop-empty-panel']]){
       document.getElementById(panel).hidden=name!==tab;
       document.getElementById(`shop-${name}-tab`).setAttribute('aria-selected',String(name===tab));
     }
-    document.querySelector('#shop-title').textContent={stock:"starter's shop",refit:'改装',backpack:'背包升级'}[tab];
-    document.querySelector('#shop-intro').textContent={stock:'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。',refit:'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。',backpack:'逐级扩充背包，让每次湖畔之行多一份收获。'}[tab];
-    status.textContent='';if(tab==='refit')refit.open();else refit.cleanup();renderUpgrade();
+    document.querySelector('#shop-title').textContent={stock:"starter's shop",refit:'改装',backpack:'背包升级',other:'shop'}[tab];
+    document.querySelector('#shop-intro').textContent={stock:'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。',refit:'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。',backpack:'逐级扩充背包，让每次湖畔之行多一份收获。',other:''}[tab];
+    status.textContent='';if(tab==='refit')refit.open();else refit.cleanup();renderUpgrade();renderStock();
   }
-  for(const tab of ['stock','refit','backpack'])document.getElementById(`shop-${tab}-tab`).addEventListener('click',()=>show(tab));
+  for(const tab of ['stock','refit','backpack','other'])document.getElementById(`shop-${tab}-tab`).addEventListener('click',()=>show(tab));
   upgradeButton.addEventListener('click',()=>{
     if(upgrading||upgradeButton.disabled)return;
     upgrading=true;upgradeButton.disabled=true;
@@ -40,7 +60,8 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
     // Ignore queued double clicks; a deliberate next upgrade is a separate purchase.
     setTimeout(()=>{upgrading=false;const message=upgradeStatus.textContent;renderUpgrade();upgradeStatus.textContent=message;},450);
   });
-  store.subscribe(renderUpgrade);
+  ownerButton.addEventListener('click',()=>quests.open(activeTab==='other'?'shop':'starter'));
+  store.subscribe(()=>{renderUpgrade();renderStock();});
   for(const product of SHOP_ITEMS){
     const card=document.createElement('form');card.className='shop-product';card.dataset.productId=product.id;
     const picture=document.createElement('div');picture.className='shop-picture';const img=document.createElement('img');img.alt=product.name;img.decoding='async';picture.append(img);
@@ -72,9 +93,10 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
       status.textContent=result.ok?`已购买 ${result.quantity} 个${result.name}，花费 ${result.cost} 金币，已放入仓库。`:result.error;
       status.dataset.state=result.ok?'success':'error';
     });
-    card.append(heading,picture,price,detail,effect,quantity,total,buy);list.append(card);cards.push({input,update,img,product,picture});update();
+    card.append(heading,picture,price,detail,effect,quantity,total,buy);list.append(card);cards.push({card,contents:[heading,picture,price,detail,effect,quantity,total,buy],input,update,img,product,picture,stop:null});update();
   }
-  document.querySelector('#shop-toggle').addEventListener('click',()=>{onOpen();status.textContent='';for(const card of cards){card.input.value='1';card.update();}dialog.showModal();show('stock');for(const card of cards)imageCleanups.push(loadInventoryImage(card.img,inventoryImageSources(card.product.image),state=>card.picture.dataset.imageState=state));});
+  renderStock();
+  document.querySelector('#shop-toggle').addEventListener('click',()=>{onOpen();status.textContent='';for(const card of cards){card.input.value='1';card.update();}dialog.showModal();show('stock');});
   document.querySelector('#shop-close').addEventListener('click',()=>dialog.close());
   dialog.addEventListener('close',()=>{stopImages();onClose();if(!document.querySelector('dialog[open]'))document.querySelector('#shop-toggle').focus({preventScroll:true});});
 }

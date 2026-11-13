@@ -1,7 +1,7 @@
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const root=path.resolve(__dirname,'../..'),key='fisher-realm-save-slots-v1';
-const legacy={version:1,items:[{id:'1',name:'罗非鱼',x:null,y:null}],storage:{version:1,coins:1000,activeBox:0,boxes:Array.from({length:10},(_,i)=>({unlocked:i===0,items:i?[]:[{id:'2',name:'1号鱼线',x:0,y:0},{id:'3',name:'2号鱼线',x:1,y:0},{id:'4',name:'3号鱼线',x:2,y:0},{id:'5',name:'1号渔轮-初学者',x:3,y:0},{id:'6',name:'1号亮片',quantity:2,x:5,y:0}]}))}};
+const legacy={version:1,items:[{id:'1',name:'罗非鱼',x:null,y:null}],storage:{version:1,quests:{version:1,mainCompleted:1,counts:[0,0],side1Done:false},coins:1000,activeBox:0,boxes:Array.from({length:10},(_,i)=>({unlocked:i===0,items:i?[]:[{id:'2',name:'1号鱼线',x:0,y:0},{id:'3',name:'2号鱼线',x:1,y:0},{id:'4',name:'3号鱼线',x:2,y:0},{id:'5',name:'1号渔轮-初学者',x:3,y:0},{id:'6',name:'1号亮片',quantity:2,x:5,y:0}]}))}};
 const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.wav':'audio/wav'};
 async function main(){
  const server=http.createServer((req,res)=>{try{

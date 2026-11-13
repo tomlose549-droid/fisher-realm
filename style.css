@@ -234,3 +234,20 @@ dialog:has(>.coin-balance){position:fixed;padding-top:53px}
 @media(max-width:600px){.shop-sidebar{grid-template-columns:repeat(3,minmax(0,1fr))}.shop-sidebar button{font-size:11px}#inventory-dialog.wide-bag .inventory-layout{grid-template-columns:1fr}.wide-bag .fish-pile{border-right:0;padding-right:0}.wide-bag .fish-pile-list{height:130px}#warehouse-bag{max-width:none}}
 
 #shop-dialog #backpack-upgrade-panel p{color:#432711}
+
+/* Shop-owner quest flow; nested dialogs keep the lake paused throughout. */
+.shop-title-row{display:flex;align-items:center;gap:20px}.shop-title-row h2{flex:0 1 auto;min-width:0;overflow-wrap:anywhere}
+.shop-owner{width:66px;height:78px;flex:none;padding:0;border:1px solid #58391f;border-radius:12px;background:#a97d4c;box-shadow:inset 0 0 15px #43260f66,0 4px 0 #543418;color:#f3d3a1;cursor:pointer}
+.shop-owner svg{width:100%;height:100%;fill:#956437;stroke:#4b2e18;stroke-width:2}.shop-owner .owner-shadow{fill:#291f18}.shop-owner .owner-grain{fill:none;stroke:#634120}.shop-owner .owner-eyes{fill:none;stroke:#f4d19a;stroke-width:2.5}.shop-owner:hover{filter:brightness(1.12)}
+.shop-product-locked{min-height:260px;align-items:center;justify-content:center;gap:15px;user-select:none}.shop-product-lock{font-size:42px;filter:sepia(1)}.shop-product-locked p{color:#4b2e18;font-size:15px}
+#shop-empty-panel{min-height:260px}
+#quest-dialog{width:min(720px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;padding:72px 30px 28px;background:#fff;color:#28231e;border:1px solid #d8d1c7;border-radius:13px}
+#quest-owner-name{text-align:center;font-family:Georgia,serif;font-size:26px;overflow-wrap:anywhere;margin:12px 0 30px;color:#342719}
+#quest-dialog p{color:#534b42}.quest-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 0;border-bottom:1px solid #ded8cd}.quest-row h3{font-size:17px;margin:0 0 12px}.quest-row p{margin:5px 0;font-size:13px}.quest-row button{flex:none;padding:9px 19px;border:1px solid #735137;border-radius:6px;background:#96724f;color:#fff}
+#quest-dialog .close,#quest-warehouse-dialog .close{color:inherit;border:1px solid #a69886;border-radius:50%;width:30px;height:30px;background:transparent;position:absolute;right:18px;top:18px}
+#quest-status,#quest-coins-status{min-height:24px}
+#quest-warehouse-dialog{width:min(1100px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:65px 28px 24px;overflow:auto;background:#183d35f5;color:#e8eddf;border:1px solid #c7d7b94d;border-radius:16px}
+#quest-warehouse-dialog p{color:#cad8c2}#quest-gift-title{margin:10px 0}#quest-gift-progress{font-size:13px}#quest-box-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:10px 0}#quest-box-tabs button:disabled{opacity:.4;cursor:default}
+#quest-grid{gap:3px;padding:3px}#quest-grid .inventory-fish span{font-size:9px}#quest-warehouse-dialog .quest-blocked-item{background:#050707;border-color:#33463d;box-shadow:none;cursor:default}#quest-grid .gift-selected{outline:3px solid #49e36a;outline-offset:-3px;box-shadow:inset 0 0 0 2px #49e36a}
+#quest-gift-status{min-height:42px}#quest-coins-dialog{padding-top:55px}#quest-coins-dialog p{max-width:450px}
+@media(max-width:600px){.shop-title-row{gap:10px}.shop-owner{width:50px;height:62px}.shop-title-row h2{font-size:24px}.shop-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}#quest-dialog{padding:65px 18px 20px}#quest-owner-name{font-size:22px}.quest-row{gap:10px}.quest-row button{padding:8px 13px}#quest-warehouse-dialog{padding:60px 15px 18px}#quest-grid{min-width:400px}}

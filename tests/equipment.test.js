@@ -12,7 +12,7 @@ import {FishingSession,TILAPIA,durabilityTier} from '../fishing-rules.js';
 import {SHOP_ITEMS} from '../item-data.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 const memory=()=>{const map=new Map();let blocked=false;return {map,set blocked(v){blocked=v;},getItem:k=>map.get(k)??null,setItem(k,v){if(blocked)throw Error('quota');map.set(k,v);},removeItem:k=>map.delete(k)};};
-function model(line='3号鱼线',reel=true){const m=new PlayerStorage();m.setCoins(10000);m.buy(line,1);m.equip(m.boxes[0].items[0].id,0,'line');if(reel){m.buy('1号渔轮-初学者',1);m.equip(m.boxes[0].items[0].id,0,'reel');}return m;}
+function model(line='3号鱼线',reel=true){const m=new PlayerStorage();m.quests.mainCompleted=1;m.setCoins(10000);m.buy(line,1);m.equip(m.boxes[0].items[0].id,0,'line');if(reel){m.buy('1号渔轮-初学者',1);m.equip(m.boxes[0].items[0].id,0,'reel');}return m;}
 const ids=m=>[...m.inventory.items,...m.boxes.flatMap(b=>b.items),...Object.values(m.equipment).filter(Boolean)].map(i=>i.id);
 
 test('all three line upgrades and reel compose the exact approved stats without requiring any equipment',()=>{
@@ -27,12 +27,12 @@ test('equipping moves actual unique items into one line and one reel slot, no co
   m.buy('1号亮片',1);const before=m.serialize();assert.equal(m.equip(m.boxes[0].items[0].id,0,'line').ok,false);assert.deepEqual(m.serialize(),before);
 });
 test('full-inventory swap returns worn old line to exactly the slot freed by the new line',()=>{
-  const m=new PlayerStorage();m.setCoins(10000);m.buy('1号鱼线',99);m.buy('2号鱼线',1);const first=m.boxes[0].items[0];m.equip(first.id,0,'line');m.equipment.line.lineWear=7;m.buy('1号鱼线',1);for(let i=0;i<15;i++)m.addFish('金色闪光鲦');
+  const m=new PlayerStorage();m.quests.mainCompleted=1;m.setCoins(10000);m.buy('1号鱼线',99);m.buy('2号鱼线',1);const first=m.boxes[0].items[0];m.equip(first.id,0,'line');m.equipment.line.lineWear=7;m.buy('1号鱼线',1);for(let i=0;i<15;i++)m.addFish('金色闪光鲦');
   const next=m.boxes[0].items.find(i=>i.name==='2号鱼线'),position=[next.x,next.y];assert.equal(m.equip(next.id,0,'line').ok,true);const returned=m.boxes[0].items.find(i=>i.id===first.id);assert.equal(returned.lineWear,7);assert.deepEqual([returned.x,returned.y],position);assert.equal(m.boxes[0].items.length,100);assert.equal(new Set(ids(m)).size,ids(m).length);
   const before=m.serialize();assert.equal(m.unequip('line').ok,false);assert.deepEqual(m.serialize(),before);m.clearAll();assert.equal(m.equipment.line.name,'2号鱼线');assert.equal(m.unequip('line').source,'bag');
 });
 test('can equip from backpack, but equipped gear cannot be sold until unloaded into warehouse',()=>{
-  const m=new PlayerStorage();m.setCoins(1000);m.buy('1号鱼线',1);const item=m.boxes[0].items[0];m.transfer(item.id,0,'bag',0,0);m.equip(item.id,'bag','line');assert.equal(m.sell(item.id,0).ok,false);assert.equal(m.unequip('line').ok,true);assert.equal(m.sell(item.id,0).price,1);
+  const m=new PlayerStorage();m.quests.mainCompleted=1;m.setCoins(1000);m.buy('1号鱼线',1);const item=m.boxes[0].items[0];m.transfer(item.id,0,'bag',0,0);m.equip(item.id,'bag','line');assert.equal(m.sell(item.id,0).ok,false);assert.equal(m.unequip('line').ok,true);assert.equal(m.sell(item.id,0).price,1);
 });
 test('legacy lines migrate to their own full wear, used items retain wear through moves, swaps and reloads',()=>{
   const raw={version:1,items:[{id:'1',name:'2号鱼线',x:0,y:0},{id:'2',name:'1号鱼线',x:1,y:0}]},m=new PlayerStorage(raw);assert.deepEqual(m.inventory.items.map(i=>i.lineWear),[40,20]);m.inventory.items[0].lineWear=13;m.equip('1','bag','line');m.equip('2','bag','line');assert.equal(m.inventory.items.find(i=>i.id==='1').lineWear,13);

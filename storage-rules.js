@@ -1,3 +1,4 @@
+import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,shopUnlocked,SIDE_QUEST} from './quest-rules.js';
 import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {FishInventory} from './inventory-rules.js';
@@ -32,6 +33,7 @@ export class PlayerStorage{
       this.inventory.items.push(item);
     }
     const storage=saved?.version===1&&saved.storage?.version===1?saved.storage:null;
+    this.quests=restoreQuests(storage?.quests);
     if(storage){
       if(validCoins(storage.coins))this.coins=storage.coins;
       for(let i=0;i<BOX_COUNT;i++){
@@ -62,7 +64,7 @@ export class PlayerStorage{
     while(used.has(String(next)))next++;this.inventory.nextId=next;
   }
   clone(){
-    const copy=Object.assign(Object.create(PlayerStorage.prototype),structuredClone({coins:this.coins,activeBox:this.activeBox,boxes:this.boxes,equipment:this.equipment,pendingCast:this.pendingCast,castSequence:this.castSequence}));
+    const copy=Object.assign(Object.create(PlayerStorage.prototype),structuredClone({coins:this.coins,activeBox:this.activeBox,boxes:this.boxes,equipment:this.equipment,pendingCast:this.pendingCast,castSequence:this.castSequence,quests:this.quests}));
     copy.inventory=Object.assign(Object.create(FishInventory.prototype),structuredClone(this.inventory));return copy;
   }
   addFish(name){
@@ -109,9 +111,16 @@ export class PlayerStorage{
     box.items.splice(box.items.indexOf(item),1);this.coins+=price;return {ok:true,name:item.name,price,quantity};
   }
   buy(name,quantity){
+    if(!shopUnlocked(this.quests))return {ok:false,error:'商店尚未解锁，请先拜访店主。'};
     if(!isShopName(name)||!Number.isSafeInteger(quantity)||quantity<1)return {ok:false,error:'请输入正整数购买数量。'};
-    const meta=SHOP_BY_NAME[name],cost=meta.price*quantity;
+    const cost=SHOP_BY_NAME[name].price*quantity;
     if(!Number.isSafeInteger(cost)||cost>this.coins)return {ok:false,error:'金币不足，无法购买。'};
+    const received=this.receiveGoods(name,quantity);if(!received.ok)return received;
+    this.coins-=cost;return {ok:true,name,quantity,cost};
+  }
+  receiveGoods(name,quantity){
+    if(!isShopName(name)||!Number.isSafeInteger(quantity)||quantity<1)return {ok:false,error:'请输入正整数购买数量。'};
+    const meta=SHOP_BY_NAME[name];
     const boxes=structuredClone(this.boxes),order=[this.activeBox,...boxes.map((_,i)=>i).filter(i=>i!==this.activeBox)].filter(i=>boxes[i].unlocked);
     let remaining=quantity,nextId=this.inventory.nextId;
     const ids=new Set([...this.inventory.items,...boxes.flatMap(box=>box.items),...Object.values(this.equipment).filter(Boolean)].map(item=>item.id));
@@ -127,7 +136,28 @@ export class PlayerStorage{
       }
     }
     if(remaining)return {ok:false,error:'已解锁的仓库空间不足，整批购买已取消。'};
-    this.boxes=boxes;this.inventory.nextId=nextId;this.coins-=cost;return {ok:true,name,quantity,cost};
+    this.boxes=boxes;this.inventory.nextId=nextId;return {ok:true,name,quantity};
+  }
+  awardQuest(id){
+    const reward=questReward(id);if(!reward)return {ok:false,error:'任务不存在。'};
+    if(!validCoins(this.coins+(reward.coins??0)))return {ok:false,error:'金币金额超出可保存范围。'};
+    for(const [name,count] of reward.items??[]){const result=this.receiveGoods(name,count);if(!result.ok)return {ok:false,error:'仓库空间不足，请在普通仓库界面整理后再提交；本次未扣除鱼或金币。'};}
+    this.coins+=reward.coins??0;return {ok:true};
+  }
+  submitQuestFish(questId,index,id){
+    const box=Number.isInteger(index)&&this.boxes[index]?.unlocked?this.boxes[index]:null,item=box?.items.find(i=>i.id===id);
+    const requirement=item?giftRequirement(this.quests,questId,item.name):-1;
+    if(requirement<0)return {ok:false,error:'这条鱼不符合当前任务，或已不在仓库中。'};
+    const next=this.clone();next.boxes[index].items=next.boxes[index].items.filter(i=>i.id!==id);next.quests.counts[requirement]++;
+    const quest=currentQuest(next.quests),completed=quest.requirements.every((r,i)=>next.quests.counts[i]===r.count);
+    if(completed){const awarded=next.awardQuest(questId);if(!awarded.ok)return awarded;next.quests.mainCompleted++;next.quests.counts=[0,0];}
+    Object.assign(this,next);return {ok:true,completed,questId};
+  }
+  submitQuestCoins(questId){
+    if(questId!==SIDE_QUEST.id||this.quests.mainCompleted<2||this.quests.side1Done)return {ok:false,error:'当前无法提交该任务。'};
+    if(this.coins<SIDE_QUEST.coins)return {ok:false,error:'金币不足，需要 30 金币。'};
+    const next=this.clone();next.coins-=SIDE_QUEST.coins;const awarded=next.awardQuest(questId);if(!awarded.ok)return awarded;
+    next.quests.side1Done=true;Object.assign(this,next);return {ok:true,completed:true,questId};
   }
   equip(id,source,slot){
     if(this.pendingCast)return {ok:false,error:'本轮钓鱼结束后才能装卸装备。'};
@@ -189,5 +219,5 @@ export class PlayerStorage{
   }
   setCoins(value){if(!validCoins(value))return {ok:false,error:'请输入非负整数，且不超过 9007199254740991。'};this.coins=value;return {ok:true};}
   clearAll(){const removed=this.inventory.items.reduce((sum,item)=>sum+quantityOf(item),0);this.inventory.items=[];this.coins=0;return {ok:true,removed};}
-  serialize(){return {...this.inventory.serialize(),storage:{version:1,coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes),...((this.equipment.line||this.equipment.reel||this.castSequence)?{equipment:structuredClone(this.equipment),castSequence:this.castSequence,pendingCast:this.pendingCast?{...this.pendingCast}:null}:{})}};}
+  serialize(){return {...this.inventory.serialize(),storage:{version:1,...(hasQuestProgress(this.quests)?{quests:structuredClone(this.quests)}:{}),coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes),...((this.equipment.line||this.equipment.reel||this.castSequence)?{equipment:structuredClone(this.equipment),castSequence:this.castSequence,pendingCast:this.pendingCast?{...this.pendingCast}:null}:{})}};}
 }

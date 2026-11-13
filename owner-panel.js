@@ -1,11 +1,12 @@
 import {FISH_SPECIES} from './fishing-rules.js';
 
-export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich}){
+export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich,onOwnerHack}){
   const command=document.querySelector('#realm-command'),message=document.querySelector('#realm-command-message'),dialog=document.querySelector('#owner-dialog'),select=document.querySelector('#owner-fish'),status=document.querySelector('#owner-mode-status');
   for(const fish of FISH_SPECIES){const option=document.createElement('option');option.value=fish.name;option.textContent=fish.name;select.appendChild(option);}
   let lastStatus='';
   function update(){const mode=fishing.getOwnerState(),text=mode.remaining>0?`当前：${mode.fishName} · 剩余 ${mode.remaining} 条`:'当前：随机鱼种';if(text!==lastStatus){status.textContent=text;lastStatus=text;}}
   function open(){
+    if(command.value.trim()==='owner hack'){command.value='';message.textContent='';onOwnerHack();return true;}
     if(command.value.trim()!=='realm owner')return false;
     command.value='';message.textContent='';onOpen();lastStatus='';update();
     const mode=fishing.getOwnerState();if(mode.fishName)select.value=mode.fishName;

@@ -62,5 +62,5 @@ test('partial progress survives reload/clear; three slots isolate progress and n
 });
 test('invalid quest saves fail closed instead of losing unlocks or allowing repeated rewards',()=>{
  const valid={version:1,mainCompleted:2,counts:[1,0],side1Done:false};
- for(const change of [{mainCompleted:-1},{mainCompleted:6},{mainCompleted:1.5},{counts:[3,0]},{counts:[0,-1]},{counts:[0]},{side1Done:'yes'},{version:2},{mainCompleted:0,side1Done:true}])assert.throws(()=>restoreQuests({...valid,...change}),/任务资料异常/);
+ for(const change of [{mainCompleted:-1},{mainCompleted:6},{mainCompleted:1.5},{counts:[3,0]},{counts:[0,-1]},{counts:[0]},{side1Done:'yes'},{version:2},{mainCompleted:0,mainRewarded:-1,side1Done:true}])assert.throws(()=>restoreQuests({...valid,...change}),/任务资料异常/);
 });

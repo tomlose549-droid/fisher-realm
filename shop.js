@@ -99,4 +99,5 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
   document.querySelector('#shop-toggle').addEventListener('click',()=>{onOpen();status.textContent='';for(const card of cards){card.input.value='1';card.update();}dialog.showModal();show('stock');});
   document.querySelector('#shop-close').addEventListener('click',()=>dialog.close());
   dialog.addEventListener('close',()=>{stopImages();onClose();if(!document.querySelector('dialog[open]'))document.querySelector('#shop-toggle').focus({preventScroll:true});});
+  return {openOwnerHack(){onOpen();quests.open('starter',{admin:true});}};
 }

@@ -1,4 +1,4 @@
-import {currentQuest,SIDE_QUEST,giftRequirement,secondShopUnlocked} from './quest-rules.js';
+import {currentQuest,SIDE_QUEST,MAIN_QUESTS,giftRequirement,secondShopUnlocked,sideQuestUnlocked} from './quest-rules.js';
 import {createFishCard} from './item-card.js';
 import {ITEMS} from './item-data.js';
 import {sizeBackpackGrid} from './backpack-upgrades.js';
@@ -6,8 +6,16 @@ export function createShopQuests({store,onClose}){
   const dialog=document.querySelector('#quest-dialog'),list=document.querySelector('#quest-list'),status=document.querySelector('#quest-status');
   const warehouse=document.querySelector('#quest-warehouse-dialog'),bag=document.querySelector('#quest-bag'),grid=document.querySelector('#quest-grid'),tabs=document.querySelector('#quest-box-tabs'),hint=document.querySelector('#quest-gift-status');
   const confirm=document.querySelector('#quest-coins-dialog'),coinStatus=document.querySelector('#quest-coins-status');
-  let owner='starter',questId=null,selected=null,cleanups=[];
+  let owner='starter',hack=false,questId=null,selected=null,cleanups=[];
+  const ownerNav=document.querySelector('#quest-owner-nav'),hackHint=document.querySelector('#quest-hack-hint');
   function cleanup(){for(const stop of cleanups)stop();cleanups=[];}
+  function hackRow(quest,index){
+    const state=store.model.quests,done=quest.id===SIDE_QUEST.id?state.side1Done:index<state.mainCompleted;
+    const row=document.createElement('button');row.type='button';row.className='quest-row quest-hack-row';row.dataset.jumpQuest=quest.id;
+    const info=document.createElement('div'),title=document.createElement('h3');title.textContent=quest.title;info.append(title);
+    for(const text of quest.coins?['赠送30金币']:quest.requirements.map(r=>r.label)){const p=document.createElement('p');p.textContent=text;info.append(p);}
+    const action=document.createElement('span');action.textContent=done?'已完成 · 可回到此处':'跳转并完成';row.append(info,action);return row;
+  }
   function taskRow(quest){
     const row=document.createElement('article');row.className='quest-row';row.dataset.quest=quest.id;
     const info=document.createElement('div'),title=document.createElement('h3');title.textContent=quest.title;info.append(title);
@@ -18,8 +26,9 @@ export function createShopQuests({store,onClose}){
   function renderTasks(){
     if(!dialog.open)return;list.replaceChildren();
     if(owner==='shop'){const p=document.createElement('p');p.textContent='暂时没有任务';list.append(p);return;}
+    if(hack){MAIN_QUESTS.forEach((quest,index)=>list.append(hackRow(quest,index)));list.append(hackRow(SIDE_QUEST));return;}
     const state=store.model.quests,quest=currentQuest(state);if(quest)list.append(taskRow(quest));
-    if(state.mainCompleted>=2&&!state.side1Done)list.append(taskRow(SIDE_QUEST));
+    if(sideQuestUnlocked(state)&&!state.side1Done)list.append(taskRow(SIDE_QUEST));
     if(!list.childElementCount){const p=document.createElement('p');p.textContent='所有任务已完成';list.append(p);}
   }
   function cells(element,w,h){
@@ -44,6 +53,12 @@ export function createShopQuests({store,onClose}){
   }
   function select(id){selected=id;for(const card of warehouse.querySelectorAll('[data-gift-id]'))card.classList.toggle('gift-selected',card.dataset.giftId===id);}
   list.addEventListener('click',event=>{
+    if(hack){
+      const button=event.target.closest('[data-jump-quest]');if(!button)return;
+      const result=store.run('hackQuest',[owner,button.dataset.jumpQuest]);
+      status.textContent=result.ok?(result.unchanged?'该任务已完成，未重复发奖。':'任务进度已保存；尚未领取的奖励已补发。'):result.error;
+      if(result.ok)list.querySelector(`[data-jump-quest="${button.dataset.jumpQuest}"]`)?.focus({preventScroll:true});return;
+    }
     const button=event.target.closest('[data-submit-quest]');if(!button)return;status.textContent='';
     if(button.dataset.submitQuest===SIDE_QUEST.id){coinStatus.textContent='';confirm.showModal();return;}
     questId=button.dataset.submitQuest;select(null);hint.textContent='只可赠送已解锁仓库内的鱼；点一次选中，再点同一条鱼上交。可随时关闭，已提交进度会保留。';warehouse.showModal();renderWarehouse();
@@ -57,12 +72,20 @@ export function createShopQuests({store,onClose}){
     if(result.completed){warehouse.close();status.textContent='任务已完成。';}else hint.textContent='已上交并保存进度，可以继续选择或关闭。';
   });
   tabs.addEventListener('click',event=>{const button=event.target.closest('[data-gift-box]');if(!button||button.disabled)return;select(null);const result=store.run('selectBox',[Number(button.dataset.giftBox)]);if(!result.ok)hint.textContent=result.error;});
+  ownerNav.addEventListener('click',event=>{const button=event.target.closest('[data-quest-owner]');if(!button)return;owner=button.dataset.questOwner;updateOwner();status.textContent='';renderTasks();});
+  function updateOwner(){
+    document.querySelector('#quest-owner-name').textContent=owner==='shop'?'shop owner':"starter's shop owner";
+    for(const button of ownerNav.querySelectorAll('button'))button.setAttribute('aria-pressed',String(button.dataset.questOwner===owner));
+  }
   document.querySelector('#quest-close').addEventListener('click',()=>dialog.close());
   document.querySelector('#quest-gift-close').addEventListener('click',()=>warehouse.close());
   document.querySelector('#quest-coins-cancel').addEventListener('click',()=>confirm.close());
   document.querySelector('#quest-coins-form').addEventListener('submit',event=>{event.preventDefault();const result=store.run('submitQuestCoins',[SIDE_QUEST.id]);if(!result.ok){coinStatus.textContent=result.error;return;}confirm.close();status.textContent='任务已完成。';});
   warehouse.addEventListener('close',()=>{cleanup();select(null);questId=null;onClose();});
-  confirm.addEventListener('close',onClose);dialog.addEventListener('close',onClose);
+  confirm.addEventListener('close',onClose);dialog.addEventListener('close',()=>{onClose();if(!document.querySelector('dialog[open]'))document.querySelector('#settings-toggle').focus({preventScroll:true});});
   store.subscribe(()=>{renderTasks();renderWarehouse();});
-  return {open(value){if(value==='shop'&&!secondShopUnlocked(store.model.quests))return;owner=value;document.querySelector('#quest-owner-name').textContent=value==='shop'?'shop owner':"starter's shop owner";status.textContent='';dialog.showModal();renderTasks();}};
+  return {open(value,{admin=false}={}){
+    if(!admin&&value==='shop'&&!secondShopUnlocked(store.model.quests))return;
+    owner=value;hack=admin;ownerNav.hidden=!hack;hackHint.hidden=!hack;dialog.classList.toggle('quest-hack',hack);updateOwner();status.textContent='';dialog.showModal();renderTasks();if(hack)ownerNav.querySelector('[aria-pressed="true"]').focus({preventScroll:true});
+  }};
 }

@@ -10,8 +10,15 @@ export const MAIN_QUESTS=Object.freeze([
 ].map(q=>Object.freeze({...q,requirements:Object.freeze(q.requirements)})));
 export const SIDE_QUEST=Object.freeze({id:'side-1',title:'支线1 · 任务1',coins:30});
 export const currentQuest=state=>MAIN_QUESTS[state.mainCompleted]??null;
-export const shopUnlocked=state=>state.mainCompleted>=1;
-export const secondShopUnlocked=state=>state.mainCompleted>=4;
+// Claimed rewards are a permanent prefix; the playable progress can move backwards.
+export const rewardedMain=state=>state.mainRewarded===undefined?state.mainCompleted:state.mainRewarded;
+export const shopUnlocked=state=>rewardedMain(state)>=1;
+export const secondShopUnlocked=state=>rewardedMain(state)>=4;
+export const sideQuestUnlocked=state=>rewardedMain(state)>=2;
+export function setMainProgress(state,completed,rewarded){
+  state.mainCompleted=completed;state.counts=[0,0];
+  if(rewarded>completed)state.mainRewarded=rewarded;else delete state.mainRewarded;
+}
 export function restoreQuests(raw){
   if(raw===undefined)return {version:1,mainCompleted:0,counts:[0,0],side1Done:false};
   const fail=()=>{throw Error('店主任务资料异常，已停止加载以保护存档。');};
@@ -19,10 +26,11 @@ export function restoreQuests(raw){
   const quest=currentQuest(raw);
   for(let i=0;i<2;i++)if(!Number.isInteger(raw.counts[i])||raw.counts[i]<0||raw.counts[i]>(quest?.requirements[i]?.count??0))fail();
   if(quest&&quest.requirements.every((r,i)=>raw.counts[i]===r.count))fail();
-  if(raw.side1Done&&raw.mainCompleted<2)fail();
-  return {version:1,mainCompleted:raw.mainCompleted,counts:[...raw.counts],side1Done:raw.side1Done};
+  const rewarded=rewardedMain(raw);
+  if(!Number.isInteger(rewarded)||rewarded<raw.mainCompleted||rewarded>MAIN_QUESTS.length)fail();
+  return {version:1,mainCompleted:raw.mainCompleted,counts:[...raw.counts],side1Done:raw.side1Done,...(rewarded>raw.mainCompleted?{mainRewarded:rewarded}:{})};
 }
-export const hasQuestProgress=state=>state.mainCompleted>0||state.counts.some(Boolean)||state.side1Done;
+export const hasQuestProgress=state=>rewardedMain(state)>0||state.counts.some(Boolean)||state.side1Done;
 export function giftRequirement(state,questId,name){
   const quest=currentQuest(state),fish=Object.hasOwn(fishByName,name)?fishByName[name]:null;
   if(!quest||quest.id!==questId||!fish)return -1;

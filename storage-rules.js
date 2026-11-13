@@ -1,4 +1,4 @@
-import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,shopUnlocked,SIDE_QUEST} from './quest-rules.js';
+import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,shopUnlocked,SIDE_QUEST,MAIN_QUESTS,rewardedMain,setMainProgress,sideQuestUnlocked} from './quest-rules.js';
 import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {FishInventory} from './inventory-rules.js';
@@ -150,14 +150,36 @@ export class PlayerStorage{
     if(requirement<0)return {ok:false,error:'这条鱼不符合当前任务，或已不在仓库中。'};
     const next=this.clone();next.boxes[index].items=next.boxes[index].items.filter(i=>i.id!==id);next.quests.counts[requirement]++;
     const quest=currentQuest(next.quests),completed=quest.requirements.every((r,i)=>next.quests.counts[i]===r.count);
-    if(completed){const awarded=next.awardQuest(questId);if(!awarded.ok)return awarded;next.quests.mainCompleted++;next.quests.counts=[0,0];}
+    if(completed){
+      const level=next.quests.mainCompleted+1,claimed=rewardedMain(next.quests);
+      if(level>claimed){const awarded=next.awardQuest(questId);if(!awarded.ok)return awarded;}
+      setMainProgress(next.quests,level,Math.max(level,claimed));
+    }
     Object.assign(this,next);return {ok:true,completed,questId};
   }
   submitQuestCoins(questId){
-    if(questId!==SIDE_QUEST.id||this.quests.mainCompleted<2||this.quests.side1Done)return {ok:false,error:'当前无法提交该任务。'};
+    if(questId!==SIDE_QUEST.id||!sideQuestUnlocked(this.quests)||this.quests.side1Done)return {ok:false,error:'当前无法提交该任务。'};
     if(this.coins<SIDE_QUEST.coins)return {ok:false,error:'金币不足，需要 30 金币。'};
     const next=this.clone();next.coins-=SIDE_QUEST.coins;const awarded=next.awardQuest(questId);if(!awarded.ok)return awarded;
     next.quests.side1Done=true;Object.assign(this,next);return {ok:true,completed:true,questId};
+  }
+  hackQuest(owner,questId){
+    if(owner!=='starter')return {ok:false,error:'这位店主暂时没有任务。'};
+    const next=this.clone();
+    if(questId===SIDE_QUEST.id){
+      if(next.quests.side1Done)return {ok:true,unchanged:true};
+      const awarded=next.awardQuest(questId);if(!awarded.ok)return awarded;
+      next.quests.side1Done=true;
+    }else{
+      const target=MAIN_QUESTS.findIndex(quest=>quest.id===questId)+1;
+      if(!target)return {ok:false,error:'任务不存在。'};
+      const claimed=rewardedMain(next.quests);
+      for(let level=claimed+1;level<=target;level++){
+        const awarded=next.awardQuest(MAIN_QUESTS[level-1].id);if(!awarded.ok)return awarded;
+      }
+      setMainProgress(next.quests,target,Math.max(target,claimed));
+    }
+    Object.assign(this,next);return {ok:true,questId};
   }
   equip(id,source,slot){
     if(this.pendingCast)return {ok:false,error:'本轮钓鱼结束后才能装卸装备。'};

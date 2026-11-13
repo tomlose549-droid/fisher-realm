@@ -1,7 +1,7 @@
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {readSavedSection}=require('./save-fixture.cjs');
-const root=path.resolve(__dirname,'../..'),key='fisher-realm-save-slots-v1',legacy={version:1,items:[{id:'1',name:'罗非鱼',x:0,y:0},{id:'2',name:'长吻雀鳝',x:null,y:null}],storage:{version:1,coins:1000,activeBox:0,boxes:Array.from({length:10},(_,i)=>({unlocked:i===0,items:[]}))}};
+const root=path.resolve(__dirname,'../..'),key='fisher-realm-save-slots-v1',legacy={version:1,items:[{id:'1',name:'罗非鱼',x:0,y:0},{id:'2',name:'长吻雀鳝',x:null,y:null}],storage:{version:1,quests:{version:1,mainCompleted:1,counts:[0,0],side1Done:false},coins:1000,activeBox:0,boxes:Array.from({length:10},(_,i)=>({unlocked:i===0,items:[]}))}};
 const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.wav':'audio/wav'};
 async function main(){
  const server=http.createServer((req,res)=>{try{

@@ -24,7 +24,7 @@ test('insufficient funds, stale level and maximum cannot debit; exact funds succ
 test('every added boundary works for fish placement, warehouse transfers and worn equipment',()=>{
   for(let level=1;level<=9;level++){
     const m=new PlayerStorage();m.setCoins(100000);for(let i=0;i<level;i++)m.upgradeBackpack(i);
-    m.buy('1号鱼线',1);const line=m.boxes[0].items[0],x=m.inventory.width-1,y=m.inventory.height-1;
+    m.quests.mainCompleted=1;m.buy('1号鱼线',1);const line=m.boxes[0].items[0],x=m.inventory.width-1,y=m.inventory.height-1;
     assert.equal(m.transfer(line.id,0,'bag',x,y).ok,true);m.inventory.items[0].lineWear=8;
     const loaded=new PlayerStorage(m.serialize());assert.deepEqual(loaded.inventory.items,m.inventory.items);
     assert.equal(loaded.equip(line.id,'bag','line').ok,true);assert.equal(loaded.equipment.line.lineWear,8);
@@ -43,7 +43,7 @@ test('legacy is lv0; invalid level fails closed without shrinking an upgraded sa
 test('failed persistence rolls back both coins and capacity; clear keeps level and boxes',()=>{
   const io=memory(),store=createPlayerStorage({storage:io});store.run('setCoins',[1000]);const before=store.snapshot(),disk=io.getItem(PLAYER_STORAGE_KEY);
   io.blocked=true;assert.equal(store.run('upgradeBackpack',[0]).ok,false);assert.deepEqual(store.snapshot(),before);assert.equal(io.getItem(PLAYER_STORAGE_KEY),disk);
-  io.blocked=false;store.run('upgradeBackpack',[0]);store.run('buy',['1号鱼线',1]);const boxes=structuredClone(store.model.boxes);store.run('clearAll');
+  io.blocked=false;store.run('upgradeBackpack',[0]);store.model.quests.mainCompleted=1;store.run('buy',['1号鱼线',1]);const boxes=structuredClone(store.model.boxes);store.run('clearAll');
   assert.equal(store.model.inventory.level,1);assert.deepEqual(store.model.boxes,boxes);assert.equal(store.model.coins,0);assert.equal(new PlayerStorage(JSON.parse(io.getItem(PLAYER_STORAGE_KEY))).inventory.level,1);
 });
 test('three slots own separate permanent levels; new slots always begin lv0',()=>{

@@ -65,7 +65,7 @@ window.addEventListener('focus',()=>playerStorage.flush());
 createWarehouse({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const coinControls=createCoinControls({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const lureCasting=createLureCasting({store:playerStorage,encounters:map.context.encounters});
-createShop({store:playerStorage,encounters:map.context.encounters,onOpen:prepareModal,onClose:finishModal,isFishing:()=>fishing.isActive()});
+const shop=createShop({store:playerStorage,encounters:map.context.encounters,onOpen:prepareModal,onClose:finishModal,isFishing:()=>fishing.isActive()});
 const fishing=createFishing({onRoundEnd:outcome=>lureCasting.finish(outcome),prepareCast:options=>lureCasting.prepare(options),scene,camera,player:cameraOrigin,mapContext:map.context,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=map.context.spawn.pitch;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}});
 createSavePanel({saves:saveSlots,onOpen:prepareModal,onClose:finishModal,beforeChange:action=>{if(action!=='delete')fishing.interrupt();const itemsSaved=playerStorage.flush(),guideSaved=discoveries.flush();return itemsSaved&&guideSaved;}});
 canvas.style.cursor = 'grab';
@@ -121,7 +121,7 @@ async function fullscreen() {
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
-const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onRich:()=>coinControls.openRich(),onOpen:prepareModal});
+const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onRich:()=>coinControls.openRich(),onOwnerHack:()=>shop.openOwnerHack(),onOpen:prepareModal});
 document.querySelector('#owner-dialog').addEventListener('close',finishModal);
 createFishGuide({onOpen:prepareModal,onClose:finishModal,isDiscovered:id=>discoveries.has(id),encounters:map.context.encounters});
 document.querySelector('#help').addEventListener('click',()=>{prepareModal();renderFishHelp(document,FISH_DATA,map.context.encounters);dialog.showModal();});

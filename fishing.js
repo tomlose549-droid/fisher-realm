@@ -44,7 +44,7 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
   const retrieveStart=new THREE.Vector3(),retrieveEnd=new THREE.Vector3(),sideVector=new THREE.Vector3(),lastWetSurface=new THREE.Vector3(player.x-Math.sin(mapContext.spawn.yaw)*FISHING.distance,surfaceY,player.z-Math.cos(mapContext.spawn.yaw)*FISHING.distance);
   let shorelineDistance=4.5,lastLandedCast=null,lastTrailAt=-Infinity,retrievalProgress=0;
   const target=new THREE.Vector3(),rodTip=new THREE.Vector3(),castDirection=new THREE.Vector3(),handOffset=new THREE.Vector3();
-  let pointerX=null,lastStatus='';
+  let pointerX=null,leftHeld=false,lastStatus='';
   function getTarget(distance=session.distance){return target.set(player.x-Math.sin(session.fishYaw)*distance,targetY,player.z-Math.cos(session.fishYaw)*distance);}
   function insideWater(x,z,margin=.995){return isWater(x,z,margin);}
   function waterPoint(yaw){return insideWater(player.x-Math.sin(yaw)*FISHING.distance,player.z-Math.cos(yaw)*FISHING.distance,.98);}
@@ -87,7 +87,7 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
     if(disposed)return false;
     if(event.repeat)return event.code==='Space';
     const t=now();update(t);
-    if(session.state==='bite'){session.hook(t);return true;}
+    if(session.state==='bite'){session.hook(t);if(leftHeld)session.setReeling(true,t);return true;}
     if(event.code!=='Space')return false;
     if(session.state==='idle'){
       const heading=camera.rotation.y;
@@ -98,14 +98,20 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
     }
     return true;
   }
+  // Mouse chords emit pointermove, not another pointerdown. Read the real button mask.
+  function mouseButtons(event){
+    if(disposed||(event.pointerType&&event.pointerType!=='mouse')||!Number.isInteger(event.buttons))return;
+    leftHeld=(event.buttons&1)!==0;
+    if(session.state==='fighting'&&session.reeling!==leftHeld)session.setReeling(leftHeld,now());
+  }
   function pointerMove(event){
-    if(disposed)return;
+    if(disposed)return;mouseButtons(event);
     if(session.state!=='fighting'){pointerX=event.clientX;return;}
     const dx=Number.isFinite(event.movementX)&&event.movementX!==0?event.movementX:(pointerX===null?0:event.clientX-pointerX);
     pointerX=event.clientX;if(dx)session.setRodYaw(session.rodYaw-dx*.006,now());
   }
-  function pointerDown(event){if(disposed)return false;if(event.button===0&&session.state==='fighting'){session.setReeling(true,now());canvas.setPointerCapture(event.pointerId);canvas.focus();return true;}return false;}
-  function release(){if(disposed)return;session.setReeling(false,now());pointerX=null;}
+  function pointerDown(event){if(disposed)return false;mouseButtons(event);if(event.button===0)leftHeld=true;if(event.button===0&&session.state==='fighting'){session.setReeling(true,now());canvas.setPointerCapture(event.pointerId);canvas.focus();return true;}return false;}
+  function release(){if(disposed)return;leftHeld=false;session.setReeling(false,now());pointerX=null;}
   function view(){
     if(disposed)return null;
     if(!['fighting','caught'].includes(session.state))return null;
@@ -207,7 +213,7 @@ export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toa
     lineGeometry.attributes.position.needsUpdate=true;
   }
   return {
-    key,pointerMove,pointerDown,release,view,update,updateDistanceLabel,
+    key,pointerMove,pointerDown,mouseButtons,release,view,update,updateDistanceLabel,
     interrupt(){if(disposed)return;const t=now();update(t);if(['casting','waiting','bite','fighting'].includes(session.state)){session.fail('interrupted',t);update(t);}},
     pauseAudio:()=>sounds.pause(),resumeAudio:()=>sounds.resume(),
     dispose(){if(disposed)return;disposed=true;waterEffects.dispose();resources.dispose();sounds.dispose();hidden(distanceLabel,true);hidden(meters,true);hidden(notice,true);idleRod.visible=true;},

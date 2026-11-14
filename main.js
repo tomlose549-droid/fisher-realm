@@ -88,6 +88,12 @@ canvas.addEventListener('pointermove', e => {
   lastX=e.clientX;lastY=e.clientY;if(Math.abs(dx)+Math.abs(dy)>1)dismissWelcome();
 });
 canvas.addEventListener('pointerup', stopDragging);canvas.addEventListener('pointercancel',stopDragging);canvas.addEventListener('lostpointercapture',stopDragging);
+// Mouse events include intermediate button changes that pointerup omits in chords.
+canvas.addEventListener('mousedown',e=>{
+  if(!settingsPanel.hidden||document.querySelector('dialog[open]'))return;
+  fishing.mouseButtons(e);
+});
+document.addEventListener('mouseup',e=>{if(e.button===0)fishing.release();});
 document.addEventListener('pointerup',e=>{if(e.button===0)fishing.release();});
 document.addEventListener('pointercancel',()=>fishing.release());
 window.addEventListener('blur', () => {stopDragging();keys.clear();fishing.release();});

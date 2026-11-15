@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getMapContext,listMaps} from '../map-registry.js';
-import {AMAZON_CONFLUENCE,riverBank,isAmazonWater} from '../maps/amazon-confluence.js';
+import {AMAZON_CONFLUENCE,riverBank,riverHalfWidth,riverBankOffset,isAmazonWater} from '../maps/amazon-confluence.js';
 import {AMAZON_CONFLUENCE_ENCOUNTERS as amazon} from '../maps/amazon-confluence-fish.js';
 import {SUMMER_POND_ENCOUNTERS as lake} from '../maps/summer-pond-fish.js';
 import {AMAZON_LOCATION,WORLD_LOCATIONS} from '../world-map-data.js';
@@ -23,7 +23,7 @@ test('Amazon is independently registered, anchored near Manaus, and uses only or
 });
 test('river geometry and water decisions share the same banks; 23 m forward cast is in water',()=>{
  const {spawn}=AMAZON_CONFLUENCE,x=spawn.position[0]-Math.sin(spawn.yaw)*23,z=spawn.position[2]-Math.cos(spawn.yaw)*23;
- assert.equal(isAmazonWater(x,z,.98),true);assert.equal(isAmazonWater(spawn.position[0],spawn.position[2]),false);assert.equal(isAmazonWater(-13,23),true);
+ assert.equal(isAmazonWater(x,z,.98),true);assert.equal(isAmazonWater(spawn.position[0],spawn.position[2]),false);assert.equal(isAmazonWater(spawn.position[0],23),true);
  for(let z=-180;z<45;z+=3){const left=riverBank(z,-1),right=riverBank(z,1);assert.equal(isAmazonWater((left+right)/2,z),true);assert.equal(isAmazonWater(left-.01,z),false);assert.equal(isAmazonWater(right+.01,z),false);if(z<AMAZON_CONFLUENCE.water.platform.minZ||z>AMAZON_CONFLUENCE.water.platform.maxZ)assert.equal(isAmazonWater(left+.01,z),true);}
  assert.equal(isAmazonWater(0,500),false);
 });
@@ -54,4 +54,10 @@ test('overlapping entry is rejected and owner restore never replenishes a partia
  let resolve;const runtime=createMapSession({createMap:()=>new Promise(r=>resolve=r),createFishing:()=>({getState:()=>({}),getOwnerState:()=>({fishName:null,remaining:0}),dispose(){}})});
  const pending=runtime.enter('one');await assert.rejects(runtime.enter('two'),/正在加载/);resolve({dispose(){}});await pending;runtime.leave();
  const session=new FishingSession();session.restoreOwnerState({fishName:'孔雀鲈',remaining:6});assert.equal(session.ownerState.remaining,6);assert.throws(()=>session.restoreOwnerState({fishName:'missing',remaining:1}),/Unknown/);session.restoreOwnerState({fishName:null,remaining:0});assert.deepEqual(session.ownerState,{fishName:null,remaining:0});
+});
+
+test('channel is exactly 1.5 times as wide, with the platform and seated player following the bank',()=>{
+ const {water,spawn}=AMAZON_CONFLUENCE;
+ for(let z=water.minZ;z<=water.maxZ;z+=.5){const original=13+2.5*Math.sin(z*.035+.5),width=2*riverHalfWidth(z,water);assert.ok(Math.abs(width-3*original)<1e-10);assert.ok(width>=31.5&&width<=46.5);for(const side of [-1,1])assert.ok(Math.abs(riverBankOffset(z,side,water)-side*original*.5)<1e-10);}
+ const shift=riverBankOffset(28,-1,water);assert.ok(Math.abs(spawn.position[0]-(-13+shift))<1e-10);assert.ok(Math.abs(water.platform.minX-(-21.85+shift))<1e-10);assert.ok(Math.abs(water.platform.maxX-(-10.15+shift))<1e-10);assert.ok(Math.abs(water.platform.maxX-water.platform.minX-11.7)<1e-10);assert.equal(isAmazonWater(spawn.position[0],spawn.position[2]),false);
 });

@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {AMAZON_CONFLUENCE,riverBank,riverCenter} from './maps/amazon-confluence.js';
+import {AMAZON_CONFLUENCE,riverBank,riverCenter,riverBankOffset,riverHalfWidth} from './maps/amazon-confluence.js';
 import {createResourceScope} from './scene-resources.js';
 
 // Real geometry at meter scale; the reference image is never used as a scene backdrop.
@@ -11,11 +11,15 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     let seed=621831;
     const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
     const range=(a,b)=>a+random()*(b-a),Y=new THREE.Vector3(0,1,0),dummy=new THREE.Object3D(),color=new THREE.Color();
+    const platformShift=riverBankOffset(28,-1,config.water);
+    const bankX=(x,z,side=x<riverCenter(z)?-1:1)=>x+riverBankOffset(z,side,config.water);
+    function inPlatformClearing(x,z,padding=1.5){const p=config.water.platform;return x>p.minX-padding&&x<p.maxX+padding&&z>p.minZ-padding&&z<p.maxZ+padding;}
+
     const background=new THREE.Color(config.environment.background),fog=new THREE.Fog(config.environment.fog.color,config.environment.fog.near,config.environment.fog.far);
     parent.background=background;parent.fog=fog;renderer.toneMappingExposure=config.environment.exposure;
     const hemi=new THREE.HemisphereLight('#e0edc9','#706246',2.3),sun=new THREE.DirectionalLight('#fff0ba',3.4);
     sun.position.set(-18,34,16);sun.target.position.set(0,0,0);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-    Object.assign(sun.shadow.camera,{left:-37,right:37,top:45,bottom:-45,near:1,far:110});sun.shadow.bias=-.00025;sun.shadow.normalBias=.035;root.add(hemi,sun,sun.target,new THREE.AmbientLight('#a1b27e',.55));
+    Object.assign(sun.shadow.camera,{left:-46,right:46,top:45,bottom:-45,near:1,far:110});sun.shadow.bias=-.00025;sun.shadow.normalBias=.035;root.add(hemi,sun,sun.target,new THREE.AmbientLight('#a1b27e',.55));
     renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
     function texture(paint,w=512,h=512,repeat=[1,1]){
       const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;paint(canvas.getContext('2d'),w,h);
@@ -52,9 +56,8 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     };
     function mesh(geo,mat,p,s,parentNode=root){const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);m.castShadow=m.receiveShadow=true;parentNode.add(m);return m;}
     const cube=new THREE.BoxGeometry(1,1,1),cylinder=new THREE.CylinderGeometry(1,1,1,10),sphere=new THREE.SphereGeometry(1,10,7);
-    const box=(mat,p,s,g=root)=>mesh(cube,mat,p,s,g);
     const pools=[];
-    function pool(geo,mat,shadow=true){const entries=[];const result={add(p,s,r=null,tint=null){entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();root.add(inst);}};pools.push(result);return result;}
+    function pool(geo,mat,shadow=true,parentNode=root){const entries=[];const result={add(p,s,r=null,tint=null){entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();parentNode.add(inst);}};pools.push(result);return result;}
     const trunks=pool(new THREE.CylinderGeometry(.68,1,1,12,3),barkMat),roots=pool(new THREE.CylinderGeometry(.48,1,1,8,2),barkMat),vines=pool(new THREE.CylinderGeometry(.7,1,1,5),standard('#4b5330'));
     function beam(target,a,b,radius,taper=1,tint=null){const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),delta=to.clone().sub(from);target.add(from.clone().add(to).multiplyScalar(.5).toArray(),[radius,delta.length(),radius*taper],new THREE.Quaternion().setFromUnitVectors(Y,delta.normalize()),tint);}
     function leafGeometry(rows=3){
@@ -82,7 +85,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     }
     const treeRecords=[];
     function tree(x,z,h,r){
-      if(x> -23&&x< -9&&z>22&&z<35)return;
+      if(inPlatformClearing(x,z))return;
       const lean=range(-1.6,1.6),base=.35;treeRecords.push({x,z,h});beam(trunks,[x,base,z],[x+lean,h,z+range(-1,1)],r);
       for(let k=0;k<7;k++){const a=k*Math.PI*2/7+range(-.18,.18),length=range(2,4.5)*r,ex=x+Math.cos(a)*length,ez=z+Math.sin(a)*length;
         const side=x<riverCenter(z)?-1:1,edge=riverBank(ez,side,config.water),inWater=side<0?ex>edge:ex<edge,y=inWater?-.05:.38;
@@ -103,7 +106,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
       const z=43-j*8.5+range(-4,4),x=riverBank(z,side,config.water)+side*(range(1.2,8.2)+row*7);
       tree(x,z,range(10,20)+row*2,range(.45,.95));
     }
-    tree(-22,22,23,1.45);tree(22,17,24,1.6);tree(-24,35,22,1.3);
+    tree(bankX(-22,22),22,23,1.45);tree(bankX(22,17),17,24,1.6);tree(bankX(-24,35),35,22,1.3);
     // Lower arching boughs form an overhead rainforest canopy rather than rows of bare poles.
     for(const side of [-1,1])for(let j=0;j<10;j++){
       const z=22-j*11+range(-2,2),x=riverBank(z,side,config.water)+side*range(1,3),h=range(6.5,11),reach=range(6,12),tip=[x-side*reach,h+range(0,2),z-3];
@@ -111,66 +114,82 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
       for(let k=0;k<9;k++){const u=.25+random()*.75,start=[x-side*reach*u,h*.55+(tip[1]-h*.55)*u,z-3*u],a=range(0,7),length=range(2,4);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.8,1),start[2]+Math.sin(a)*length],6,range(.8,1.4));}
     }
     // Broad boughs bridge the river high overhead, leaving a softly lit opening downriver.
-    for(const [x,z,side]of [[-21,17,-1],[21,0,1],[-18,-17,-1],[25,-35,1]]){
+    for(const [authoredX,z,side]of [[-21,17,-1],[21,0,1],[-18,-17,-1],[25,-35,1]]){
+      const x=bankX(authoredX,z,side);
       const tip=[x-side*17,12,z-9];beam(trunks,[x,5,z],tip,.32);
       for(let k=0;k<14;k++){const u=.15+random()*.85,start=[x-side*17*u,5+7*u,z-9*u],a=range(0,7),length=range(2,4.2);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.5,1.5),start[2]+Math.sin(a)*length],7,range(.8,1.4));}
     }
     // Understory fans, ferns and broad tropical foliage: all drawn in two instanced batches.
     for(let i=0;i<1600;i++){
       const z=range(-156,47),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(.4,12);
-      if(x> -23&&x< -10&&z>23&&z<35)continue;
+      if(inPlatformClearing(x,z))continue;
       const h=z> -40?range(.7,2.1):range(.7,1.5),a=range(0,7),broad=i%6===0;
       for(let k=0;k<4;k++){const length=h*range(.65,1.2);smallLeaves.add([x,.35,z],[broad?length*.65:length*.28,length,1],[range(.4,1.65),a+k*1.8,range(-.3,.3)],foliage[(i+k)%6]);}
       if(i%4===0)pebbles.add([x,.25,z],[range(.1,.45),range(.1,.3),range(.1,.4)],[0,range(0,7),0]);
     }
-    for(const [x,z]of[[-19,21],[-18.2,25],[-11,35],[18,22],[19,13],[-22,30]])for(let k=0;k<12;k++)smallLeaves.add([x,.35,z],[range(.65,1.25),range(1.8,3.1),1],[range(.4,1.5),k*.53,range(-.2,.2)],foliage[k%6]);
+    for(const [authoredX,z]of[[-19,21],[-22.8,25],[-11,35],[18,22],[19,13],[-22,30]]){const x=bankX(authoredX,z);for(let k=0;k<12;k++)smallLeaves.add([x,.35,z],[range(.65,1.25),range(1.8,3.1),1],[range(.4,1.5),k*.53,range(-.2,.2)],foliage[k%6]);}
     // Dense midstory hides bare ground and breaks up the tall trunks into layered jungle.
     for(let i=0;i<260;i++){
-      const z=range(-100,46),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(1.4,9);if(x> -23&&x< -10&&z>23&&z<35)continue;
+      const z=range(-100,46),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(1.4,9);if(inPlatformClearing(x,z))continue;
       const height=range(1.5,4.5);beam(vines,[x,.3,z],[x,height,z],.035);
       for(let k=0;k<6;k++){const a=k*1.05+random()*.4,length=range(1,2.2),y=height*(.4+k*.09);leafyTwig([x,y,z],[x+Math.cos(a)*length,y+range(.1,.7),z+Math.sin(a)*length],4,range(.45,.9));}
     }
     // Fine fern leaflets sit on connected fronds along the visible bank.
-    for(let i=0;i<220;i++){const z=range(-56,43),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(.5,4);if(x> -23&&x< -10&&z>23&&z<35)continue;
+    for(let i=0;i<220;i++){const z=range(-56,43),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(.5,4);if(inPlatformClearing(x,z))continue;
       for(let k=0;k<4;k++){const a=k*1.57+random(),length=range(.7,1.7);leafyTwig([x,.4,z],[x+Math.cos(a)*length,.7+length*.3,z+Math.sin(a)*length],7,range(.15,.28));}
     }
     // A few warm red heliconia bracts beside the platform.
-    const red=standard('#a84322');for(const [x,z]of[[-19.2,24],[-21,29],[19,20]]){beam(vines,[x,.4,z],[x,2.4,z],.035);for(let k=0;k<5;k++){const bract=mesh(new THREE.ConeGeometry(.12,.65,7),red,[x+(k%2?.18:-.18),1.1+k*.25,z]);bract.rotation.z=k%2?-.9:.9;}}
+    const red=standard('#a84322');for(const [authoredX,z]of[[-22.7,24],[-23.2,29],[19,20]]){const x=bankX(authoredX,z);beam(vines,[x,.4,z],[x,2.4,z],.035);for(let k=0;k<5;k++){const bract=mesh(new THREE.ConeGeometry(.12,.65,7),red,[x+(k%2?.18:-.18),1.1+k*.25,z]);bract.rotation.z=k%2?-.9:.9;}}
+    // Translate the whole fishing station with the left bank, retaining meter-scale props.
+    const platformRoot=new THREE.Group();platformRoot.name='amazon-platform';platformRoot.position.x=platformShift;root.add(platformRoot);
+    const platformMesh=(geo,mat,p,s,g=platformRoot)=>mesh(geo,mat,p,s,g);
+    const platformBox=(mat,p,s,g=platformRoot)=>mesh(cube,mat,p,s,g);
     // Weathered wooden platform and fishing station from the reference.
-    for(let i=0;i<20;i++)box(woodMat,[-16,.46,24+i*.48],[11.7,.17,.455]);
-    for(const x of [-21,-16,-10.5]){box(darkWood,[x,.22,28.6],[.18,.24,10.4]);for(const z of [24,33.2])mesh(cylinder,barkMat,[x,-.05,z],[.13,.9,.13]);}
-    const nailPool=pool(sphere,metal,false);for(let i=0;i<20;i++)for(const x of [-21,-16,-10.5])nailPool.add([x,.552,24+i*.48],[.018,.007,.018]);
-    for(const x of [-17.5,-10.5]){box(darkWood,[x,.95,24],[.14,1.0,.14]);box(woodMat,[x,1.47,24],[.23,.07,.23]);}
-    box(darkWood,[-14,.83,24],[7,.07,.07]);
-    for(const x of [-16.8,-12]){const rest=mesh(new THREE.TorusGeometry(.12,.018,6,14,Math.PI),metal,[x,1.20,24]);rest.rotation.z=Math.PI;}
+    for(let i=0;i<20;i++)platformBox(woodMat,[-16,.46,24+i*.48],[11.7,.17,.455]);
+    for(const x of [-21,-16,-10.5]){platformBox(darkWood,[x,.22,28.6],[.18,.24,10.4]);for(const z of [24,33.2])platformMesh(cylinder,barkMat,[x,-.05,z],[.13,.9,.13]);}
+    const nailPool=pool(sphere,metal,false,platformRoot);for(let i=0;i<20;i++)for(const x of [-21,-16,-10.5])nailPool.add([x,.552,24+i*.48],[.018,.007,.018]);
+    for(const x of [-17.5,-10.5]){platformBox(darkWood,[x,.95,24],[.14,1.0,.14]);platformBox(woodMat,[x,1.47,24],[.23,.07,.23]);}
+    platformBox(darkWood,[-14,.83,24],[7,.07,.07]);
+    for(const x of [-16.8,-12]){const rest=platformMesh(new THREE.TorusGeometry(.12,.018,6,14,Math.PI),metal,[x,1.20,24]);rest.rotation.z=Math.PI;}
     const tackle=standard('#727958'),trim=standard('#333e30',{metalness:.35}),cushion=standard('#77785b',{roughness:1}),brass=standard('#b4a77b',{metalness:.7,roughness:.5});
-    const chest=new THREE.Group();chest.name='amazon-tackle-seat';chest.position.set(-16.7,.58,28.5);root.add(chest);
-    box(tackle,[0,.40,0],[1.5,.80,1.15],chest);box(cushion,[0,.88,0],[1.58,.18,1.2],chest);
-    for(const x of [-.72,.72])box(trim,[x,.41,0],[.085,.86,1.18],chest);
-    for(let j=0;j<3;j++){box(trim,[0,.17+j*.23,-.585],[1.36,.024,.018],chest);box(brass,[0,.25+j*.23,-.61],[.27,.045,.04],chest);}
-    for(const x of [-.6,.6])box(brass,[x,.64,-.62],[.08,.17,.055],chest);
-    const shelf=new THREE.Group();shelf.name='amazon-wood-shelf';shelf.position.set(-19,.58,25.6);root.add(shelf);
-    for(const x of [-1.1,1.1])for(const z of [-.36,.36])box(darkWood,[x,.56,z],[.11,1.18,.11],shelf);
-    for(const y of [.16,1.04])box(woodMat,[0,y,0],[2.5,.12,.92],shelf);
+    const chest=new THREE.Group();chest.name='amazon-tackle-seat';chest.position.set(-16.7,.58,28.5);platformRoot.add(chest);
+    platformBox(tackle,[0,.40,0],[1.5,.80,1.15],chest);platformBox(cushion,[0,.88,0],[1.58,.18,1.2],chest);
+    for(const x of [-.72,.72])platformBox(trim,[x,.41,0],[.085,.86,1.18],chest);
+    for(let j=0;j<3;j++){platformBox(trim,[0,.17+j*.23,-.585],[1.36,.024,.018],chest);platformBox(brass,[0,.25+j*.23,-.61],[.27,.045,.04],chest);}
+    for(const x of [-.6,.6])platformBox(brass,[x,.64,-.62],[.08,.17,.055],chest);
+    const shelf=new THREE.Group();shelf.name='amazon-wood-shelf';shelf.position.set(-19,.58,25.6);platformRoot.add(shelf);
+    for(const x of [-1.1,1.1])for(const z of [-.36,.36])platformBox(darkWood,[x,.56,z],[.11,1.18,.11],shelf);
+    for(const y of [.16,1.04])platformBox(woodMat,[0,y,0],[2.5,.12,.92],shelf);
     const glass=standard('#b5ad7d',{transparent:true,opacity:.55,roughness:.2}),jarLid=standard('#403e2d');
-    for(let i=0;i<3;i++){const x=-.70+i*.5;mesh(cylinder,glass,[x,1.32,0],[.16,.42,.16],shelf);mesh(cylinder,jarLid,[x,1.55,0],[.18,.05,.18],shelf);mesh(cylinder,standard(i%2?'#9c7745':'#a6883f'),[x,1.25,0],[.13,.24,.13],shelf);}
-    const thermos=standard('#7b9180',{metalness:.55,roughness:.3});mesh(cylinder,thermos,[.88,1.43,.04],[.15,.64,.15],shelf);mesh(cylinder,metal,[.88,1.77,.04],[.16,.07,.16],shelf);
-    box(tackle,[-.3,.43,.02],[1.14,.4,.65],shelf);
-    const lantern=new THREE.Group();lantern.name='amazon-lantern';lantern.position.set(-17.8,1.18,25.3);root.add(lantern);
-    mesh(cylinder,metal,[0,.06,0],[.15,.10,.15],lantern);mesh(cylinder,glass,[0,.24,0],[.11,.30,.11],lantern);mesh(cylinder,metal,[0,.44,0],[.16,.08,.16],lantern);
-    mesh(cylinder,standard('#ffe8a6',{emissive:'#ffc45d',emissiveIntensity:1}),[0,.22,0],[.035,.18,.035],lantern);
-    const bucketMat=standard('#737958'),bucket=mesh(new THREE.CylinderGeometry(.28,.23,.49,20,1,true),bucketMat,[-14.9,.81,23.8]);bucket.material.side=THREE.DoubleSide;
-    const bucketRim=mesh(new THREE.TorusGeometry(.28,.018,6,22),metal,[-14.9,1.06,23.8]);bucketRim.rotation.x=Math.PI/2;
-    const bucketFill=mesh(new THREE.CircleGeometry(.24,22),standard('#2a3724',{roughness:.18}),[-14.9,.87,23.8]);bucketFill.rotation.x=-Math.PI/2;
-    const handle=mesh(new THREE.TorusGeometry(.30,.009,6,20,Math.PI),metal,[-14.9,1.07,23.8]);handle.rotation.y=Math.PI/2;
+    for(let i=0;i<3;i++){const x=-.70+i*.5;platformMesh(cylinder,glass,[x,1.32,0],[.16,.42,.16],shelf);platformMesh(cylinder,jarLid,[x,1.55,0],[.18,.05,.18],shelf);platformMesh(cylinder,standard(i%2?'#9c7745':'#a6883f'),[x,1.25,0],[.13,.24,.13],shelf);}
+    const thermos=standard('#7b9180',{metalness:.55,roughness:.3});platformMesh(cylinder,thermos,[.88,1.43,.04],[.15,.64,.15],shelf);platformMesh(cylinder,metal,[.88,1.77,.04],[.16,.07,.16],shelf);
+    platformBox(tackle,[-.3,.43,.02],[1.14,.4,.65],shelf);
+    const lantern=new THREE.Group();lantern.name='amazon-lantern';lantern.position.set(-17.8,1.18,25.3);platformRoot.add(lantern);
+    platformMesh(cylinder,metal,[0,.06,0],[.15,.10,.15],lantern);platformMesh(cylinder,glass,[0,.24,0],[.11,.30,.11],lantern);platformMesh(cylinder,metal,[0,.44,0],[.16,.08,.16],lantern);
+    platformMesh(cylinder,standard('#ffe8a6',{emissive:'#ffc45d',emissiveIntensity:1}),[0,.22,0],[.035,.18,.035],lantern);
+    const bucketMat=standard('#737958'),bucket=platformMesh(new THREE.CylinderGeometry(.28,.23,.49,20,1,true),bucketMat,[-14.9,.81,23.8]);bucket.material.side=THREE.DoubleSide;
+    const bucketRim=platformMesh(new THREE.TorusGeometry(.28,.018,6,22),metal,[-14.9,1.06,23.8]);bucketRim.rotation.x=Math.PI/2;
+    const bucketFill=platformMesh(new THREE.CircleGeometry(.24,22),standard('#2a3724',{roughness:.18}),[-14.9,.87,23.8]);bucketFill.rotation.x=-Math.PI/2;
+    const handle=platformMesh(new THREE.TorusGeometry(.30,.009,6,20,Math.PI),metal,[-14.9,1.07,23.8]);handle.rotation.y=Math.PI/2;
     // Landing net: a real hoop and sagging line mesh rather than a solid black disk.
-    const net=new THREE.Group();net.name='amazon-landing-net';net.position.set(-10.6,1.17,23.5);net.rotation.set(.18,0,.13);root.add(net);
-    const hoop=mesh(new THREE.TorusGeometry(.43,.016,7,40),metal,null,null,net);hoop.rotation.x=Math.PI/2;
+    const net=new THREE.Group();net.name='amazon-landing-net';net.position.set(-10.6,1.17,23.5);net.rotation.set(.18,0,.13);platformRoot.add(net);
+    const hoop=platformMesh(new THREE.TorusGeometry(.43,.016,7,40),metal,null,null,net);hoop.rotation.x=Math.PI/2;
     const strings=[];for(let k=0;k<20;k++){const a=k*Math.PI/10;for(let j=0;j<5;j++){const r1=.43*(1-j/5),r2=.43*(1-(j+1)/5);strings.push(Math.cos(a)*r1,-.45*(j/5),Math.sin(a)*r1,Math.cos(a)*r2,-.45*((j+1)/5),Math.sin(a)*r2);}}
     for(let j=1;j<5;j++)for(let k=0;k<40;k++){const a=k*Math.PI/20,b=(k+1)*Math.PI/20,r=.43*(1-j/5);strings.push(Math.cos(a)*r,-.45*j/5,Math.sin(a)*r,Math.cos(b)*r,-.45*j/5,Math.sin(b)*r);}
     const ng=new THREE.BufferGeometry();ng.setAttribute('position',new THREE.Float32BufferAttribute(strings,3));net.add(new THREE.LineSegments(ng,new THREE.LineBasicMaterial({color:'#222b20',transparent:true,opacity:.8})));
-    const netHandle=mesh(cylinder,woodMat,[-.9,0,0],[.025,1.0,.025],net);netHandle.rotation.z=Math.PI/2;
-    const sky=mesh(new THREE.SphereGeometry(270,20,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,vertexShader:'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 direction;void main(){vec3 d=normalize(direction);float h=max(0.,d.y);vec3 c=mix(vec3(.72,.79,.62),vec3(.39,.64,.73),smoothstep(0.,.65,h));float cloud=sin(d.x*27.+sin(d.z*19.))*sin(d.z*31.-d.x*7.);c=mix(c,vec3(.95,.94,.78),smoothstep(.22,.68,cloud)*.55);float glow=pow(max(dot(d,normalize(vec3(-18.,34.,16.))),0.),22.);c+=vec3(.28,.22,.1)*glow;gl_FragColor=vec4(c,1.);#include <colorspace_fragment>}`.replace('#include','\n#include')}));sky.castShadow=sky.receiveShadow=false;sky.frustumCulled=false;
+    const netHandle=platformMesh(cylinder,woodMat,[-.9,0,0],[.025,1.0,.025],net);netHandle.rotation.z=Math.PI/2;
+    // Same blue gradient and seeded white cloud banks as the first lake.
+    // Sky randomness is independent of the bank and vegetation layout.
+    let skySeed=17329;
+    const skyRange=(a,b)=>{skySeed=(1664525*skySeed+1013904223)>>>0;return a+(b-a)*skySeed/4294967296;};
+    const sky=mesh(new THREE.SphereGeometry(300,24,14),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,vertexShader:'varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 vDir;void main(){vec3 d=normalize(vDir);float h=clamp(d.y,0.,1.);vec3 c=mix(vec3(.56,.79,.94),vec3(.012,.20,.75),smoothstep(0.,.35,h));float glow=pow(max(dot(d,normalize(vec3(-38.,62.,24.))),0.),32.);c+=vec3(.18,.13,.035)*glow;gl_FragColor=vec4(c,1.);
+      #include <colorspace_fragment>
+    }`}));sky.castShadow=false;sky.receiveShadow=false;sky.frustumCulled=false;
+    const cloudPool=pool(new THREE.SphereGeometry(1,10,7),new THREE.ShaderMaterial({vertexShader:'varying vec3 cloudNormal;void main(){cloudNormal=normal;gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 cloudNormal;void main(){float light=smoothstep(-.7,.65,normalize(cloudNormal).y-normalize(cloudNormal).x*.2);gl_FragColor=vec4(mix(vec3(.63,.77,.91),vec3(1.),light),1.);
+      #include <colorspace_fragment>
+    }`}),false);
+    for(let i=0;i<14;i++){const a=skyRange(0,Math.PI*2),r=skyRange(105,170),x=Math.cos(a)*r,z=-15+Math.sin(a)*r,y=skyRange(34,56),s=skyRange(2.8,5.5);for(let j=0;j<7;j++)cloudPool.add([x+(j-3)*s*.95,y+Math.sin(j*.9)*s*.5,z+skyRange(-2,2)],[s*skyRange(.85,1.5),s*skyRange(.65,1.1),s*.8],null,'#ffffff');}
+
     // River water reflects the actual current scene. Reflection resolution/frequency are bounded.
     const reflectionTarget=new THREE.WebGLRenderTarget(...config.quality.fine.reflection,{depthBuffer:true});targets.push(reflectionTarget);
     const reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4(),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();
@@ -199,7 +218,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
         try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parent,reflectionCamera);}
         finally{renderer.setRenderTarget(target);water.visible=visible;after();}
       },
-      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines']}),
+      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],platformShift,platformBounds:{...config.water.platform},riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines']}),
       dispose(){if(resources.disposed)return;resources.dispose();if(parent.background===background)parent.background=previous.background;if(parent.fog===fog)parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;}
     };
   }catch(error){createResourceScope(root,{targets,shared:sharedResources}).dispose();parent.background=previous.background;parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;throw error;}

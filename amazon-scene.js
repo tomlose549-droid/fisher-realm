@@ -170,7 +170,18 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     for(let j=1;j<5;j++)for(let k=0;k<40;k++){const a=k*Math.PI/20,b=(k+1)*Math.PI/20,r=.43*(1-j/5);strings.push(Math.cos(a)*r,-.45*j/5,Math.sin(a)*r,Math.cos(b)*r,-.45*j/5,Math.sin(b)*r);}
     const ng=new THREE.BufferGeometry();ng.setAttribute('position',new THREE.Float32BufferAttribute(strings,3));net.add(new THREE.LineSegments(ng,new THREE.LineBasicMaterial({color:'#222b20',transparent:true,opacity:.8})));
     const netHandle=mesh(cylinder,woodMat,[-.9,0,0],[.025,1.0,.025],net);netHandle.rotation.z=Math.PI/2;
-    const sky=mesh(new THREE.SphereGeometry(270,20,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,vertexShader:'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 direction;void main(){vec3 d=normalize(direction);float h=max(0.,d.y);vec3 c=mix(vec3(.72,.79,.62),vec3(.39,.64,.73),smoothstep(0.,.65,h));float cloud=sin(d.x*27.+sin(d.z*19.))*sin(d.z*31.-d.x*7.);c=mix(c,vec3(.95,.94,.78),smoothstep(.22,.68,cloud)*.55);float glow=pow(max(dot(d,normalize(vec3(-18.,34.,16.))),0.),22.);c+=vec3(.28,.22,.1)*glow;gl_FragColor=vec4(c,1.);#include <colorspace_fragment>}`.replace('#include','\n#include')}));sky.castShadow=sky.receiveShadow=false;sky.frustumCulled=false;
+    // Same blue gradient and seeded white cloud banks as the first lake.
+    // A separate seed keeps the Amazon vegetation/lily layout unchanged.
+    let skySeed=17329;
+    const skyRange=(a,b)=>{skySeed=(1664525*skySeed+1013904223)>>>0;return a+(b-a)*skySeed/4294967296;};
+    const sky=mesh(new THREE.SphereGeometry(300,24,14),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,vertexShader:'varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 vDir;void main(){vec3 d=normalize(vDir);float h=clamp(d.y,0.,1.);vec3 c=mix(vec3(.56,.79,.94),vec3(.012,.20,.75),smoothstep(0.,.35,h));float glow=pow(max(dot(d,normalize(vec3(-38.,62.,24.))),0.),32.);c+=vec3(.18,.13,.035)*glow;gl_FragColor=vec4(c,1.);
+      #include <colorspace_fragment>
+    }`}));sky.castShadow=false;sky.receiveShadow=false;sky.frustumCulled=false;
+    const cloudPool=pool(new THREE.SphereGeometry(1,10,7),new THREE.ShaderMaterial({vertexShader:'varying vec3 cloudNormal;void main(){cloudNormal=normal;gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 cloudNormal;void main(){float light=smoothstep(-.7,.65,normalize(cloudNormal).y-normalize(cloudNormal).x*.2);gl_FragColor=vec4(mix(vec3(.63,.77,.91),vec3(1.),light),1.);
+      #include <colorspace_fragment>
+    }`}),false);
+    for(let i=0;i<14;i++){const a=skyRange(0,Math.PI*2),r=skyRange(105,170),x=Math.cos(a)*r,z=-15+Math.sin(a)*r,y=skyRange(34,56),s=skyRange(2.8,5.5);for(let j=0;j<7;j++)cloudPool.add([x+(j-3)*s*.95,y+Math.sin(j*.9)*s*.5,z+skyRange(-2,2)],[s*skyRange(.85,1.5),s*skyRange(.65,1.1),s*.8],null,'#ffffff');}
+
     // River water reflects the actual current scene. Reflection resolution/frequency are bounded.
     const reflectionTarget=new THREE.WebGLRenderTarget(...config.quality.fine.reflection,{depthBuffer:true});targets.push(reflectionTarget);
     const reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4(),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();

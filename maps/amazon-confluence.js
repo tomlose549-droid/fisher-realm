@@ -5,7 +5,7 @@ export const AMAZON_CONFLUENCE=freeze({
   id:'amazon-confluence',name:'亚马逊 · 河道交汇区',
   spawn:{position:[-13,1.82,28],yaw:-.26,pitch:-.075},
   water:{level:0,minZ:-210,maxZ:48,halfWidth:13,platform:{minX:-21.85,maxX:-10.15,minZ:23.77,maxZ:33.35}},
-  environment:{background:'#bbc5a2',fog:{color:'#a5b78f',near:55,far:170},exposure:.94},
+  environment:{background:'#49a4ef',fog:{color:'#a5b78f',near:55,far:170},exposure:.94},
   quality:{fine:{reflection:[768,480],reflectionEvery:3},fast:{reflection:[448,280],reflectionEvery:5}},
   labels:{castHint:'请面向河道水面，再按空格抛竿',reset:'已回到亚马逊木平台钓位'}
 });

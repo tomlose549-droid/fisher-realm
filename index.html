@@ -7,11 +7,11 @@
   <title>湖畔慢时光 · 3D 钓鱼</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23224942'/%3E%3Cpath d='M12 38q10-10 20 0t20 0M12 48q10-10 20 0t20 0' fill='none' stroke='%23c4d9bd' stroke-width='4'/%3E%3Ccircle cx='32' cy='20' r='7' fill='%23edce8e'/%3E%3C/svg%3E">
   <style id="bootstrap-style">
-    body{margin:0;background:#183d35;color:#e8eddf;font-family:system-ui,"Microsoft YaHei",sans-serif}#game>:not(#loading):not(#error){display:none!important}#loading,#error{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;box-sizing:border-box}#loading[hidden],#error[hidden]{display:none}#error button{padding:10px 20px;cursor:pointer}
+    #world-map{display:none}body{margin:0;background:#183d35;color:#e8eddf;font-family:system-ui,"Microsoft YaHei",sans-serif}#game>:not(#loading):not(#error){display:none!important}#loading,#error{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;box-sizing:border-box}#loading[hidden],#error[hidden]{display:none}#error button{padding:10px 20px;cursor:pointer}
   </style>
 </head>
 <body>
-  <main id="game" aria-label="第一人称三维湖边场景">
+  <main id="game" class="world-mode" aria-label="第一人称三维湖边场景">
     <canvas id="scene" tabindex="0" aria-label="湖泊场景。按住鼠标右键拖动环顾，方向键也可转动视角，R 重置。"></canvas>
     <div class="vignette" aria-hidden="true"></div>
     <header class="topbar">
@@ -27,7 +27,7 @@
         <form id="realm-command-form" class="realm-command-form"><label for="realm-command">输入内容</label><input id="realm-command" type="text" autocomplete="off" spellcheck="false" aria-label="输入内容" maxlength="80"><span id="realm-command-message" role="status"></span></form>
       </section>
     </header>
-    <aside class="location"><span class="eyebrow">YOUR QUIET CORNER</span><h2>夏日池塘 <span>·</span> 林间钓位</h2><p><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>晴朗夏日 <span>微风拂面</span></p></aside>
+    <aside class="location"><span class="eyebrow">YOUR QUIET CORNER</span><h2>美国奥基乔比湖 <span>·</span> 林间钓位</h2><p><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>晴朗夏日 <span>微风拂面</span></p></aside>
     <div class="crosshair" aria-hidden="true"></div>
     <section id="welcome" class="welcome"><span class="eyebrow">TAKE A BREATH.</span><h2>在湖边，慢下来。</h2><p>让风吹过树梢，听时间停在水面。<br>你的第一处钓位，已经准备好了。</p><div class="welcome-tip"><span class="mouse-icon" aria-hidden="true"></span>空格抛竿，等一条鱼 <span>↔</span></div></section>
     <div id="toast" role="status" aria-live="polite"></div>
@@ -64,6 +64,7 @@
     <dialog id="save-confirm-dialog" aria-labelledby="save-confirm-title"><h2 id="save-confirm-title">创建新存档</h2><p id="save-confirm-description"></p><p id="save-confirm-message" role="status"></p><form id="save-confirm-form"><div class="economy-actions save-confirm-actions"><button id="save-confirm-cancel" type="button">取消</button><button id="save-confirm-choose" type="button" hidden>选择存档</button><button id="save-confirm-apply" class="primary" type="submit">确认</button></div></form></dialog>
     <div id="error" class="error" hidden><h2>暂时没能打开湖景</h2><p id="error-text"></p><button onclick="location.reload()">重新加载</button></div>
   </main>
+  <section id="world-map" aria-labelledby="world-title"><header class="world-header"><div><p>REALM OWNER · WORLD</p><h1 id="world-title">世界地图</h1></div><div class="world-tools"><span id="world-coins" aria-label="金币余额"></span><span id="world-version"></span><button id="world-warehouse" type="button">仓库</button></div></header><div id="world-viewport" aria-label="可拖动和缩放的世界地图"><div id="world-surface"><img id="world-image" alt="世界地图" draggable="false"><button id="world-lake-point" type="button" aria-label="美国奥基乔比湖，第一次点击预览，再次点击进入" aria-controls="world-preview" aria-expanded="false"><span></span></button></div></div><aside id="world-preview" aria-labelledby="world-location-name" hidden><button id="world-preview-close" type="button" aria-label="关闭钓点预览">×</button><p id="world-region"></p><h2 id="world-location-name"></h2><img id="world-preview-image" alt="当前3D钓鱼场景预览"><p id="world-preview-fallback" hidden>预览暂未加载，仍可点击白点进入。</p><p>再次点击白色光点进入钓点</p></aside><div class="world-zoom" aria-label="地图缩放"><button id="world-zoom-in" type="button" aria-label="放大地图">＋</button><button id="world-zoom-out" type="button" aria-label="缩小地图">−</button><button id="world-reset" type="button">复位</button></div><footer class="world-footer"><p id="world-status" role="status"></p><span>拖动地图 · 滚轮或双指缩放</span><button id="world-reload" type="button" hidden>重新加载</button></footer></section>
   <script>
     window.showGameError = (message) => { document.getElementById('loading').hidden = true; document.getElementById('error').hidden = false; document.getElementById('error-text').textContent = message; };
     if (location.protocol === 'file:') showGameError('请关闭此页，双击文件夹中的「启动游戏.cmd」。游戏需要通过本地服务器打开。');

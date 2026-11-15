@@ -9,7 +9,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify({version:1,items:[{id:'1',name:'美洲鳗鲡',x:0,y:0}]}));});
   await page.goto('http://127.0.0.1:'+server.address().port+'/');await page.locator('#loading').waitFor({state:'hidden'});
-  await page.waitForFunction(()=>Boolean(window.lakeside),null,{timeout:10000});
+  await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>Boolean(window.lakeside),null,{timeout:10000});
   const initial=await page.evaluate(()=>window.lakeside.getState());
   assert.equal(initial.scene,'summer-pond');assert.equal(initial.treeCount,137);assert.equal(initial.targetFps,25);
   assert.deepEqual(initial.camera,[0,1.78,32]);assert.deepEqual(initial.chairs.map(c=>c.horizontalDistance),[10,0,10]);

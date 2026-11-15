@@ -20,7 +20,7 @@ async function main(){
   // Test-only strong, slow fish reliably causes a real line-broken event before escaping/catching.
   await page.route('**/fish-data.js*',r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync(path.join(root,'fish-data.js'),'utf8').split('\n').map(line=>{if(!line.includes('"id":"TILAPIA"'))return line;const f=JSON.parse(line.trim().replace(/,$/,''));Object.assign(f,{strength:{amount:.01,interval:10},speed:.01,stamina:10000});return JSON.stringify(f)+',';}).join('\n')}));
   const state=()=>page.evaluate(()=>window.lakeside.getState()),disk=()=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
-  async function loaded(){await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);await page.evaluate(()=>window.refitUnit=0);}
+  async function loaded(){await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);await page.evaluate(()=>window.refitUnit=0);}
   async function closeShop(){await page.locator('#shop-close').click();await page.waitForFunction(()=>!window.lakeside.getState().paused);}
   async function openRefit(){await page.locator('#shop-toggle').click();await page.locator('#shop-refit-tab').click();assert.equal((await state()).paused,true);}
   const candidate=id=>page.locator('[data-equipment-id="'+id+'"] .refit-equip');

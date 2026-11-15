@@ -30,7 +30,7 @@ const server=http.createServer((req,res)=>{try{
  const reports=[];
  for(const next of ['91.0.0','91.0.1']){
   version=next;const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
-  await p.goto(url,{waitUntil:'networkidle'});await p.waitForFunction(v=>window.lakeside?.getState().version===v,version);
+  await p.goto(url,{waitUntil:'networkidle'});await require('./enter-lake.cjs')(p);await p.waitForFunction(v=>window.lakeside?.getState().version===v,version);
   assert.equal(await p.locator('#game-version').textContent(),'V'+version);
   assert.equal(await p.evaluate(async()=>{const m=await import('./fish-data.js');return m.FISH_DATA.find(f=>f.id==='OSCAR').stamina;}),version==='91.0.0'?55:56);
   assert.equal(await p.evaluate(()=>getComputedStyle(document.body).getPropertyValue('--release-test').trim()),'"'+version+'"');
@@ -48,12 +48,12 @@ const server=http.createServer((req,res)=>{try{
  for(const v of ['91.0.0','91.0.1'])for(const name of manifest.fisherRealm.modules){assert.ok(requests.some(r=>r.path==='/fisher-realm/'+name&&new URLSearchParams(r.query).get('v')===v),'missing versioned module '+name+' '+v);}
  for(const v of ['91.0.0','91.0.1'])for(const name of ['audio/hooked.wav','audio/line-broken.wav','audio/caught.wav'])assert.ok(requests.some(r=>r.path==='/fisher-realm/'+name&&new URLSearchParams(r.query).get('v')===v),'missing versioned audio '+name);
  const checks=requests.filter(r=>r.path.endsWith('/package.json')).map(r=>new URLSearchParams(r.query).get('check'));assert.equal(checks.length,2);assert.equal(new Set(checks).size,2);assert.ok(checks.every(Boolean));
- legacyEntry=true;version='93.0.0';const legacy=await context.newPage();await legacy.goto(url+'?old-entry=1',{waitUntil:'domcontentloaded'});await legacy.locator('#error').waitFor({state:'visible'});assert.equal(await legacy.evaluate(()=>typeof window.lakeside),'undefined');legacyEntry=false;await legacy.locator('#error button').click();await legacy.waitForFunction(v=>window.lakeside?.getState().version===v,version);assert.ok(new URL(legacy.url()).searchParams.has('reload'));await legacy.close();reports.push({legacyHtmlRecovery:true});
+ legacyEntry=true;version='93.0.0';const legacy=await context.newPage();await legacy.goto(url+'?old-entry=1',{waitUntil:'domcontentloaded'});await legacy.locator('#error').waitFor({state:'visible'});assert.equal(await legacy.evaluate(()=>typeof window.lakeside),'undefined');legacyEntry=false;await Promise.all([legacy.waitForEvent('domcontentloaded'),legacy.locator('#error button').click()]);await require('./enter-lake.cjs')(legacy);await legacy.waitForFunction(v=>window.lakeside?.getState().version===v,version);assert.ok(new URL(legacy.url()).searchParams.has('reload'));await legacy.close();reports.push({legacyHtmlRecovery:true});
  for(const [i,scenario] of ['manifest','invalid','style','loader'].entries()){
   version='92.0.'+i;
   failure=scenario;const p=await context.newPage(),start=requests.length;
   await p.goto(url,{waitUntil:'domcontentloaded'});await p.locator('#error').waitFor({state:'visible'});
-  assert.equal(await p.evaluate(()=>typeof window.lakeside),'undefined');assert.ok(!requests.slice(start).some(r=>r.path.endsWith('/main.js')));reports.push({failure:scenario,errorVisible:true,gameNotStarted:true});if(scenario==='manifest'){failure=null;await p.locator('#error button').click();await p.waitForFunction(v=>window.lakeside?.getState().version===v,version);reports.push({retryAfterFailure:true});}await p.close();
+  assert.equal(await p.evaluate(()=>typeof window.lakeside),'undefined');assert.ok(!requests.slice(start).some(r=>r.path.endsWith('/main.js')));reports.push({failure:scenario,errorVisible:true,gameNotStarted:true});if(scenario==='manifest'){failure=null;await Promise.all([p.waitForEvent('domcontentloaded'),p.locator('#error button').click()]);await require('./enter-lake.cjs')(p);await p.waitForFunction(v=>window.lakeside?.getState().version===v,version);reports.push({retryAfterFailure:true});}await p.close();
  }
  await context.close();console.log(JSON.stringify({reports,allModuleVersions:true,lazyModuleVersions:true,noEagerLazyDownload:true,allAudioVersions:true,uncachedManifest:true,subdirectory:true}));
  }finally{await browser.close();await new Promise(r=>server.close(r));}

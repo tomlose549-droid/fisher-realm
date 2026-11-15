@@ -21,7 +21,7 @@ async function main(){
   const initial=model.serialize();await context.addInitScript(data=>{if(!localStorage.getItem('fisher-realm-save-slots-v1')&&!localStorage.getItem('fisher-realm-inventory-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(data));},initial);
   const state=()=>page.evaluate(()=>window.lakeside.getState()),quests=async()=>(await state()).storage.quests??{mainCompleted:0,counts:[0,0],side1Done:false};
   const saved=()=>readSavedSection(page,'fisher-realm-inventory-v1');
-  async function loaded(){await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});}
+  async function loaded(){await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});}
   async function openTasks(){await page.locator('#shop-toggle').click();await page.locator('#shop-owner').click();}
   const row=id=>page.locator('[data-quest="'+id+'"]');
   const gift=id=>page.locator('#quest-grid [data-gift-id="'+id+'"]');

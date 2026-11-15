@@ -2,7 +2,7 @@ const {readInPage,readSavedSection}=require('./save-fixture.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path');
 const root=path.resolve(__dirname,'../..'),mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.png':'image/png','.wav':'audio/wav'};
 const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname.slice(1))||'index.html',f=path.resolve(root,name);if(path.relative(root,f).startsWith('..'))return res.writeHead(403).end();res.writeHead(200,{'Content-Type':mime[path.extname(f)]||'application/octet-stream'}).end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
-async function ready(p,url){await p.goto(url,{waitUntil:'networkidle'});await p.waitForFunction(()=>window.lakeside);await p.locator('#loading').waitFor({state:'hidden'});}
+async function ready(p,url){await p.goto(url,{waitUntil:'networkidle'});await require('./enter-lake.cjs')(p);await p.waitForFunction(()=>window.lakeside);await p.locator('#loading').waitFor({state:'hidden'});}
 const state=p=>p.evaluate(()=>window.lakeside.getState());
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port+'/',b=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',args:['--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader'],chromiumSandbox:false}),reports=[];
 try{

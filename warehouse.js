@@ -3,7 +3,7 @@ import {createFishCard} from './item-card.js';
 import {sizeBackpackGrid} from './backpack-upgrades.js';
 import {BOX_SIZE,BOX_COST} from './storage-rules.js';
 
-export function createWarehouse({store,onOpen,onClose,toast}){
+export function createWarehouse({store,onOpen,onClose,toast,beforeOpen=()=>true,onOpened=()=>{}}){
   const dialog=document.querySelector('#warehouse-dialog'),bag=document.querySelector('#warehouse-bag'),grid=document.querySelector('#warehouse-grid');
   const tabs=document.querySelector('#warehouse-tabs'),hint=document.querySelector('#warehouse-hint'),saleButton=document.querySelector('#warehouse-sale');
   const unlockDialog=document.querySelector('#warehouse-unlock-dialog'),unlockMessage=document.querySelector('#warehouse-unlock-message');
@@ -118,8 +118,8 @@ export function createWarehouse({store,onOpen,onClose,toast}){
   unlockDialog.addEventListener('close',()=>{document.querySelector(`#warehouse-box-${pendingBox}`)?.focus({preventScroll:true});pendingBox=null;});
   document.querySelector('#warehouse-toggle').addEventListener('click',()=>{
     // Settle the current fishing tick before clearing the pile, including a catch on this exact frame.
-    onOpen();const result=store.run('openWarehouse');if(!result.ok){toast(result.error);onClose();return;}
-    sale=false;select(null);saleButton.setAttribute('aria-pressed','false');saleButton.textContent='出售';dialog.classList.remove('selling');
+    onOpen();if(beforeOpen()===false){onClose();return;}const result=store.run('openWarehouse');if(!result.ok){toast(result.error);onClose();return;}
+    onOpened();sale=false;select(null);saleButton.setAttribute('aria-pressed','false');saleButton.textContent='出售';dialog.classList.remove('selling');
     dialog.showModal();render();defaultHint();if(result.removed)toast(`鱼堆已清空 · ${result.removed} 条鱼`);
   });
   document.querySelector('#warehouse-close').addEventListener('click',()=>dialog.close());

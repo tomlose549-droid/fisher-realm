@@ -2,7 +2,7 @@ function freeze(value){if(value&&typeof value==='object'){Object.values(value).f
 
 // Stable map identity. One world unit is one meter. No fish membership fields yet.
 export const SUMMER_POND=freeze({
-  id:'summer-pond',name:'夏日池塘',
+  id:'summer-pond',name:'美国奥基乔比湖',
   spawn:{position:[0,1.78,32],yaw:0,pitch:-.065},
   water:{level:-.035,center:[0,-14],radii:[34,41],
     shoreline:{sinFrequency:5,sinAmplitude:.026,sinPhase:.5,cosFrequency:7,cosAmplitude:.015},

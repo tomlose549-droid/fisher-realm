@@ -15,7 +15,7 @@ async function ready(p,url){
  // has separate coverage in fish-guide-unlocks.cjs, without this seed.
  const ids=fs.readFileSync(path.join(root,'fish-data.js'),'utf8').split('\n').filter(l=>l.trim().startsWith('{"id":')).map(l=>JSON.parse(l.trim().replace(/,$/,'' )).id);
  await p.addInitScript(fishIds=>localStorage.setItem('fisher-realm-discoveries-v1',JSON.stringify({version:1,fishIds})),[...ids,'GUIDE_TEST']);
- await p.goto(url,{waitUntil:'networkidle'});await p.waitForFunction(()=>window.lakeside);await p.locator('#loading').waitFor({state:'hidden'});
+ await p.goto(url,{waitUntil:'networkidle'});await require('./enter-lake.cjs')(p);await p.waitForFunction(()=>window.lakeside);await p.locator('#loading').waitFor({state:'hidden'});
 }
 async function open(p){
  // A held mouse is captured by the rod. Use real keyboard activation to open

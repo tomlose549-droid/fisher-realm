@@ -34,6 +34,6 @@
     })));
     document.querySelector('#bootstrap-style')?.remove();
     for(const path of release.preloadImages){const link=document.createElement('link');link.rel='preload';link.as='image';link.href=assetUrl(path);link.fetchPriority='low';document.head.append(link);}
-    await import('./main.js');
+    await import('./world-map.js');
   }catch(error){console.error(error);showGameError('加载游戏失败，请检查网络后重新加载。详情：'+error.message);}
 })();

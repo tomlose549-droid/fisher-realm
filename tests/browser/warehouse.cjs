@@ -20,7 +20,7 @@ async function main(){
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     const state=()=>page.evaluate(()=>window.lakeside.getState());
     const disk=()=>readSavedSection(page,key);
-    async function loaded(){await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);}
+    async function loaded(){await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);}
     async function command(text){await page.locator('#settings-toggle').click();await page.locator('#realm-command').fill(text);if(text!=='realm owner')await page.locator('#realm-command').press('Enter');}
     async function rich(value){await command('rich');await page.locator('#rich-amount').fill(String(value));await page.locator('#rich-form .primary').click();await page.locator('#rich-dialog').waitFor({state:'hidden'});}
     const card=(container,id)=>page.locator(container+' [data-fish-id="'+id+'"]');
@@ -48,7 +48,7 @@ async function main(){
     await page.locator('#warehouse-unlock-form .primary').click();assert.match(await page.locator('#warehouse-unlock-message').textContent(),/金币不足/);assert.equal((await state()).storage.boxes[9].unlocked,false);
     await page.locator('#warehouse-unlock-cancel').click();assert.equal((await state()).paused,true);
     await page.screenshot({path:path.join(shots,'warehouse.png')});
-    await page.locator('#warehouse-close').click();await page.waitForFunction(()=>!window.lakeside.getState().paused);
+    await page.locator('#warehouse-close').click();await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>!window.lakeside.getState().paused);
     await rich(2500);assert.equal((await state()).storage.coins,2500);
     await command('rich');await page.locator('#rich-amount').fill('-1');await page.locator('#rich-form .primary').click();assert.match(await page.locator('#rich-message').textContent(),/非负整数/);
     await page.locator('#rich-amount').fill('1.5');await page.locator('#rich-form .primary').click();assert.equal((await state()).storage.coins,2500);
@@ -63,7 +63,7 @@ async function main(){
     await page.screenshot({path:path.join(shots,'sale.png')});
     await page.locator('#warehouse-sale').click();
     await card('#warehouse-bag','2').click();await cell('#warehouse-grid',0,0).click();
-    await page.locator('#warehouse-close').click();await page.locator('#warehouse-toggle').click();assert.equal(await page.locator('#warehouse-sale').getAttribute('aria-pressed'),'false');
+    await page.locator('#warehouse-close').click();await require('./enter-lake.cjs')(page);await page.locator('#warehouse-toggle').click();assert.equal(await page.locator('#warehouse-sale').getAttribute('aria-pressed'),'false');
     const frozen=await disk();await page.reload({waitUntil:'domcontentloaded'});await loaded();assert.deepEqual(await disk(),frozen);assert.equal((await state()).storage.coins,609);
     const discoveriesBefore=await readSavedSection(page,'fisher-realm-discoveries-v1');
     await command('clear');assert.equal((await state()).inventory.items.length,0);assert.equal((await state()).storage.coins,0);assert.equal((await state()).storage.boxes[0].items[0].name,'大口黑鲈');assert.equal((await state()).storage.boxes[9].unlocked,true);
@@ -72,7 +72,7 @@ async function main(){
     await page.evaluate(()=>{window.originalSave=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='fisher-realm-save-slots-v1')throw new DOMException('test quota','QuotaExceededError');return window.originalSave.call(this,key,value);};});
     const before=await state(),diskBefore=await disk();await page.locator('#warehouse-sale').click();await card('#warehouse-grid','2').dblclick();
     assert.match(await page.locator('#warehouse-hint').textContent(),/保存失败/);assert.deepEqual((await state()).storage,before.storage);assert.deepEqual(await disk(),diskBefore);
-    await page.locator('#warehouse-close').click();await page.locator('#warehouse-toggle').click();
+    await page.locator('#warehouse-close').click();await require('./enter-lake.cjs')(page);await page.locator('#warehouse-toggle').click();
     assert.equal(await page.locator('#warehouse-dialog').evaluate(e=>e.open),false);await page.waitForFunction(()=>!window.lakeside.getState().paused);
     assert.deepEqual(await disk(),diskBefore);
     await page.evaluate(()=>{Storage.prototype.setItem=window.originalSave;});
@@ -81,7 +81,7 @@ async function main(){
     await command('realm owner');assert.equal((await state()).paused,true);await page.locator('#owner-close').click();
     await page.locator('#help').click();assert.ok(await page.locator('#help-dialog>.coin-balance').isVisible());await page.locator('#help-dialog .close').click();
     await page.locator('#backpack-toggle').click();assert.equal((await state()).inventory.items.length,0);await page.locator('#inventory-close').click();
-    await page.setViewportSize({width:800,height:900});await page.locator('#warehouse-toggle').click();await page.screenshot({path:path.join(shots,'tablet.png')});await page.locator('#warehouse-close').click();
+    await page.setViewportSize({width:800,height:900});await page.locator('#warehouse-toggle').click();await page.screenshot({path:path.join(shots,'tablet.png')});await page.locator('#warehouse-close').click();await require('./enter-lake.cjs')(page);
     await page.setViewportSize({width:390,height:844});await page.locator('#warehouse-toggle').click();await page.screenshot({path:path.join(shots,'mobile.png')});assert.equal(await page.locator('#warehouse-close').isVisible(),true);
     assert.deepEqual(errors,[]);
     const report={result:'passed',legacyMigration:true,dragBothDirections:true,collisionRejected:true,unlockAnyBox:true,warehouseOnlySale:true,richAndClear:true,refreshSaved:true,saveFailureRollback:true,modalPause:true,noRepeatedRender:true,viewports:[1440,800,390]};

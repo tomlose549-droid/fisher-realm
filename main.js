@@ -46,7 +46,8 @@ function dismissWelcome() { if (!explored) { explored = true; document.querySele
 function reset() { if(fishing.isActive()){toast('本轮结束后可重置视角');return;}targetYaw=map.context.spawn.yaw;targetPitch=map.context.spawn.pitch;toast(map.context.labels.reset); }
 function stopDragging() { dragging = false; touchId = null; canvas.style.cursor = 'grab'; }
 const gameTime=new GameTime();
-let sceneDirty=true;
+let sceneDirty=true,inWorld=true,worldReturn=()=>{};
+gameTime.pause();
 // Closing a previous modal queues its close event; only the last modal may resume.
 function prepareModal(){
   setSettingsOpen(false);keys.clear();stopDragging();fishing.release();
@@ -54,7 +55,7 @@ function prepareModal(){
   for(const open of document.querySelectorAll('dialog[open]'))open.close();
   sceneDirty=true;
 }
-function finishModal(){discoveries.flush();playerStorage.flush();if(!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;}}
+function finishModal(){discoveries.flush();playerStorage.flush();if(!inWorld&&!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;}}
 const saveSlots=createSaveSlots();
 const playerStorage=createPlayerStorage({storage:saveSlots.storage,onSaveError:()=>toast('存储空间不足或不可用，请稍后重试保存')});
 const inventory=createInventory({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
@@ -62,7 +63,7 @@ const discoveries=createFishDiscoveries({storage:saveSlots.storage,items:[...pla
 window.addEventListener('focus',()=>discoveries.flush());
 window.addEventListener('pagehide',()=>{fishing.interrupt();discoveries.flush();playerStorage.flush();});
 window.addEventListener('focus',()=>playerStorage.flush());
-createWarehouse({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
+createWarehouse({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal,beforeOpen:prepareWorldReturn,onOpened:returnToWorld});
 const coinControls=createCoinControls({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
 const lureCasting=createLureCasting({store:playerStorage,encounters:map.context.encounters});
 const shop=createShop({store:playerStorage,encounters:map.context.encounters,onOpen:prepareModal,onClose:finishModal,isFishing:()=>fishing.isActive()});
@@ -71,7 +72,7 @@ createSavePanel({saves:saveSlots,onOpen:prepareModal,onClose:finishModal,beforeC
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
-  if(!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
+  if(inWorld||!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
   if(fishing.pointerDown(e))return;
   if(fishing.isFighting())return;
   if (e.button !== 2 && e.pointerType !== 'touch') return;
@@ -80,7 +81,7 @@ canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId); canvas.style.cursor='grabbing';canvas.focus();
 });
 canvas.addEventListener('pointermove', e => {
-  if(!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
+  if(inWorld||!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
   fishing.pointerMove(e);if(fishing.isFighting())return;
   if (!dragging || e.pointerId !== touchId) return;
   const dx=e.clientX-lastX,dy=e.clientY-lastY;
@@ -90,7 +91,7 @@ canvas.addEventListener('pointermove', e => {
 canvas.addEventListener('pointerup', stopDragging);canvas.addEventListener('pointercancel',stopDragging);canvas.addEventListener('lostpointercapture',stopDragging);
 // Mouse events include intermediate button changes that pointerup omits in chords.
 canvas.addEventListener('mousedown',e=>{
-  if(!settingsPanel.hidden||document.querySelector('dialog[open]'))return;
+  if(inWorld||!settingsPanel.hidden||document.querySelector('dialog[open]'))return;
   fishing.mouseButtons(e);
 });
 document.addEventListener('mouseup',e=>{if(e.button===0)fishing.release();});
@@ -134,7 +135,7 @@ document.querySelector('#help').addEventListener('click',()=>{prepareModal();ren
 dialog.addEventListener('close',finishModal);
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
-  if(e.defaultPrevented||Boolean(document.querySelector('dialog[open]'))||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(inWorld||e.defaultPrevented||Boolean(document.querySelector('dialog[open]'))||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if(!/^(BUTTON|A)$/.test(e.target.tagName)&&settingsPanel.hidden&&fishing.key(e)){e.preventDefault();return;}
   if(fishing.isFighting()&&e.code.startsWith('Arrow'))return;
   if(!settingsPanel.hidden&&e.code.startsWith('Arrow'))return;
@@ -153,6 +154,7 @@ let elapsed=0,nextFrame=performance.now(),sampleStart=performance.now(),sampleFr
 function animate(now){
   if(contextLost)return;
   requestAnimationFrame(animate);
+  if(inWorld){clock.update();sceneDirty=false;nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
   if(document.hidden){nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
   // Keep the last canvas as a static backdrop; resize requests one fresh frame.
   if(gameTime.paused&&!sceneDirty){clock.update();nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
@@ -188,4 +190,19 @@ setTimeout(()=>{
   const warmup=()=>preloadInventoryImages(FISH_DATA.filter(fish=>discoveries.has(fish.id)).map(fish=>fish.inventory.image));
   if(globalThis.requestIdleCallback)requestIdleCallback(warmup,{timeout:3000});else warmup();
 },1500);
-window.lakeside={getState:()=>({paused:gameTime.paused,activeSave:saveSlots.activeId,inventory:inventory.snapshot(),storage:playerStorage.snapshot().storage,version:releaseVersion(),scene:map.context.id,map:map.getDiagnostics(),fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs:map.getDiagnostics().chairs,treeCount:map.getDiagnostics().treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={getState:()=>({screen:inWorld?'world':'lake',paused:gameTime.paused,activeSave:saveSlots.activeId,inventory:inventory.snapshot(),storage:playerStorage.snapshot().storage,version:releaseVersion(),scene:map.context.id,map:map.getDiagnostics(),fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs:map.getDiagnostics().chairs,treeCount:map.getDiagnostics().treeCount,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+
+function prepareWorldReturn(){
+  fishing.interrupt();const itemsSaved=playerStorage.flush(),guideSaved=discoveries.flush();
+  if(!itemsSaved||!guideSaved){toast('进度暂未保存，无法离开钓点；请重试保存。');return false;}
+  return true;
+}
+function returnToWorld(){
+  inWorld=true;keys.clear();stopDragging();fishing.release();gameTime.pause();fishing.pauseAudio();document.querySelector('#game').classList.add('world-mode');worldReturn();return true;
+}
+export const gameUI={
+  setWorldReturn(callback){worldReturn=callback;},
+  subscribeBalance(callback){playerStorage.subscribe(()=>callback(playerStorage.model.coins));callback(playerStorage.model.coins);},
+  enter(){inWorld=false;document.querySelector('#game').classList.remove('world-mode');yaw=targetYaw=map.context.spawn.yaw;pitch=targetPitch=map.context.spawn.pitch;camera.rotation.set(pitch,yaw,0);gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sceneDirty=true;canvas.focus({preventScroll:true});},
+  openWarehouse(){document.querySelector('#warehouse-toggle').click();}
+};

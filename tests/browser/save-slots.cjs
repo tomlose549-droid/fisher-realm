@@ -16,7 +16,7 @@ async function main(){
   const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await context.addInitScript(({canonical,inventoryKey,inventory,discoveries})=>{if(!localStorage.getItem(canonical)&&!localStorage.getItem(inventoryKey)){localStorage.setItem(inventoryKey,JSON.stringify(inventory));localStorage.setItem('fisher-realm-discoveries-v1',JSON.stringify(discoveries));}},{canonical,inventoryKey,inventory,discoveries});
   const state=()=>page.evaluate(()=>window.lakeside.getState()),disk=()=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),canonical);
-  async function loaded(){await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);}
+  async function loaded(){await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});assert.equal(await page.locator('#error').isVisible(),false);}
   async function settings(){await page.locator('#settings-toggle').click();}
   async function choose(){await settings();await page.locator('#save-select').click();assert.equal((await state()).paused,true);}
   const row=id=>page.locator('[data-save-id="'+id+'"]');

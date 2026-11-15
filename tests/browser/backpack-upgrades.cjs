@@ -16,7 +16,7 @@ async function main(){
   const context=await browser.newContext({viewport:{width:1440,height:1050}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await context.addInitScript(()=>{if(!localStorage.getItem('fisher-realm-save-slots-v1')&&!localStorage.getItem('fisher-realm-inventory-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify({version:1,items:[{id:'1',name:'罗非鱼',x:0,y:0},{id:'2',name:'长吻雀鳝',x:null,y:null}],storage:{version:1,coins:100000,boxes:[{unlocked:true,items:[]}]}}));});
   const state=()=>page.evaluate(()=>window.lakeside.getState()),bag=async()=>(await state()).inventory;
-  async function loaded(){await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});}
+  async function loaded(){await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>window.lakeside);await page.locator('#loading').waitFor({state:'hidden'});}
   async function openUpgrade(){await page.locator('#shop-toggle').click();await page.locator('#shop-backpack-tab').click();}
   async function upgrade(level){await page.locator('#backpack-upgrade-buy').click();assert.equal((await bag()).backpackLevel,level);await page.waitForTimeout(500);}
   const shots=path.join(root,'.qa/backpack-upgrades');fs.mkdirSync(shots,{recursive:true});
@@ -36,7 +36,7 @@ async function main(){
   await page.setViewportSize({width:390,height:844});assert.equal(await page.locator('#inventory-dialog').evaluate(e=>e.scrollWidth>e.clientWidth),false);await page.screenshot({path:path.join(shots,'inventory-mobile.png')});await page.locator('#inventory-close').click();
   await page.setViewportSize({width:1440,height:1050});await page.locator('#warehouse-toggle').click();assert.equal(await page.locator('#warehouse-bag>.inventory-cell').count(),70);assert.equal(await page.locator('#warehouse-grid>.inventory-cell').count(),100);
   await page.locator('#warehouse-bag [data-fish-id="1"]').click();await page.locator('#warehouse-grid>[data-x="0"][data-y="0"]').click();await page.locator('#warehouse-grid [data-fish-id="1"]').click();await page.locator('#warehouse-bag>[data-x="8"][data-y="6"]').click();assert.equal((await bag()).items.find(i=>i.id==='1').y,6);
-  await page.setViewportSize({width:390,height:844});assert.equal(await page.locator('#warehouse-dialog').evaluate(e=>e.scrollWidth>e.clientWidth),false);await page.screenshot({path:path.join(shots,'warehouse-mobile.png')});await page.locator('#warehouse-close').click();
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.locator('#warehouse-dialog').evaluate(e=>e.scrollWidth>e.clientWidth),false);await page.screenshot({path:path.join(shots,'warehouse-mobile.png')});await page.locator('#warehouse-close').click();await require('./enter-lake.cjs')(page);
   await page.reload();await loaded();assert.equal((await bag()).backpackLevel,9);assert.equal((await bag()).items.find(i=>i.id==='1').x,8);
   await page.locator('#settings-toggle').click();await page.locator('#realm-command').fill('clear');await page.locator('#realm-command').press('Enter');assert.equal((await bag()).backpackLevel,9);assert.equal((await bag()).items.length,0);assert.equal((await state()).storage.coins,0);await page.keyboard.press('Escape');
   await page.locator('#settings-toggle').click();await page.locator('#save-new').click();await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#save-confirm-apply').click()]);await loaded();assert.equal((await bag()).backpackLevel??0,0);

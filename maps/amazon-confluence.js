@@ -8,7 +8,7 @@ const platformShift=riverBankOffset(28,-1,water);
 // Widen by 1.5 without scaling the platform, furniture, trees or player.
 export const AMAZON_CONFLUENCE=freeze({
   id:'amazon-confluence',name:'亚马逊 · 河道交汇区',
-  spawn:{position:[-13+platformShift,1.82,28],yaw:-.26,pitch:-.075},
+  spawn:{position:[-13+platformShift,1.82,28],yaw:-.6844,pitch:.0447},
   water:{...water,platform:{minX:-21.85+platformShift,maxX:-10.15+platformShift,minZ:23.77,maxZ:33.35}},
   environment:{background:'#49a4ef',fog:{color:'#a5b78f',near:55,far:170},exposure:.94},
   quality:{fine:{reflection:[768,480],reflectionEvery:3},fast:{reflection:[448,280],reflectionEvery:5}},

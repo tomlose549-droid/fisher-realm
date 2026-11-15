@@ -57,6 +57,12 @@ export class FishingSession{
     if(this.state!=='idle'||!fish)return false;
     this.forcedFish=fish;this.forcedRemaining=10;return true;
   }
+  restoreOwnerState({fishName,remaining}){
+    if(this.state!=='idle'||!Number.isInteger(remaining)||remaining<0||remaining>10)throw TypeError('Invalid owner state');
+    const fish=FISH_SPECIES.find(f=>f.name===fishName);
+    if(remaining>0&&!fish)throw TypeError('Unknown owner fish');
+    this.forcedFish=remaining>0?fish:null;this.forcedRemaining=remaining;
+  }
   cast(now,yaw,{encounters=this.encounters,equipment={lineMaximum:100,reelBaseSpeed:3.75,fishSpeedScale:1}}={}){
     this.advance(now);if(this.state!=='idle')return false;
     if(!Number.isFinite(equipment.lineMaximum)||equipment.lineMaximum<100||!Number.isFinite(equipment.reelBaseSpeed)||equipment.reelBaseSpeed<3.75||!Number.isFinite(equipment.fishSpeedScale)||equipment.fishSpeedScale<=0||equipment.fishSpeedScale>1)throw TypeError('Invalid equipment stats');

@@ -13,11 +13,11 @@ export function buildFishGuide(entries=FISH_DATA,encounters){
   }))};
 }
 
-export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=FISH_DATA,encounters,doc=document}){
+export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=FISH_DATA,encounters,getEncounters=()=>encounters,doc=document}){
   const dialog=doc.querySelector('#fish-guide-dialog'),list=doc.querySelector('#fish-guide-list'),
     search=doc.querySelector('#fish-guide-search'),count=doc.querySelector('#fish-guide-count'),
     empty=doc.querySelector('#fish-guide-empty'),toggle=doc.querySelector('#fish-guide-toggle');
-  const catalog=buildFishGuide(entries,encounters);
+  let catalog;
   let cards=[],imageCleanups=[];
   function watchImage(image,source,onState,retryButton){
     const cleanup=loadInventoryImage(image,source,state=>{onState(state);if(retryButton)retryButton.hidden=state!=='error';});
@@ -94,7 +94,7 @@ export function createFishGuide({onOpen,onClose,isDiscovered=()=>false,entries=F
     empty.hidden=shown!==0;
   }
   function open(){
-    if(dialog.open)return;onOpen();search.value='';
+    if(dialog.open)return;onOpen();search.value='';catalog=buildFishGuide(entries,getEncounters());
     const built=catalog.fish.map(f=>isDiscovered(f.id)?card(f):lockedCard());cards=built.map(c=>c.details);list.replaceChildren(...cards);filter();
     dialog.showModal();doc.querySelector('.guide-scroll').scrollTop=0;search.focus({preventScroll:true});built.forEach(c=>c.loadThumb());
   }

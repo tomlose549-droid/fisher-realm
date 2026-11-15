@@ -10,6 +10,8 @@ export function withLure(base,name){
   const affected=row=>Object.hasOwn(modifiers,row.quality);
   const removed=base.ranges.reduce((sum,row)=>sum+(affected(row)?row.percent*(1-modifiers[row.quality]):0),0);
   const others=base.ranges.reduce((sum,row)=>sum+(!affected(row)?row.percent:0),0);
+  // A single eligible species stays at 100% after the calculation; the cast still consumes its lure.
+  if(base.fishPool.length===1)return base;
   if(removed>0&&others<=0)throw Error('当前地图无法分配亮片调整后的概率');
   const multiplier=others>0?1+removed/others:1,qualityTotals=Object.fromEntries(Object.keys(base.qualityTotals).map(q=>[q,0]));
   let end=0;

@@ -105,7 +105,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
     }finally{fishing?.dispose();equipment.dispose();window.Audio=AudioBefore;Math.random=random;}
     check(localStorage.getItem('fisher-realm-inventory-v1')===inventoryBefore,'map lifecycle changed inventory');
     check(localStorage.getItem('fisher-realm-discoveries-v1')===guideBefore,'map lifecycle changed discoveries');
-    check(listMaps().length===1,'a second production map was added');
+    check(listMaps().map(m=>m.id).join(',')==='summer-pond,amazon-confluence','registered production maps differ');
     return {cycles:cycleReports,memory,customShorelineMatchesTerrainAndShader:true,failedConstructionPreservesCamera:true,constructionFailureCleaned:true,reflectionFailureRestored:true,
       injectedWaterAndPool:true,catchAndRetrieval:true,globalSavesPreserved:true,registeredMaps:listMaps()};
   });

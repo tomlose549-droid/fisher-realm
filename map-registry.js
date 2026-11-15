@@ -1,9 +1,12 @@
 import {SUMMER_POND,isSummerPondWater} from './maps/summer-pond.js';
 import {SUMMER_POND_ENCOUNTERS} from './maps/summer-pond-fish.js';
+import {AMAZON_CONFLUENCE,isAmazonWater} from './maps/amazon-confluence.js';
+import {AMAZON_CONFLUENCE_ENCOUNTERS} from './maps/amazon-confluence-fish.js';
 
 export const DEFAULT_MAP_ID=SUMMER_POND.id;
 const definitions=Object.freeze({[DEFAULT_MAP_ID]:Object.freeze({config:SUMMER_POND,
-    isWater:isSummerPondWater,encounters:SUMMER_POND_ENCOUNTERS,load:()=>import('./pond-scene.js')})});
+    isWater:isSummerPondWater,encounters:SUMMER_POND_ENCOUNTERS,load:()=>import('./pond-scene.js')}),
+  [AMAZON_CONFLUENCE.id]:Object.freeze({config:AMAZON_CONFLUENCE,isWater:isAmazonWater,encounters:AMAZON_CONFLUENCE_ENCOUNTERS,load:()=>import('./amazon-scene.js')})});
 export function getMapDefinition(id=DEFAULT_MAP_ID){
   if(!Object.hasOwn(definitions,id))throw new RangeError('Unknown map: '+id);
   return definitions[id];

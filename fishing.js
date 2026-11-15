@@ -4,10 +4,11 @@ import {createWaterEffects} from './water-effects.js';
 import {createFishingAudio} from './fishing-audio.js';
 import {createResourceScope} from './scene-resources.js';
 
-export function createFishing({scene,camera,player,mapContext,canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000,prepareCast=()=>({ok:true}),onRoundEnd=()=>({})}){
+export function createFishing({scene,camera,player,mapContext,ownerState={fishName:null,remaining:0},canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000,prepareCast=()=>({ok:true}),onRoundEnd=()=>({})}){
   if(!mapContext||typeof mapContext.isWater!=='function'||!Number.isFinite(mapContext.waterLevel))throw new TypeError('Fishing requires a map context');
   const {waterLevel,isWater,fishPool,encounters}=mapContext,targetY=waterLevel+.095,surfaceY=waterLevel+.06;
   const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater,fishPool,encounters}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
+  session.restoreOwnerState(ownerState);
   const now=getTime;let activeLure=null;
   const sounds=createFishingAudio();
   const root=new THREE.Group();root.name='player-fishing';scene.add(root);let disposed=false;

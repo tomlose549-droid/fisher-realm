@@ -1,6 +1,6 @@
 {
   "name": "lakeside-fishing",
-  "version": "0.48.0",
+  "version": "0.49.0",
   "private": true,
   "type": "module",
   "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
@@ -55,7 +55,11 @@
       "quest-rules.js",
       "shop-quests.js",
       "world-map.js",
-      "world-map-data.js"
+      "world-map-data.js",
+      "map-session.js",
+      "maps/amazon-confluence.js",
+      "maps/amazon-confluence-fish.js",
+      "amazon-scene.js"
     ],
     "styles": [
       "style.css"

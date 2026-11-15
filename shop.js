@@ -7,7 +7,7 @@ import {tackleDescription} from './equipment-rules.js';
 import {SHOP_ITEMS} from './item-data.js';
 import {withLure} from './lure-encounters.js';
 
-export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}){
+export function createShop({store,encounters,getEncounters=()=>encounters,onOpen,onClose,isFishing=()=>false}){
   const dialog=document.querySelector('#shop-dialog'),list=document.querySelector('#shop-products'),status=document.querySelector('#shop-status'),cards=[];
   const refit=createRefit({store,isFishing});
   function stopImages(){stopProductImages();refit.cleanup();}
@@ -18,6 +18,7 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
   function stopProductImages(){for(const card of cards){card.stop?.();card.stop=null;}}
   function renderStock(){
     const unlocked=shopUnlocked(store.model.quests);
+    for(const card of cards)card.updateEffect();
     if(activeTab==='stock')document.querySelector('#shop-intro').textContent=unlocked?'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。':'店主正在等候，点击木质人物图标与他交谈。';
     document.querySelector('#shop-other-tab').hidden=!secondShopUnlocked(store.model.quests);
     if(lastUnlocked!==unlocked){
@@ -70,10 +71,11 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
     const detail=document.createElement('p');detail.className='shop-detail';
     detail.textContent=`高 ${product.h} × 宽 ${product.w} 格 · ${product.stackLimit>1?'每堆最多 100 个':'不堆叠'} · 出售 ${product.sellPrice} 金币 / 个`;
     const effect=document.createElement('p');effect.className='shop-effect';
-    if(product.kind==='lure'){
-      const table=withLure(encounters,product.name);
+    function updateEffect(){if(product.kind==='lure'){
+      const table=withLure(getEncounters(),product.name);
       effect.textContent=`灰色概率降低 ${Math.round((1-product.modifiers.grey)*100)}%，白色降低 ${Math.round((1-product.modifiers.white)*100)}%。当前地图：灰 ${Number(table.qualityTotals.grey.toFixed(4))}% · 白 ${Number(table.qualityTotals.white.toFixed(4))}%。放入背包后每竿消耗 1 个。`;
-    }else effect.textContent=tackleDescription(product.name);
+    }else effect.textContent=tackleDescription(product.name);}
+    updateEffect();
     const quantity=document.createElement('div');quantity.className='shop-quantity';
     const minus=document.createElement('button'),plus=document.createElement('button'),input=document.createElement('input');
     minus.type=plus.type='button';minus.textContent='−';plus.textContent='＋';minus.setAttribute('aria-label',`减少${product.name}数量`);plus.setAttribute('aria-label',`增加${product.name}数量`);
@@ -93,7 +95,7 @@ export function createShop({store,encounters,onOpen,onClose,isFishing=()=>false}
       status.textContent=result.ok?`已购买 ${result.quantity} 个${result.name}，花费 ${result.cost} 金币，已放入仓库。`:result.error;
       status.dataset.state=result.ok?'success':'error';
     });
-    card.append(heading,picture,price,detail,effect,quantity,total,buy);list.append(card);cards.push({card,contents:[heading,picture,price,detail,effect,quantity,total,buy],input,update,img,product,picture,stop:null});update();
+    card.append(heading,picture,price,detail,effect,quantity,total,buy);list.append(card);cards.push({updateEffect,card,contents:[heading,picture,price,detail,effect,quantity,total,buy],input,update,img,product,picture,stop:null});update();
   }
   renderStock();
   document.querySelector('#shop-toggle').addEventListener('click',()=>{onOpen();status.textContent='';for(const card of cards){card.input.value='1';card.update();}dialog.showModal();show('stock');});

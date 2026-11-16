@@ -1,4 +1,5 @@
 import {copyCatalogSandbox} from './helpers/catalog-sandbox.js';
+import {listMaps,getMapEncounterTable} from '../map-registry.js';
 import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,12 +26,13 @@ test('pre-refactor profiles remain exact except the approved catch color synchro
 test('all catalog fish have matching assets, valid intervals and automatic owner/save support',async()=>{
  assert.equal(rules.FISH_SPECIES.length,FISH_DATA.length);assert.equal(Object.keys(FISH_ITEMS).length,FISH_DATA.length);
  for(const [i,data]of FISH_DATA.entries()){
-  assert.equal(rules.pickFish(unitForFish(FISH_DATA[i],0)),rules.FISH_SPECIES[i]);assert.equal(rules.pickFish(unitForFish(FISH_DATA[i],1-1e-7)),rules.FISH_SPECIES[i]);
+  const table=listMaps().map(m=>getMapEncounterTable(m.id)).find(t=>t.probabilityFor(data.id)>0),range=table.ranges.find(r=>r.id===data.id);
+  assert.equal(rules.pickFish(range.start/10000,table.fishPool,table),rules.FISH_SPECIES[i]);assert.equal(rules.pickFish((range.end-.001)/10000,table.fishPool,table),rules.FISH_SPECIES[i]);
   const f=new rules.FishingSession(()=>0);assert.equal(f.setForcedFish(data.name),true);f.cast(0,0);assert.equal(f.profile,rules.FISH_SPECIES[i]);assert.equal(f.fishStamina,data.stamina);
   const b=new FishInventory();b.add(data.name);assert.deepEqual(new FishInventory(b.serialize()).serialize(),b.serialize());
   if(data.inventory.image)assert.ok((await readFile(new URL('../fish-images/'+data.inventory.image,import.meta.url))).length>0);
  }
- assert.equal(rules.pickFish(1),rules.FISH_SPECIES.at(-1));
+ assert.equal(rules.pickFish(1),getMapEncounterTable().fishPool.at(-1));
 });
 
 test('validation rejects duplicate identities, invalid resources, unsupported legs, angles and bag shapes',()=>{

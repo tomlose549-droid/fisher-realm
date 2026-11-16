@@ -29,5 +29,9 @@ export const SUMMER_POND_PROBABILITIES=Object.freeze([
   Object.freeze({"id":"CHAIN_PICKEREL","percent":0.2}),
   Object.freeze({"id":"FLORIDA_GAR","percent":0.5}),
   Object.freeze({"id":"LONGNOSE_GAR","percent":0.3}),
+  Object.freeze({"id":"AMAZON_LONG_SARDINE","percent":0}),
+  Object.freeze({"id":"AMAZON_SILVER_PACU","percent":0}),
+  Object.freeze({"id":"BANDED_LEPORINUS","percent":0}),
+  Object.freeze({"id":"GUPPY","percent":0}),
 ]);
 export const SUMMER_POND_ENCOUNTERS=createEncounterTable(SUMMER_POND_PROBABILITIES);

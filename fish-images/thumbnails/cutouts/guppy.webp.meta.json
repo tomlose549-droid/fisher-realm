@@ -1,0 +1,23 @@
+{
+  "settings": {
+    "alphaThreshold": 8,
+    "cropTransparent": true,
+    "exact": true,
+    "format": "WEBP",
+    "limit": [
+      512,
+      384
+    ],
+    "lossless": true,
+    "method": 6,
+    "pillow": "12.2.0",
+    "resampling": "LANCZOS",
+    "version": 1
+  },
+  "size": [
+    512,
+    173
+  ],
+  "sourceSHA256": "b73ef13d6403949faa9b94e0f15efe6bb2fd6af48250d5fb4eccce5657b10803",
+  "thumbnailSHA256": "900160843ec24a487f42f42ae2eb0161f412ede72ec8ba6f7dea0d223f33bb6b"
+}

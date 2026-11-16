@@ -5,7 +5,7 @@ export const FISHING=Object.freeze({distance:23,flight:.8,minWait:6,maxWait:13,h
 export const FISH_SPECIES=FISH_CATALOG.profiles;
 // Preserve named exports consumed by existing callers and species-specific tests.
 export const {TILAPIA,BLUEGILL,REDEAR,BLACKBERRY_BASS,GOLDEN_SHINER,NILE_TILAPIA,COMMON_CARP,EUROPEAN_PERCH,WHITE_CATFISH,CHANNEL_CATFISH,LARGEMOUTH_BASS,CHAIN_PICKEREL,LEOPARD_PLECO,LONGNOSE_GAR,MAYAN_CICHLID,OSCAR,FLORIDA_GAR,YELLOW_BULLHEAD,BOWFIN}=FISH_CATALOG.byId;
-export function pickFish(unit,pool=FISH_SPECIES,encounters=pool===FISH_SPECIES?getMapEncounterTable():null){
+export function pickFish(unit,pool=getMapEncounterTable().fishPool,encounters=pool===getMapEncounterTable().fishPool?getMapEncounterTable():null){
   if(!Array.isArray(pool)||!pool.length)throw new TypeError('Expected a nonempty fish pool');
   if(!encounters||pool.length!==encounters.fishPool.length||pool.some((f,i)=>f.name!==encounters.fishPool[i].name))throw new TypeError('Fish pool requires its matching probability table');
   const selected=encounters.pick(unit);
@@ -27,7 +27,7 @@ function circleCrossing(x,z,dx,dz,r,entering){
   return null;
 }
 export class FishingSession{
-  constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true,fishPool=FISH_SPECIES,encounters=fishPool===FISH_SPECIES?getMapEncounterTable():null}={}){
+  constructor(random=Math.random,{fish=TILAPIA,randomSpecies=false,player={x:0,z:0},isWater=()=>true,fishPool=getMapEncounterTable().fishPool,encounters=fishPool===getMapEncounterTable().fishPool?getMapEncounterTable():null}={}){
     if(!Array.isArray(fishPool)||!fishPool.length)throw new TypeError('Expected a nonempty fish pool');
     this.fishPool=Object.freeze([...fishPool]);
     this.encounters=encounters;

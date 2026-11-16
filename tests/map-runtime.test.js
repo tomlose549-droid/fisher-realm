@@ -17,7 +17,7 @@ test('registered maps retain the default lake fish and immutable configuration',
   const map=getMapContext();assert.deepEqual(map.spawn.position,[0,1.78,32]);assert.equal(map.spawn.pitch,-.065);
   assert.equal(map.waterLevel,-.035);
   for(const [x,z]of [[0,-14],[0,32],[60,0]])assert.equal(map.isWater(x,z),isPondWater(x,z));
-  assert.deepEqual(map.fishPool,FISH_CATALOG.profiles);assert.equal(getMapFishPool(),map.encounters.fishPool);
+  assert.deepEqual(map.fishPool,FISH_DATA.filter(f=>map.encounters.probabilityFor(f.id)>0).map(f=>FISH_CATALOG.byId[f.id]));assert.equal(getMapFishPool(),map.encounters.fishPool);
   assert.throws(()=>getMapDefinition('not-a-map'),/Unknown map/);
   assert.throws(()=>map.spawn.position[0]=100,TypeError);
 });
@@ -66,7 +66,7 @@ test('random encounters accept an injected pool without changing global inventor
   const original=FISH_CATALOG.profiles,pool=[original.at(-1)],encounters=createEncounterTable([{id:FISH_DATA.at(-1).id,percent:100}],{requireAll:false}),session=new FishingSession(()=>.5,{randomSpecies:true,fishPool:pool,encounters});
   pool[0]=original[0];session.cast(0,0);assert.equal(session.profile,original.at(-1));
   assert.equal(pickFish(0,[original[1]],createEncounterTable([{id:'BLUEGILL',percent:100}],{requireAll:false})),original[1]);assert.equal(pickFish(1,[original[1]],createEncounterTable([{id:'BLUEGILL',percent:100}],{requireAll:false})),original[1]);
-  assert.deepEqual(getMapFishPool(),original);assert.throws(()=>pickFish(0,[]),/nonempty/);
+  assert.deepEqual(getMapFishPool(),getMapContext().encounters.fishPool);assert.equal(FISH_CATALOG.profiles,original);assert.throws(()=>pickFish(0,[]),/nonempty/);
   assert.throws(()=>new FishingSession(()=>0,{fishPool:[]}),/nonempty/);
 });
 
@@ -95,4 +95,15 @@ test('water effects use the supplied level and stop allocating/emitting after di
   waves.update(.1);assert.equal(waves.snapshot().active,1);waves.dispose();waves.dispose();
   assert.equal(scene.children.length,0);waves.pulse('landing',{x:0,z:0},1);waves.update(1);
   assert.equal(waves.snapshot().emitted.landing,1);assert.equal(SUMMER_POND.water.level,-.035);
+});
+
+test('default random encounters use the lake pool while administrators retain Amazon fish',()=>{
+  const lake=getMapContext(),amazon=getMapContext('amazon-confluence');
+  for(const unit of [0,.25,.5,.75,1]){
+    assert.equal(pickFish(unit),lake.encounters.pick(unit));
+    const normal=new FishingSession(()=>unit,{randomSpecies:true});normal.cast(0,0);
+    assert.ok(lake.fishPool.includes(normal.profile));
+  }
+  const id=FISH_DATA.find(f=>amazon.encounters.probabilityFor(f.id)>0&&lake.encounters.probabilityFor(f.id)===0).id;
+  const admin=new FishingSession(()=>0,{randomSpecies:true});assert.equal(admin.setForcedFish(FISH_CATALOG.byId[id].name),true);admin.cast(0,0);assert.equal(admin.profile,FISH_CATALOG.byId[id]);
 });

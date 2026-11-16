@@ -32,7 +32,7 @@ test('all 27 fish match the approved absolute percentages, qualities and quality
       assert.equal(data.quality,quality);assert.equal(table.probabilityFor(data.id),percent);count++;
     }
   }
-  assert.equal(count,27);assert.equal(FISH_DATA.length,count);assert.equal(SUMMER_POND_PROBABILITIES.length,count);
+  assert.equal(count,27);assert.equal(table.fishPool.length,count);assert.equal(SUMMER_POND_PROBABILITIES.length,FISH_DATA.length);
   assert.equal(Object.values(table.qualityTotals).reduce((n,p)=>n+Math.round(p*100),0),10000);
 });
 
@@ -40,10 +40,11 @@ test('every one of 10000 equal random buckets lands in the exact approved fish d
   const counts=new Map();
   for(let i=0;i<10000;i++){const fish=pickFish((i+.5)/10000);counts.set(fish.name,(counts.get(fish.name)||0)+1);}
   for(const [,fish]of Object.values(expected))for(const [name,percent]of Object.entries(fish))assert.equal(counts.get(name),percent*100,name);
-  for(const [i,range]of table.ranges.entries()){
+  const active=table.ranges.filter(r=>r.units>0);
+  for(const [i,range]of active.entries()){
     assert.equal(pickFish(range.start/10000),range.profile);
     assert.equal(pickFish((range.end-.5)/10000),range.profile);
-    if(i+1<table.ranges.length)assert.equal(pickFish(range.end/10000),table.ranges[i+1].profile);
+    if(i+1<active.length)assert.equal(pickFish(range.end/10000),active[i+1].profile);
   }
   assert.equal(pickFish(-1),table.fishPool[0]);assert.equal(pickFish(1),table.fishPool.at(-1));
   assert.equal(pickFish(2),table.fishPool.at(-1));assert.throws(()=>pickFish(NaN),/finite/);

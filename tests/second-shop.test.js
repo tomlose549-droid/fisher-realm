@@ -9,7 +9,9 @@ import {withLure} from '../lure-encounters.js';
 import {createLureCasting} from '../lure-casting.js';
 import {FishingSession,reelEfficiency} from '../fishing-rules.js';
 import {SUMMER_POND_ENCOUNTERS as lake} from '../maps/summer-pond-fish.js';
-import {AMAZON_CONFLUENCE_ENCOUNTERS as amazon} from '../maps/amazon-confluence-fish.js';
+import {createEqualEncounterTable} from '../fish-encounters.js';
+// Fixed scenario for the approved shop examples, independent of later map additions.
+const amazon=createEqualEncounterTable(['AMAZON_LONG_SARDINE','AMAZON_SILVER_PACU','BANDED_LEPORINUS','GUPPY','AFRICAN_SHARPTOOTH_CATFISH','AMAZON_BRYCON','AMAZON_FRESHWATER_DRUM','RED_BELLIED_PIRANHA']);
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 const funded=()=>{const m=new PlayerStorage();m.quests.mainCompleted=4;m.coins=100000;return m;};
 function memory(){let blocked=false;const values=new Map();return {get blocked(){return blocked;},set blocked(v){blocked=v;},getItem:k=>values.get(k)??null,setItem(k,v){if(blocked)throw Error('quota');values.set(k,v);},removeItem:k=>values.delete(k)};}

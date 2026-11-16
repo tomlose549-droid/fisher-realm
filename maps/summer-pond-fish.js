@@ -37,5 +37,10 @@ export const SUMMER_POND_PROBABILITIES=Object.freeze([
   Object.freeze({"id":"AMAZON_BRYCON","percent":0}),
   Object.freeze({"id":"AMAZON_FRESHWATER_DRUM","percent":0}),
   Object.freeze({"id":"RED_BELLIED_PIRANHA","percent":0}),
+  Object.freeze({"id":"SOUTH_AMERICAN_WOLFFISH","percent":0}),
+  Object.freeze({"id":"BLOCH_CATFISH","percent":0}),
+  Object.freeze({"id":"RED_BELLIED_PACU","percent":0}),
+  Object.freeze({"id":"BROWN_TROUT","percent":0}),
+  Object.freeze({"id":"CUTTHROAT_TROUT","percent":0}),
 ]);
 export const SUMMER_POND_ENCOUNTERS=createEncounterTable(SUMMER_POND_PROBABILITIES);

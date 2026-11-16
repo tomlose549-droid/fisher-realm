@@ -12,23 +12,23 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
   const refit=createRefit({store,isFishing});
   function stopImages(){stopProductImages();refit.cleanup();}
   const quests=createShopQuests({store,onClose});
-  let activeTab='stock',upgrading=false,lastUnlocked=null;
+  let activeTab='stock',upgrading=false;
   const ownerButton=document.querySelector('#shop-owner');
-  function loadProductImages(){for(const card of cards)if(!card.stop){card.stop=loadInventoryImage(card.img,inventoryImageSources(card.product.image),state=>card.picture.dataset.imageState=state);}}
   function stopProductImages(){for(const card of cards){card.stop?.();card.stop=null;}}
   function renderStock(){
-    const unlocked=shopUnlocked(store.model.quests);
-    for(const card of cards)card.updateEffect();
-    if(activeTab==='stock')document.querySelector('#shop-intro').textContent=unlocked?'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。':'店主正在等候，点击木质人物图标与他交谈。';
-    document.querySelector('#shop-other-tab').hidden=!secondShopUnlocked(store.model.quests);
-    if(lastUnlocked!==unlocked){
-      lastUnlocked=unlocked;for(const card of cards){
-        card.card.replaceChildren();card.card.classList.toggle('shop-product-locked',!unlocked);
-        if(unlocked){card.card.removeAttribute('aria-label');card.card.append(...card.contents);}
+    const unlocked={starter:shopUnlocked(store.model.quests),shop:secondShopUnlocked(store.model.quests)};
+    document.querySelector('#shop-other-tab').hidden=!unlocked.shop;
+    if(['stock','other'].includes(activeTab))document.querySelector('#shop-intro').textContent=unlocked[activeTab==='other'?'shop':'starter']?'购入仓库 · 背包内的亮片与假饵每竿消耗一个，优先使用价值最高的。':'店主正在等候，点击木质人物图标与他交谈。';
+    for(const card of cards){
+      const available=unlocked[card.product.shop],visible=dialog.open&&available&&(card.product.shop==='shop'?activeTab==='other':activeTab==='stock');
+      if(card.unlocked!==available){
+        card.unlocked=available;card.card.replaceChildren();card.card.classList.toggle('shop-product-locked',!available);
+        if(available){card.card.removeAttribute('aria-label');card.card.append(...card.contents);}
         else{const lock=document.createElement('span');lock.className='shop-product-lock';lock.textContent='🔒';lock.setAttribute('aria-hidden','true');const label=document.createElement('p');label.textContent='尚未解锁';card.card.setAttribute('aria-label','尚未解锁的商品');card.card.append(lock,label);}
       }
+      if(visible){card.updateEffect();if(!card.stop)card.stop=loadInventoryImage(card.img,inventoryImageSources(card.product.image),state=>card.picture.dataset.imageState=state);}
+      else{card.stop?.();card.stop=null;}
     }
-    if(dialog.open&&activeTab==='stock'&&unlocked)loadProductImages();else stopProductImages();
   }
   const upgradeButton=document.querySelector('#backpack-upgrade-buy'),upgradeStatus=document.querySelector('#backpack-upgrade-status');
   function renderUpgrade(){
@@ -43,7 +43,7 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
   }
   function show(tab){
     if(tab==='other'&&!secondShopUnlocked(store.model.quests))return;
-    activeTab=tab;document.querySelector('.shop-footer>div').hidden=tab==='other';ownerButton.hidden=!['stock','other'].includes(tab);ownerButton.setAttribute('aria-label',tab==='other'?'拜访 shop owner':"拜访 starter's shop owner");
+    activeTab=tab;document.querySelector('.shop-footer>div').hidden=false;ownerButton.hidden=!['stock','other'].includes(tab);ownerButton.setAttribute('aria-label',tab==='other'?'拜访 shop owner':"拜访 starter's shop owner");
     for(const [name,panel] of [['stock','shop-products'],['refit','refit-panel'],['backpack','backpack-upgrade-panel'],['other','shop-empty-panel']]){
       document.getElementById(panel).hidden=name!==tab;
       document.getElementById(`shop-${name}-tab`).setAttribute('aria-selected',String(name===tab));
@@ -73,9 +73,12 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
     const effect=document.createElement('p');effect.className='shop-effect';
     function updateEffect(){if(product.kind==='lure'){
       const table=withLure(getEncounters(),product.name);
-      effect.textContent=`灰色概率降低 ${Math.round((1-product.modifiers.grey)*100)}%，白色降低 ${Math.round((1-product.modifiers.white)*100)}%。当前地图：灰 ${Number(table.qualityTotals.grey.toFixed(4))}% · 白 ${Number(table.qualityTotals.white.toFixed(4))}%。放入背包后每竿消耗 1 个。`;
+      const labels={grey:'灰',white:'白','light green':'浅绿',green:'绿',turquoise:'青绿',blue:'蓝',indigo:'靛蓝','dark purple':'深紫',violet:'紫罗兰'};
+      const reductions=Object.entries(product.modifiers).map(([quality,scale])=>`${labels[quality]}色降低 ${Number(((1-scale)*100).toFixed(2))}%`).join('，');
+      const boost=product.areaBoost?'占格≥3的鱼在品质调整后概率再提高20%，小鱼概率相应减少。':'';
+      const totals=Object.entries(table.qualityTotals).filter(([quality])=>Object.hasOwn(product.modifiers,quality)).map(([quality,value])=>`${labels[quality]} ${Number(value.toFixed(4))}%`).join(' · ');
+      effect.textContent=`${reductions}。${boost}当前地图：${totals}。放入背包后每竿消耗 1 个。`;
     }else effect.textContent=tackleDescription(product.name);}
-    updateEffect();
     const quantity=document.createElement('div');quantity.className='shop-quantity';
     const minus=document.createElement('button'),plus=document.createElement('button'),input=document.createElement('input');
     minus.type=plus.type='button';minus.textContent='−';plus.textContent='＋';minus.setAttribute('aria-label',`减少${product.name}数量`);plus.setAttribute('aria-label',`增加${product.name}数量`);
@@ -95,7 +98,7 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
       status.textContent=result.ok?`已购买 ${result.quantity} 个${result.name}，花费 ${result.cost} 金币，已放入仓库。`:result.error;
       status.dataset.state=result.ok?'success':'error';
     });
-    card.append(heading,picture,price,detail,effect,quantity,total,buy);list.append(card);cards.push({updateEffect,card,contents:[heading,picture,price,detail,effect,quantity,total,buy],input,update,img,product,picture,stop:null});update();
+    card.append(heading,picture,price,detail,effect,quantity,total,buy);(product.shop==='shop'?document.querySelector('#shop-empty-panel'):list).append(card);cards.push({updateEffect,card,contents:[heading,picture,price,detail,effect,quantity,total,buy],input,update,img,product,picture,stop:null});update();
   }
   renderStock();
   document.querySelector('#shop-toggle').addEventListener('click',()=>{onOpen();status.textContent='';for(const card of cards){card.input.value='1';card.update();}dialog.showModal();show('stock');});

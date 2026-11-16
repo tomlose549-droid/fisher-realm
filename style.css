@@ -154,7 +154,7 @@ dialog:has(>.coin-balance){position:fixed;padding-top:53px}
 .shop-header{padding-right:180px;margin-bottom:24px}
 .shop-header h2{display:inline-block;font-family:Georgia,serif;font-size:34px;font-weight:700;letter-spacing:.5px;color:#422411;margin:0 0 12px;padding:13px 23px;border:3px solid #77512d;border-radius:7px;transform:rotate(-1deg);background:repeating-linear-gradient(5deg,transparent 0 11px,#89592718 11px 13px),linear-gradient(#d5af7e,#bc8a55);box-shadow:0 5px 0 #55351d99,inset 0 0 0 1px #e1c199}
 .shop-header p{font-size:12px;line-height:1.7;margin:4px 0 0;color:#44290f}
-#shop-products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+:is(#shop-products,#shop-empty-panel){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 .shop-product{position:relative;min-width:0;margin:0;padding:19px 17px 16px;border:3px solid #78512f;border-radius:9px;display:flex;flex-direction:column;align-items:stretch;background:repeating-linear-gradient(1deg,transparent 0 16px,#6f481c12 16px 18px),linear-gradient(110deg,#ddbc8e,#c89f6c);box-shadow:0 5px 0 #62402588,inset 0 0 0 1px #efcfa0}
 .shop-product:before,.shop-product:after{content:'';position:absolute;top:7px;width:5px;height:5px;border-radius:50%;background:#6d4a2c;box-shadow:0 1px 1px #f0cf9a}
 .shop-product:before{left:8px}.shop-product:after{right:8px}
@@ -175,8 +175,8 @@ dialog:has(>.coin-balance){position:fixed;padding-top:53px}
 .shop-note{font-size:11px;line-height:1.7;margin:0;color:#543820}
 .inventory-fish .item-quantity{position:absolute;top:2px;right:3px;z-index:3;padding:0 3px;min-width:12px;line-height:16px;border-radius:4px;background:#193c32ce;color:#fff;font-size:10px;text-align:center;pointer-events:none}
 .inventory-fish:not([data-item-kind=fish])>span{font-size:11px;position:static;margin:8px 1px 0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
-@media(max-width:800px){#shop-dialog{padding:22px 16px}.shop-header{padding-right:145px}.shop-header h2{font-size:25px;padding:11px 14px}#shop-dialog>.coin-balance{right:16px;top:19px;font-size:12px}#shop-products{gap:12px}.shop-product{padding:16px 11px 12px}.shop-product h3{font-size:17px}}
-@media(max-width:600px){#shop-products{grid-template-columns:1fr}.shop-header{padding-right:0;padding-top:40px}#shop-dialog>.coin-balance{max-width:80%}.shop-effect{min-height:0}.shop-header h2{font-size:29px}.shop-footer{align-items:stretch;flex-direction:column}.shop-quantity input{width:100px}#shop-close{align-self:flex-end}}
+@media(max-width:800px){#shop-dialog{padding:22px 16px}.shop-header{padding-right:145px}.shop-header h2{font-size:25px;padding:11px 14px}#shop-dialog>.coin-balance{right:16px;top:19px;font-size:12px}:is(#shop-products,#shop-empty-panel){gap:12px}.shop-product{padding:16px 11px 12px}.shop-product h3{font-size:17px}}
+@media(max-width:600px){:is(#shop-products,#shop-empty-panel){grid-template-columns:1fr}.shop-header{padding-right:0;padding-top:40px}#shop-dialog>.coin-balance{max-width:80%}.shop-effect{min-height:0}.shop-header h2{font-size:29px}.shop-footer{align-items:stretch;flex-direction:column}.shop-quantity input{width:100px}#shop-close{align-self:flex-end}}
 
 #shop-status{color:#3d4e24}
 
@@ -186,7 +186,7 @@ dialog:has(>.coin-balance){position:fixed;padding-top:53px}
 .shop-main{min-width:0}.shop-sidebar{align-self:start;position:sticky;top:0;display:grid;gap:9px;padding:10px 8px;border:2px solid #79512e;border-radius:8px;background:#ba8c59}
 .shop-sidebar button{min-width:0;padding:13px 7px;border:1px solid #654121;border-radius:5px;color:#432711;background:#dfbc89;font:600 13px/1.5 Georgia,"Microsoft YaHei",serif;cursor:pointer}
 .shop-sidebar button[aria-selected=true]{color:#fff1cf;background:#674122;box-shadow:inset 0 0 0 1px #e7c38955}
-#shop-products[hidden],#refit-panel[hidden]{display:none}
+:is(#shop-products,#shop-empty-panel)[hidden],#refit-panel[hidden]{display:none}
 .shop-picture{height:80px;display:grid;place-items:center;margin:0 0 8px;position:relative;background:#f2d4a622;border-radius:5px}
 .shop-picture img{width:100%;height:80px;object-fit:contain}
 .shop-picture[data-image-state=loading]:after{content:'图片加载中…';position:absolute;font-size:11px;color:#5e3b20}

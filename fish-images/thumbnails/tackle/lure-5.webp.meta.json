@@ -1,0 +1,17 @@
+{
+  "sourceName": "假饵5.png",
+  "sourceSHA256": "e4d145177f6b47dc8b4576be42b6c007cd73a870ef6de244aafd130713b18e29",
+  "fullSHA256": "7542a49d7e7b77356fc411511b00aaeae7cff09cabb517ff42ea352dbe857bfa",
+  "thumbnailSHA256": "c962a2d8e2933dbd4366c6fe81b14994af9287add5ca0cb6833d6926cea9e0e5",
+  "size": [
+    512,
+    100
+  ],
+  "limit": [
+    512,
+    384
+  ],
+  "format": "WEBP",
+  "lossless": true,
+  "background": "edge-connected near-white and selected hollow center; metallic highlights preserved"
+}

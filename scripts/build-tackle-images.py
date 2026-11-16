@@ -1,4 +1,4 @@
-"""Prepare only the four explicitly selected tackle images; never open an old fish asset."""
+"""Prepare only only explicitly selected tackle images; never open an old fish asset."""
 import argparse
 import hashlib
 import json
@@ -7,7 +7,7 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-FILES = {'line-1': '1级鱼线.png', 'lure-1': '假饵1.png', 'lure-2': '假饵2.png', 'reel-1': '渔轮1.png'}
+FILES = {'line-1': '1级鱼线.png', 'lure-1': '假饵1.png', 'lure-2': '假饵2.png', 'reel-1': '渔轮1.png', 'line-2': '2级鱼线.png', 'lure-3': '假饵3.png', 'lure-4': '假饵4.png', 'lure-5': '假饵5.png', 'reel-2': '渔轮2.png'}
 
 
 def prepare(source, name):
@@ -44,8 +44,10 @@ def prepare(source, name):
         for y in range(height):
             visit(0, y)
             visit(width - 1, y)
-        hole = {'line-1': (.55, .5), 'reel-1': (.29, .35), 'lure-1': (.073, .52), 'lure-2': (.073, .52)}[name]
-        visit(int(width * hole[0]), int(height * hole[1]))
+        hole = {'line-1': (.55, .5), 'reel-1': (.29, .35), 'lure-1': (.073, .52), 'lure-2': (.073, .52)}.get(name)
+        holes = [hole] if hole else {'lure-3': [(.043, .49), (.735, .51)], 'lure-4': [(.498, .04), (.498, .793)], 'reel-2': [(.47, .27), (.64, .72)]}.get(name, [])
+        for hole in holes:
+            visit(int(width * hole[0]), int(height * hole[1]))
         while queue:
             x, y = queue.popleft()
             if x:

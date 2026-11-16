@@ -1,9 +1,11 @@
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const {pathToFileURL}=require('node:url');
 const {readSavedSection}=require('./save-fixture.cjs');
 const root=path.resolve(__dirname,'../..'),key='fisher-realm-save-slots-v1',legacy={version:1,items:[{id:'1',name:'罗非鱼',x:0,y:0},{id:'2',name:'长吻雀鳝',x:null,y:null}],storage:{version:1,quests:{version:1,mainCompleted:1,counts:[0,0],side1Done:false},coins:1000,activeBox:0,boxes:Array.from({length:10},(_,i)=>({unlocked:i===0,items:[]}))}};
 const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.wav':'audio/wav'};
 async function main(){
+  const {FISH_DATA}=await import(pathToFileURL(path.join(root,'fish-data.js')).href);
  const server=http.createServer((req,res)=>{try{
   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname),file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname)),relative=path.relative(root,file);
   if(relative.startsWith('..')||path.isAbsolute(relative)||relative.split(path.sep).some(p=>p.startsWith('.'))||!types[path.extname(file)])return res.writeHead(403).end();
@@ -31,7 +33,7 @@ async function main(){
   const shots=path.join(root,'.qa/shop');fs.mkdirSync(shots,{recursive:true});
   await page.goto(url,{waitUntil:'domcontentloaded'});await loaded();
   const warehouse=await page.locator('#warehouse-toggle').boundingBox(),shop=await page.locator('#shop-toggle').boundingBox();assert.ok(shop.y>=warehouse.y+warehouse.height);assert.ok(Math.abs(shop.x+shop.width/2-warehouse.x-warehouse.width/2)<2);
-  await page.locator('#shop-toggle').click();assert.equal((await state()).paused,true);assert.equal((await state()).inventory.items.length,2,'shop must not clear pile');assert.equal(await page.locator('#shop-title').textContent(),"starter's shop");assert.equal(await page.locator('.shop-product').count(),6);
+  await page.locator('#shop-toggle').click();assert.equal((await state()).paused,true);assert.equal((await state()).inventory.items.length,2,'shop must not clear pile');assert.equal(await page.locator('#shop-title').textContent(),"starter's shop");assert.equal(await page.locator('#shop-products .shop-product').count(),6);
   assert.equal(await page.locator('#shop-products').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),3);
   const badge=await page.locator('#shop-dialog>.coin-balance').boundingBox(),title=await page.locator('#shop-title').boundingBox();assert.ok(badge.x>title.x+title.width);
   await product('LINE_1').getByRole('button',{name:'增加1号鱼线数量'}).click();assert.equal(await product('LINE_1').locator('input').inputValue(),'2');await product('LINE_1').getByRole('button',{name:'减少1号鱼线数量'}).click();
@@ -59,7 +61,7 @@ async function main(){
   const snapshot=await state();await page.reload({waitUntil:'domcontentloaded'});await loaded();assert.deepEqual((await state()).inventory.items,snapshot.inventory.items);assert.deepEqual((await state()).storage,snapshot.storage);
   await page.locator('#settings-toggle').click();await page.locator('#save-new').click();await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#save-confirm-apply').click()]);await loaded();assert.equal((await state()).activeSave,'2');assert.equal(quantity(await state(),'1号亮片'),0);assert.equal((await state()).storage.coins,0);
   await page.locator('#settings-toggle').click();await page.locator('#save-select').click();await page.locator('[data-save-id="1"] [data-save-action=select]').click();await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#save-confirm-apply').click()]);await loaded();assert.equal(quantity(await state(),'1号亮片'),100);assert.equal((await state()).storage.coins,100);
-  await page.locator('#help').click();assert.equal(await page.locator('.help-fish-entry').count(),27);await page.locator('#help-dialog .close').click();assert.deepEqual(errors,[]);
+  await page.locator('#help').click();assert.equal(await page.locator('.help-fish-entry').count(),FISH_DATA.length);await page.locator('#help-dialog .close').click();assert.deepEqual(errors,[]);
   const full=await browser.newContext({viewport:{width:1440,height:1050}}),fullPage=await full.newPage();const fullSave=structuredClone(legacy);fullSave.storage.boxes[0].items=Array.from({length:100},(_,i)=>({id:String(i+3),name:'金色闪光鲦',x:i%10,y:Math.floor(i/10)}));await fullPage.addInitScript(s=>localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(s)),fullSave);await fullPage.goto(url,{waitUntil:'domcontentloaded'});await require('./enter-lake.cjs')(fullPage);await fullPage.waitForFunction(()=>window.lakeside);await fullPage.locator('#loading').waitFor({state:'hidden'});await fullPage.locator('#shop-toggle').click();await fullPage.locator('[data-product-id=REEL_1] .shop-buy').click();assert.match(await fullPage.locator('#shop-status').textContent(),/空间不足/);assert.equal(await fullPage.evaluate(()=>window.lakeside.getState().storage.coins),1000);await full.close();
   const report={result:'passed',sixWoodProducts:true,quantityControls:true,suppliedItemImages:true,shopPreservesPile:true,pausedWithoutRendering:true,warehouseStacks:true,partialDragMerge:true,gearCannotEnterPile:true,realWeightedCast:true,highLureFirst:true,onePerCast:true,emptyFallback:true,adminBypass:true,warehouseLureInactive:true,roundedStackSale:true,insufficientFundsAndSpace:true,saveFailureRollback:true,refreshAndSlots:true,mobileNoOverflow:true,pageErrors:errors};fs.writeFileSync(path.join(shots,'acceptance.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
  }finally{if(browser)await browser.close();if(server.listening)await new Promise(resolve=>server.close(resolve));}

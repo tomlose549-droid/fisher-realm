@@ -1,4 +1,5 @@
 import {loadInventoryImage,inventoryImageSources} from './inventory-images.js';
+import {SHOP_BY_NAME} from './item-data.js';
 import {createFishCard} from './item-card.js';
 import {tackleFor,tackleDescription} from './equipment-rules.js';
 
@@ -10,13 +11,13 @@ export function createRefit({store,isFishing}){
   function render(){
     if(panel.hidden||!document.querySelector('#shop-dialog').open)return;cleanup();
     const stats=store.model.tackleStats(),busy=isFishing();
-    document.querySelector('#refit-stats').textContent=`线韧性上限 ${stats.lineMaximum} · 基础收线 ${Number(stats.reelBaseSpeed.toFixed(2))} 米/秒 · 鱼移速降低 ${Math.round((1-stats.fishSpeedScale)*100)}%`;
+    document.querySelector('#refit-stats').textContent=`线韧性上限 ${stats.lineMaximum} · 基础收线 ${Number(stats.reelBaseSpeed.toFixed(2))} 米/秒 · 鱼移速降低 ${Number(((1-stats.fishSpeedScale)*100).toFixed(2))}%`;
     document.querySelector('#refit-lock').textContent=busy?'本轮钓鱼未结束，仅可查看，收竿后才能装卸。':'每种装备只可装一件；空槽仍使用基础属性。';
     for(const slot of ['line','reel']){
       const button=document.querySelector('#refit-slot-'+slot),item=store.model.equipment[slot],content=button.querySelector('.refit-slot-content');content.replaceChildren();button.setAttribute('aria-pressed',String(selected===slot));
       if(item){
         const img=document.createElement('img');img.alt=item.name;img.className='refit-slot-image';img.decoding='async';content.append(img);
-        cleanups.push(loadInventoryImage(img,inventoryImageSources((slot==='line'?'tackle/line-1.png':'tackle/reel-1.png')),state=>content.dataset.imageState=state));
+        cleanups.push(loadInventoryImage(img,inventoryImageSources(SHOP_BY_NAME[item.name].image),state=>content.dataset.imageState=state));
         const label=document.createElement('strong');label.textContent=item.name;content.append(label);if(slot==='line'){const wear=document.createElement('span');wear.textContent=`耐久 ${item.lineWear} / ${tackleFor(item.name).maxWear}`;content.append(wear);}
       }
       else content.textContent=slot==='line'?'未装鱼线 · 基础韧性100':'未装渔轮';

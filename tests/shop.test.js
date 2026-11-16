@@ -16,7 +16,7 @@ const funded=()=>{const m=new PlayerStorage();m.quests.mainCompleted=1;m.setCoin
 function memory(){const map=new Map();let blocked=false;return {map,set blocked(v){blocked=v;},getItem:k=>map.get(k)??null,setItem(k,v){if(blocked)throw Error('quota');map.set(k,v);},removeItem:k=>map.delete(k)};}
 
 test('six exact products, footprints, qualities, stack caps and rounded per-unit resale values',()=>{
-  assert.deepEqual(SHOP_ITEMS.map(p=>[p.name,p.price,p.sellPrice,p.h,p.w,p.quality,p.stackLimit]),[
+  assert.deepEqual(SHOP_ITEMS.filter(p=>p.shop==='starter').map(p=>[p.name,p.price,p.sellPrice,p.h,p.w,p.quality,p.stackLimit]),[
     ['1号鱼线',2,1,1,1,'grey',1],['2号鱼线',10,5,1,1,'white',1],['3号鱼线',45,23,1,1,'white',1],
     ['1号亮片',1,1,1,1,'white',100],['2号亮片',3,2,1,1,'light green',100],['1号渔轮-初学者',150,75,2,2,'turquoise',1]
   ]);assert.ok(SHOP_ITEMS.every(p=>typeof p.image==='string'&&Object.isFrozen(p)));
@@ -83,7 +83,7 @@ test('approved lure quality totals are exact; only other qualities receive redis
   assert.equal(withLure(base,null),base);assert.equal(base.qualityTotals.grey,22);assert.equal(base.qualityTotals.white,39);
 });
 test('derived probabilities preserve every fish interval, zero/one boundaries and real session selection',()=>{
-  const table=withLure(base,'2号亮片');for(const row of table.ranges){assert.equal(table.pick((row.start+row.end)/20000).name,row.profile.name);}
+  const table=withLure(base,'2号亮片');for(const row of table.ranges.filter(r=>r.units>0)){assert.equal(table.pick((row.start+row.end)/20000).name,row.profile.name);}
   assert.equal(table.pick(0),base.fishPool[0]);assert.equal(table.pick(1),base.fishPool.at(-1));assert.equal(table.probabilityFor('UNKNOWN'),null);
   const session=new FishingSession(()=>.1,{randomSpecies:true});session.cast(0,0,{encounters:table});assert.equal(session.profile.name,table.pick(.1).name);assert.notEqual(session.profile.name,base.pick(.1).name);
   assert.throws(()=>withLure(base,'1号鱼线'));assert.throws(()=>table.pick(NaN));
@@ -105,7 +105,7 @@ test('cast preparation saves one debit, admin casts bypass it and quota failure 
   io.blocked=false;const first=cast.prepare();assert.equal(first.lure,'2号亮片');assert.equal(count(store.model,'2号亮片'),1);assert.equal(cast.prepare().encounters,first.encounters);assert.equal(cast.prepare().encounters,base);
 });
 test('all products and stack counts survive reload, remain slot-local, and clear preserves warehouse stock',()=>{
-  const io=memory();let slots=createSaveSlots({storage:io}),store=createPlayerStorage({storage:slots.storage});store.model.quests.mainCompleted=1;store.run('setCoins',[10000]);for(const p of SHOP_ITEMS)store.run('buy',[p.name,p.stackLimit>1?101:2]);
+  const io=memory();let slots=createSaveSlots({storage:io}),store=createPlayerStorage({storage:slots.storage});store.model.quests.mainCompleted=4;store.run('setCoins',[10000]);for(const p of SHOP_ITEMS)store.run('buy',[p.name,p.stackLimit>1?101:2]);
   const lure=store.model.boxes[0].items.find(i=>i.name==='2号亮片');store.run('transfer',[lure.id,0,'bag',0,0]);const expected=store.snapshot();slots.create();slots=createSaveSlots({storage:io});assert.equal(owned(createPlayerStorage({storage:slots.storage}).model).length,0);slots.select('1');slots=createSaveSlots({storage:io});store=createPlayerStorage({storage:slots.storage});assert.deepEqual(store.snapshot(),expected);
   const boxes=structuredClone(store.model.boxes);store.run('clearAll');assert.equal(store.model.inventory.items.length,0);assert.deepEqual(store.model.boxes,boxes);
 });

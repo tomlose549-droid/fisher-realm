@@ -1,4 +1,4 @@
-import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,shopUnlocked,SIDE_QUEST,MAIN_QUESTS,rewardedMain,setMainProgress,sideQuestUnlocked} from './quest-rules.js';
+import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,shopUnlocked,secondShopUnlocked,SIDE_QUEST,MAIN_QUESTS,rewardedMain,setMainProgress,sideQuestUnlocked} from './quest-rules.js';
 import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {FishInventory} from './inventory-rules.js';
@@ -111,8 +111,8 @@ export class PlayerStorage{
     box.items.splice(box.items.indexOf(item),1);this.coins+=price;return {ok:true,name:item.name,price,quantity};
   }
   buy(name,quantity){
-    if(!shopUnlocked(this.quests))return {ok:false,error:'商店尚未解锁，请先拜访店主。'};
     if(!isShopName(name)||!Number.isSafeInteger(quantity)||quantity<1)return {ok:false,error:'请输入正整数购买数量。'};
+    if(!(SHOP_BY_NAME[name].shop==='shop'?secondShopUnlocked(this.quests):shopUnlocked(this.quests)))return {ok:false,error:'商店尚未解锁，请先拜访店主完成任务。'};
     const cost=SHOP_BY_NAME[name].price*quantity;
     if(!Number.isSafeInteger(cost)||cost>this.coins)return {ok:false,error:'金币不足，无法购买。'};
     const received=this.receiveGoods(name,quantity);if(!received.ok)return received;

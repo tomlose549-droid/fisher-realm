@@ -12,15 +12,15 @@ import {createPlayerStorage} from '../player-storage.js';
 import {FishingSession} from '../fishing-rules.js';
 import {createMapSession} from '../map-session.js';
 
-test('Amazon is independently registered, anchored near Manaus, and uses eight equally likely Amazon species',()=>{
+test('Amazon is independently registered, anchored near Manaus, and uses thirteen equally likely Amazon species',()=>{
  assert.deepEqual(listMaps().map(m=>m.id),['summer-pond','amazon-confluence']);assert.equal(WORLD_LOCATIONS.length,2);
  assert.ok(Math.abs(AMAZON_LOCATION.latitude+3.14)<.01&&Math.abs(AMAZON_LOCATION.longitude+59.91)<.01);
- const ids=['AMAZON_LONG_SARDINE','AMAZON_SILVER_PACU','BANDED_LEPORINUS','GUPPY','AFRICAN_SHARPTOOTH_CATFISH','AMAZON_BRYCON','AMAZON_FRESHWATER_DRUM','RED_BELLIED_PIRANHA'],map=getMapContext('amazon-confluence');
+ const ids=['AMAZON_LONG_SARDINE','AMAZON_SILVER_PACU','BANDED_LEPORINUS','GUPPY','AFRICAN_SHARPTOOTH_CATFISH','AMAZON_BRYCON','AMAZON_FRESHWATER_DRUM','RED_BELLIED_PIRANHA','SOUTH_AMERICAN_WOLFFISH','BLOCH_CATFISH','RED_BELLIED_PACU','BROWN_TROUT','CUTTHROAT_TROUT'],map=getMapContext('amazon-confluence');
  assert.deepEqual(map.fishPool,ids.map(id=>FISH_CATALOG.byId[id]));
- assert.equal(amazon.qualityTotals.white,12.5);assert.equal(amazon.qualityTotals['light green'],37.5);assert.equal(amazon.qualityTotals.green,12.5);assert.equal(amazon.qualityTotals.turquoise,37.5);
- for(const fish of FISH_DATA)assert.equal(amazon.probabilityFor(fish.id),ids.includes(fish.id)?12.5:0);
+ assert.equal(amazon.qualityTotals.white,100/13);assert.equal(amazon.qualityTotals['light green'],300/13);assert.equal(amazon.qualityTotals.green,100/13);assert.equal(amazon.qualityTotals.turquoise,300/13);assert.equal(amazon.qualityTotals.blue,200/13);assert.equal(amazon.qualityTotals.indigo,200/13);assert.equal(amazon.qualityTotals.violet,100/13);
+ for(const fish of FISH_DATA)assert.equal(amazon.probabilityFor(fish.id),ids.includes(fish.id)?100/13:0);
  for(let i=0;i<ids.length;i++){assert.equal(amazon.pick(i/ids.length),FISH_CATALOG.byId[ids[i]]);assert.equal(amazon.pick((i+1)/ids.length-1e-8),FISH_CATALOG.byId[ids[i]]);assert.equal(lake.probabilityFor(ids[i]),0);}
- assert.equal(amazon.pick(1),FISH_CATALOG.byId.RED_BELLIED_PIRANHA);assert.equal(lake.probabilityFor('TILAPIA'),15);assert.equal(lake.fishPool.length,FISH_DATA.length-ids.length);
+ assert.equal(amazon.pick(1),FISH_CATALOG.byId.CUTTHROAT_TROUT);assert.equal(lake.probabilityFor('TILAPIA'),15);assert.equal(lake.fishPool.length,FISH_DATA.length-ids.length);
 });
 test('river geometry and water decisions share the same banks; 23 m forward cast is in water',()=>{
  const {spawn}=AMAZON_CONFLUENCE,x=spawn.position[0]-Math.sin(spawn.yaw)*23,z=spawn.position[2]-Math.cos(spawn.yaw)*23;
@@ -35,8 +35,8 @@ test('both lures debit once and redistribute white probability to other qualitie
  const low=store.model.boxes[0].items.find(i=>i.name==='1号亮片'),high=store.model.boxes[0].items.find(i=>i.name==='2号亮片');
  store.run('transfer',[low.id,0,'bag',0,0]);store.run('transfer',[high.id,0,'bag',1,0]);
  const casting=createLureCasting({store,getEncounters:()=>base});
- assert.equal(casting.prepare().lure,'2号亮片');assert.equal(store.model.inventory.items.find(i=>i.id===high.id).quantity,1);const highTable=casting.prepare().encounters;assert.equal(highTable.probabilityFor('AMAZON_LONG_SARDINE'),7.5);assert.ok(Math.abs(highTable.probabilityFor('GUPPY')-92.5/7)<1e-10);assert.equal(highTable.probabilityFor('TILAPIA'),0);
- const lowCast=casting.prepare();assert.equal(lowCast.lure,'1号亮片');assert.equal(lowCast.encounters.probabilityFor('AMAZON_LONG_SARDINE'),9.375);assert.ok(Math.abs(lowCast.encounters.probabilityFor('GUPPY')-90.625/7)<1e-10);
+ assert.equal(casting.prepare().lure,'2号亮片');assert.equal(store.model.inventory.items.find(i=>i.id===high.id).quantity,1);const highTable=casting.prepare().encounters;assert.equal(highTable.probabilityFor('AMAZON_LONG_SARDINE'),60/13);assert.ok(Math.abs(highTable.probabilityFor('GUPPY')-(100-60/13)/12)<1e-10);assert.equal(highTable.probabilityFor('TILAPIA'),0);
+ const lowCast=casting.prepare();assert.equal(lowCast.lure,'1号亮片');assert.equal(lowCast.encounters.probabilityFor('AMAZON_LONG_SARDINE'),75/13);assert.ok(Math.abs(lowCast.encounters.probabilityFor('GUPPY')-(100-75/13)/12)<1e-10);
  base=lake;assert.equal(casting.prepare().encounters.probabilityFor('TILAPIA'),withLure(lake,'1号亮片').probabilityFor('TILAPIA'));assert.equal(store.model.bestLure(),null);
  store.run('buy',['2号亮片',1]);const item=store.model.boxes[0].items.find(i=>i.name==='2号亮片');store.run('transfer',[item.id,0,'bag',0,0]);base=amazon;
  blocked=true;const before=store.model.serialize();assert.equal(casting.prepare().ok,false);assert.deepEqual(store.model.serialize(),before);blocked=false;
@@ -63,9 +63,9 @@ test('channel is exactly 1.5 times as wide, with the platform and seated player 
  const shift=riverBankOffset(28,-1,water);assert.ok(Math.abs(spawn.position[0]-(-13+shift))<1e-10);assert.ok(Math.abs(water.platform.minX-(-21.85+shift))<1e-10);assert.ok(Math.abs(water.platform.maxX-(-10.15+shift))<1e-10);assert.ok(Math.abs(water.platform.maxX-water.platform.minX-11.7)<1e-10);assert.equal(isAmazonWater(spawn.position[0],spawn.position[2]),false);
 });
 
-test('the four new Amazon species explicitly sell for zero without losing coins',async()=>{
+test('the five new Amazon species explicitly sell for zero without losing coins',async()=>{
  const {PlayerStorage}=await import('../storage-rules.js');
- for(const id of ['AFRICAN_SHARPTOOTH_CATFISH','AMAZON_BRYCON','AMAZON_FRESHWATER_DRUM','RED_BELLIED_PIRANHA']){
+ for(const id of ['SOUTH_AMERICAN_WOLFFISH', 'BLOCH_CATFISH', 'RED_BELLIED_PACU', 'BROWN_TROUT', 'CUTTHROAT_TROUT']){
   const fish=FISH_DATA.find(f=>f.id===id);assert.equal(fish.sellPrice,0);
   const model=new PlayerStorage();model.coins=123;model.addFish(fish.name);
   const item=model.inventory.items[0];assert.equal(model.transfer(item.id,'bag',0,0,0).ok,true);

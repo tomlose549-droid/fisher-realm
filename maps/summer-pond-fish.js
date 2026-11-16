@@ -42,5 +42,6 @@ export const SUMMER_POND_PROBABILITIES=Object.freeze([
   Object.freeze({"id":"RED_BELLIED_PACU","percent":0}),
   Object.freeze({"id":"BROWN_TROUT","percent":0}),
   Object.freeze({"id":"CUTTHROAT_TROUT","percent":0}),
+  Object.freeze({"id":"TAMBAQUI","percent":0}),
 ]);
 export const SUMMER_POND_ENCOUNTERS=createEncounterTable(SUMMER_POND_PROBABILITIES);

@@ -46,5 +46,11 @@ export const SUMMER_POND_PROBABILITIES=Object.freeze([
   Object.freeze({"id":"TIGER_SHOVELNOSE_CATFISH","percent":0}),
   Object.freeze({"id":"REDTAIL_CATFISH","percent":0}),
   Object.freeze({"id":"AMAZON_GILDED_CATFISH","percent":0}),
+  Object.freeze({"id":"BLACK_AROWANA","percent":0}),
+  Object.freeze({"id":"SILVER_AROWANA","percent":0}),
+  Object.freeze({"id":"SOUTHERN_SARATOGA","percent":0}),
+  Object.freeze({"id":"AUSTRALIAN_PEARL_AROWANA","percent":0}),
+  Object.freeze({"id":"GOLDEN_AROWANA","percent":0}),
+  Object.freeze({"id":"ASIAN_AROWANA","percent":0}),
 ]);
 export const SUMMER_POND_ENCOUNTERS=createEncounterTable(SUMMER_POND_PROBABILITIES);

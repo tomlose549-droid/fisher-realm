@@ -1,7 +1,7 @@
 import {FISH_DATA,DEFAULT_CATCH_COLOR} from './fish-data.js';
 import {getMapEncounterTable} from './map-registry.js';
 
-const colors={'#d3d3d3':'浅灰色','#808080':'灰色','#008000':'绿色','#90ee90':'浅绿色','#ffffff':'白色','#0000ff':'蓝色','#4c9fff':'蓝色','#301934':'深紫色','#40e0d0':'青绿色','#4b0082':'紫罗兰色','#00008b':'靛蓝色','#ffc0cb':'粉色','#ffff00':'黄色'};
+const colors={'#d3d3d3':'浅灰色','#808080':'灰色','#008000':'绿色','#90ee90':'浅绿色','#ffffff':'白色','#0000ff':'蓝色','#4c9fff':'蓝色','#301934':'深紫色','#40e0d0':'青绿色','#4b0082':'紫罗兰色','#00008b':'靛蓝色','#ffc0cb':'粉色','#ffff00':'黄色','#ffa500':'橙色','#ff0000':'红色','#8b0000':'深红色'};
 const colorText=value=>colors[value.toLowerCase()]??value;
 
 // Pure formatting makes additions and tuning use the same data as the game.

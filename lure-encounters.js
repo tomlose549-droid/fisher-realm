@@ -15,10 +15,11 @@ export function withLure(base,name){
   let percentages=base.ranges.map(row=>row.percent*(affected(row)?modifiers[row.quality]:multiplier));
   if(areaBoost){
     const large=base.ranges.map(row=>{const item=ITEMS[row.profile.name];return item.w*item.h>=areaBoost.minArea;});
-    const big=percentages.reduce((sum,p,i)=>sum+(large[i]?p:0),0),small=percentages.reduce((sum,p,i)=>sum+(large[i]?0:p),0),extra=big*areaBoost.increase;
-    if(extra>small+1e-8)throw Error('当前地图无法从小鱼概率中分配体型加成');
+    const big=percentages.reduce((sum,p,i)=>sum+(large[i]?p:0),0),small=percentages.reduce((sum,p,i)=>sum+(large[i]?0:p),0),extra=Math.min(big*areaBoost.increase,small);
+    // A size-heavy pool can exhaust small-fish probability; only transfer what is available.
+    const bigScale=big>0?1+extra/big:1;
     const smallScale=small>0?Math.max(0,1-extra/small):1;
-    percentages=percentages.map((p,i)=>p*(large[i]?1+areaBoost.increase:smallScale));
+    percentages=percentages.map((p,i)=>p*(large[i]?bigScale:smallScale));
   }
   const qualityTotals=Object.fromEntries(Object.keys(base.qualityTotals).map(q=>[q,0]));let end=0;
   const ranges=base.ranges.map((row,i)=>{
@@ -31,7 +32,7 @@ export function withLure(base,name){
     pick(unit){
       if(!Number.isFinite(unit))throw TypeError('Expected a finite random value');
       const sample=Math.max(0,Math.min(1,unit));
-      return ranges.find(row=>row.units>0&&sample<row.end/ENCOUNTER_UNITS)?.profile??base.fishPool.at(-1);
+      return ranges.find(row=>row.units>0&&sample<row.end/ENCOUNTER_UNITS)?.profile??ranges.findLast(row=>row.units>0)?.profile;
     }
   });
 }

@@ -73,7 +73,7 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
     const effect=document.createElement('p');effect.className='shop-effect';
     function updateEffect(){if(product.kind==='lure'){
       const table=withLure(getEncounters(),product.name);
-      const labels={grey:'灰',white:'白','light green':'浅绿',green:'绿',turquoise:'青绿',blue:'蓝',indigo:'靛蓝','dark purple':'深紫',violet:'紫罗兰'};
+      const labels={grey:'灰',white:'白','light green':'浅绿',green:'绿',turquoise:'青绿',blue:'蓝',indigo:'靛蓝','dark purple':'深紫',violet:'紫罗兰',pink:'粉',yellow:'黄'};
       const reductions=Object.entries(product.modifiers).map(([quality,scale])=>`${labels[quality]}色降低 ${Number(((1-scale)*100).toFixed(2))}%`).join('，');
       const boost=product.areaBoost?'占格≥3的鱼在品质调整后概率再提高20%，小鱼概率相应减少。':'';
       const totals=Object.entries(table.qualityTotals).filter(([quality])=>Object.hasOwn(product.modifiers,quality)).map(([quality,value])=>`${labels[quality]} ${Number(value.toFixed(4))}%`).join(' · ');

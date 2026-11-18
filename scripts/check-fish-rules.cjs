@@ -54,7 +54,7 @@ async function checkFish(selector) {
   const caught=fight({...profile,speed:0,stamina:0});caught.setRodYaw(caught.fishYaw,6);caught.setReeling(true,6);
   caught.advance(6+(FISHING.distance-FISHING.catchDistance)/(FISHING.baseSpeed*1.2)+.1);
   assert.equal(caught.lastCatchName,data.name);assert.equal(caught.lastCatchColor,data.catchColor??DEFAULT_CATCH_COLOR);
-  const bag=new FishInventory(),capacity=Math.floor(5/data.inventory.w)*Math.floor(3/data.inventory.h);
+  const bag=new FishInventory(),capacity=Math.floor(bag.width/data.inventory.w)*Math.floor(bag.height/data.inventory.h);
   for(let i=0;i<=capacity;i++)bag.add(data.name);
   assert.equal(bag.items.at(-1).x,null);
   assert.deepEqual(new FishInventory(bag.serialize()).serialize(),bag.serialize());

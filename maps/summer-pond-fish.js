@@ -60,5 +60,10 @@ export const SUMMER_POND_PROBABILITIES=Object.freeze([
   Object.freeze({"id":"RAINBOW_SNAKEHEAD","percent":0}),
   Object.freeze({"id":"GOLDEN_COBRA_SNAKEHEAD","percent":0}),
   Object.freeze({"id":"BARCA_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"PINK_RIVER_DOLPHIN","percent":0}),
+  Object.freeze({"id":"BLACK_BACKED_GIANT_CATFISH","percent":0}),
+  Object.freeze({"id":"LOWLAND_ELECTRIC_EEL","percent":0}),
+  Object.freeze({"id":"AMAZON_GIANT_CATFISH","percent":0}),
+  Object.freeze({"id":"ARAPAIMA","percent":0}),
 ]);
 export const SUMMER_POND_ENCOUNTERS=createEncounterTable(SUMMER_POND_PROBABILITIES);

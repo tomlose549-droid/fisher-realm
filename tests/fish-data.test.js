@@ -36,7 +36,7 @@ test('all catalog fish have matching assets, valid intervals and automatic owner
 });
 
 test('validation rejects duplicate identities, invalid resources, unsupported legs, angles and bag shapes',()=>{
- const invalid=[e=>e.id='',e=>e.name=' ',e=>e.strength.amount=0,e=>e.strength.interval=NaN,e=>e.speed=Infinity,e=>e.restDuration=-1,e=>e.stamina=0,e=>e.catchColor='green',e=>e.struggle.minAngle=-1,e=>e.struggle.maxAngle=91,e=>e.struggle.minAngle=80,e=>e.struggle.durations=[],e=>e.struggle.durations=[1,1,1,1,1,1,1,1,1],e=>e.struggle.durations=[0],e=>e.struggle.switchPause=-1,e=>e.inventory.w=6,e=>e.inventory.h=4,e=>e.inventory.w=1.5,e=>e.inventory.color='blue',e=>e.inventory.image='../outside.png',e=>e.specials=null];
+ const invalid=[e=>e.id='',e=>e.name=' ',e=>e.strength.amount=0,e=>e.strength.interval=NaN,e=>e.speed=Infinity,e=>e.restDuration=-1,e=>e.stamina=0,e=>e.catchColor='green',e=>e.struggle.minAngle=-1,e=>e.struggle.maxAngle=91,e=>e.struggle.minAngle=80,e=>e.struggle.durations=[],e=>e.struggle.durations=[1,1,1,1,1,1,1,1,1],e=>e.struggle.durations=[0],e=>e.struggle.switchPause=-1,e=>e.inventory.w=7,e=>e.inventory.h=4,e=>e.inventory.w=1.5,e=>e.inventory.color='blue',e=>e.inventory.image='../outside.png',e=>e.specials=null];
  for(const change of invalid){const entry=clone(FISH_DATA[1]);change(entry);assert.throws(()=>createFishCatalog([entry]),TypeError);}
  assert.throws(()=>createFishCatalog([]),TypeError);assert.throws(()=>createFishCatalog([clone(FISH_DATA[0]),clone(FISH_DATA[0])]),/duplicate/);
  const sameName=clone(FISH_DATA[0]);sameName.id='OTHER';assert.throws(()=>createFishCatalog([clone(FISH_DATA[0]),sameName]),/duplicate name/);

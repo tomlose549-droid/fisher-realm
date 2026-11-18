@@ -52,5 +52,13 @@ export const SUMMER_POND_PROBABILITIES=Object.freeze([
   Object.freeze({"id":"AUSTRALIAN_PEARL_AROWANA","percent":0}),
   Object.freeze({"id":"GOLDEN_AROWANA","percent":0}),
   Object.freeze({"id":"ASIAN_AROWANA","percent":0}),
+  Object.freeze({"id":"BLOTCHED_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"NORTHERN_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"GIANT_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"BLUE_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"COBRA_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"RAINBOW_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"GOLDEN_COBRA_SNAKEHEAD","percent":0}),
+  Object.freeze({"id":"BARCA_SNAKEHEAD","percent":0}),
 ]);
 export const SUMMER_POND_ENCOUNTERS=createEncounterTable(SUMMER_POND_PROBABILITIES);

@@ -11,7 +11,7 @@ export function pickFish(unit,pool=getMapEncounterTable().fishPool,encounters=po
   const selected=encounters.pick(unit);
   return pool.find(f=>f.name===selected.name);
 }
-const PHASES=['first','second','third','fourth','fifth'];
+const PHASES=['first','second','third','fourth','fifth','sixth','seventh','eighth'];
 const EPS=1e-9,STEP=.01;
 export function signedAngle(a){return Math.atan2(Math.sin(a),Math.cos(a));}
 export function reelEfficiency(a){a=Math.abs(a);return a<=3+EPS?1.2:a<=30+EPS?1:a<=90+EPS?.75:.2;}

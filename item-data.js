@@ -1,4 +1,4 @@
-import {wearFields} from './equipment-rules.js';
+import {wearFields,tackleFor} from './equipment-rules.js';
 import {FISH_CATALOG,FISH_PRICES} from './fish-data.js';
 
 const product=(id,name,price,w,h,quality,color,kind,stackLimit=1,modifiers=null,options={})=>Object.freeze({id,name,price,sellPrice:Math.round(price*.5),w,h,quality,color,kind,stackLimit,shop:options.shop??'starter',image:options.image??(kind==='line'?'tackle/line-1.png':kind==='reel'?'tackle/reel-1.png':id==='LURE_1'?'tackle/lure-1.png':'tackle/lure-2.png'),modifiers:modifiers?Object.freeze(modifiers):null,areaBoost:options.areaBoost?Object.freeze(options.areaBoost):null});
@@ -27,6 +27,11 @@ export const knownItem=name=>typeof name==='string'&&Object.hasOwn(ITEMS,name);
 export const quantityOf=item=>isShopName(item?.name)?(item.quantity??1):1;
 export const stackLimit=name=>isShopName(name)?SHOP_BY_NAME[name].stackLimit:1;
 export const unitSalePrice=name=>isFishName(name)?FISH_PRICES[name]:isShopName(name)?SHOP_BY_NAME[name].sellPrice:null;
+// Legacy items without wear are restored as full durability.
+export function itemUnitSalePrice(item){
+  const max=tackleFor(item?.name)?.maxWear;
+  return max&&(item.lineWear??max)<max?0:unitSalePrice(item?.name);
+}
 export function quantityFields(raw){
   if(!isShopName(raw.name))return {};
   const quantity=raw.quantity??1,limit=stackLimit(raw.name);

@@ -2,7 +2,7 @@ import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,
 import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {FishInventory} from './inventory-rules.js';
-import {ITEMS,SHOP_BY_NAME,isFishName,isShopName,knownItem,quantityOf,quantityFields,stackLimit,unitSalePrice,bestLure} from './item-data.js';
+import {ITEMS,SHOP_BY_NAME,isFishName,isShopName,knownItem,quantityOf,quantityFields,stackLimit,itemUnitSalePrice,bestLure} from './item-data.js';
 
 export const BOX_SIZE=10,BOX_COUNT=10,BOX_COST=1000;
 export const validCoins=value=>Number.isSafeInteger(value)&&value>=0;
@@ -106,7 +106,7 @@ export class PlayerStorage{
   sell(id,index){
     const box=this.boxes[index],item=box?.unlocked?box.items.find(i=>i.id===id):null;
     if(!item)return {ok:false,error:'这条鱼已不在仓库中'};
-    const quantity=quantityOf(item),unitPrice=unitSalePrice(item.name),price=unitPrice*quantity;
+    const quantity=quantityOf(item),unitPrice=itemUnitSalePrice(item),price=unitPrice*quantity;
     if(!validCoins(price)||!validCoins(this.coins+price))return {ok:false,error:'金币金额超出可保存范围'};
     box.items.splice(box.items.indexOf(item),1);this.coins+=price;return {ok:true,name:item.name,price,quantity};
   }

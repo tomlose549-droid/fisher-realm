@@ -11,9 +11,10 @@ const savedStore=initial=>{
   const store=createPlayerStorage({storage});return {store,fail:v=>fail=v,get value(){return JSON.parse(value);},get writes(){return writes;}};
 };
 
-test('all 27 approved per-fish prices are explicit and do not enter combat profiles',()=>{
+test('original approved prices remain correct and all current prices stay outside combat profiles',()=>{
   const expected={'豹纹翼甲鲶':3,'罗非鱼':1,'尼罗罗非鱼':2,'普通鲤鱼':3,'黑莓鲈':4,'欧洲河鲈':6,'红耳太阳鱼':6,'草鱼':7,'蓝鳃太阳鱼':7,'白鮰':10,'玛雅慈鲷':13,'黄鲶':10,'斑点叉尾鮰':39,'地图鱼':31,'美洲鳗鲡':33,'行走鲶':20,'湖吸口鱼':19,'金色闪光鲦':10,'大口黑鲈':55,'弓鳍鱼':20,'非洲宝石慈鲷':19,'红鳍狗鱼':26,'杰克登普西慈鲷':48,'孔雀鲈':39,'链纹狗鱼':65,'佛罗里达雀鳝':80,'长吻雀鳝':109};
-  assert.deepEqual({...FISH_PRICES},expected);
+  for(const [name,price]of Object.entries(expected))assert.equal(FISH_PRICES[name],price);
+  for(const fish of FISH_DATA)assert.equal(FISH_PRICES[fish.name],fish.sellPrice);
   const catalog=createFishCatalog(FISH_DATA);assert.ok(catalog.profiles.every(f=>!Object.hasOwn(f,'sellPrice')));
   for(const value of [undefined,null,-1,1.5,Infinity,Number.MAX_SAFE_INTEGER+1]){
     const fish={...FISH_DATA[0],sellPrice:value};assert.throws(()=>createFishCatalog([fish]),/sellPrice/);

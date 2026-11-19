@@ -30,12 +30,13 @@ async function main() {
   const {buildFishHelp} = await import(pathToFileURL(path.join(root, 'fish-help.js')).href);
   const fish = FISH_DATA.find(f => f.id === selector || f.name === selector);
   assert.ok(fish, `Unknown fish: ${selector}`);
-  const {listMaps,getMapEncounterTable}=await import(pathToFileURL(path.join(root,'map-registry.js')).href);
+  const {listMaps,getMapEncounterTable,getMapContext}=await import(pathToFileURL(path.join(root,'map-registry.js')).href);
   const map=listMaps().find(m=>getMapEncounterTable(m.id).probabilityFor(fish.id)>0);
   assert.ok(map,'Requested fish needs a positive probability in a registered map');
   const {BACKPACK_LEVELS}=await import(pathToFileURL(path.join(root,'backpack-upgrades.js')).href);
   const bagLevel=BACKPACK_LEVELS.find(level=>level.w>=fish.inventory.w&&level.h>=fish.inventory.h)?.level;
   assert.notEqual(bagLevel,undefined,'Fish needs a compatible backpack tier');
+  const entryCoins=getMapContext(map.id).entryFee*2;
   const help = buildFishHelp([fish],getMapEncounterTable(map.id)).profiles[0];
   const sourcePath = fish.inventory.image && '/fish-images/' + fish.inventory.image;
   const thumbPath = fish.inventory.image && '/fish-images/thumbnails/' + fish.inventory.image.replace(/\.[^./]+$/, '.webp');
@@ -67,11 +68,11 @@ async function main() {
       try {
         const page = await context.newPage(), errors = [];
         page.on('pageerror', error => errors.push(error.message));
-        if (saved) await page.addInitScript(({name,backpackLevel}) => {
-          if (!localStorage.getItem('fisher-realm-inventory-v1')) localStorage.setItem(
-            'fisher-realm-inventory-v1', JSON.stringify({version:1, backpackLevel, items:[
-              {id:'1', name, x:0, y:0}, {id:'2', name, x:null, y:null}]}));
-        }, {name:fish.name,backpackLevel:bagLevel});
+        await page.addInitScript(({name,backpackLevel,entryCoins,saved}) => {
+          if (!localStorage.getItem('fisher-realm-save-slots-v1')&&!localStorage.getItem('fisher-realm-inventory-v1')) localStorage.setItem(
+            'fisher-realm-inventory-v1', JSON.stringify({version:1, backpackLevel, storage:{version:1,coins:entryCoins}, items:saved?[
+              {id:'1', name, x:0, y:0}, {id:'2', name, x:null, y:null}]:[]}));
+        }, {name:fish.name,backpackLevel:bagLevel,entryCoins,saved});
         await page.goto('http://127.0.0.1:' + server.address().port + '/', {waitUntil:'domcontentloaded'});
         await page.waitForFunction(()=>window.worldMap?.getState().ready);
         await page.locator(`[data-map-id="${map.id}"]`).click();

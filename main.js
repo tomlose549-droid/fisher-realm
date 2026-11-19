@@ -1,3 +1,4 @@
+import {createMapEntry} from './map-entry.js';
 import {createShop} from './shop.js';
 import {createLureCasting} from './lure-casting.js';
 import {createSaveSlots} from './save-slots.js';
@@ -210,16 +211,18 @@ function prepareWorldReturn(){
 function returnToWorld(){
   inWorld=true;keys.clear();stopDragging();fishing.release();gameTime.pause();fishing.pauseAudio();mapSession.leave();map=null;document.querySelector('#game').classList.add('world-mode');worldReturn();return true;
 }
+const mapEntry=createMapEntry({store:playerStorage,getFee:id=>getMapContext(id).entryFee,
+  async prepare(id){
+    map=await mapSession.enter(id);map.setQuality(fine);
+    document.querySelector('.location h2').textContent=map.context.name+' · '+(id==='amazon-confluence'?'雨林木平台':'林间钓位');
+    yaw=targetYaw=map.context.spawn.yaw;pitch=targetPitch=map.context.spawn.pitch;camera.rotation.set(pitch,yaw,0);camera.updateMatrixWorld();return map;
+  },
+  activate(){inWorld=false;document.querySelector('#game').classList.remove('world-mode');gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;slowSamples=0;sceneDirty=true;canvas.focus({preventScroll:true});},
+  rollback:returnToWorld
+});
 export const gameUI={
   setWorldReturn(callback){worldReturn=callback;},
   subscribeBalance(callback){playerStorage.subscribe(()=>callback(playerStorage.model.coins));callback(playerStorage.model.coins);},
-  async enter(id=DEFAULT_MAP_ID){
-    if(!inWorld)throw Error('请先返回世界地图');
-    map=null;
-    try{map=await mapSession.enter(id);map.setQuality(fine);}catch(error){mapSession.leave();map=null;throw error;}
-    document.querySelector('.location h2').textContent=map.context.name+' · '+(id==='amazon-confluence'?'雨林木平台':'林间钓位');
-    yaw=targetYaw=map.context.spawn.yaw;pitch=targetPitch=map.context.spawn.pitch;camera.rotation.set(pitch,yaw,0);camera.updateMatrixWorld();
-    inWorld=false;document.querySelector('#game').classList.remove('world-mode');gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;slowSamples=0;sceneDirty=true;canvas.focus({preventScroll:true});
-  },
+  async enter(id=DEFAULT_MAP_ID){if(!inWorld)throw Error('请先返回世界地图');return mapEntry.enter(id);},
   openWarehouse(){document.querySelector('#warehouse-toggle').click();}
 };

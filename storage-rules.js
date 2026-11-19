@@ -239,6 +239,7 @@ export class PlayerStorage{
     this.coins-=next.cost;this.inventory.level=next.level;
     return {ok:true,level:next.level,cost:next.cost};
   }
+  payMapEntry(cost){if(!validCoins(cost))return {ok:false,error:'入场费无效。'};if(this.coins<cost)return {ok:false,error:`金币不足，需要 ${cost} 金币。`};this.coins-=cost;return {ok:true,cost};}
   setCoins(value){if(!validCoins(value))return {ok:false,error:'请输入非负整数，且不超过 9007199254740991。'};this.coins=value;return {ok:true};}
   clearAll(){const removed=this.inventory.items.reduce((sum,item)=>sum+quantityOf(item),0);this.inventory.items=[];this.coins=0;return {ok:true,removed};}
   serialize(){return {...this.inventory.serialize(),storage:{version:1,...(hasQuestProgress(this.quests)?{quests:structuredClone(this.quests)}:{}),coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes),...((this.equipment.line||this.equipment.reel||this.castSequence)?{equipment:structuredClone(this.equipment),castSequence:this.castSequence,pendingCast:this.pendingCast?{...this.pendingCast}:null}:{})}};}

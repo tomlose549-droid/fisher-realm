@@ -18,7 +18,7 @@ function select(location){
   selected=location;card.hidden=!location;
   for(const [id,marker]of markers){const active=id===location?.id;marker.setAttribute('aria-expanded',String(active));marker.classList.toggle('selected',active);}
   if(!location)return;
-  document.querySelector('#world-location-name').textContent=location.name;document.querySelector('#world-region').textContent=location.region;
+  document.querySelector('#world-location-name').textContent=location.name;document.querySelector('#world-region').textContent=location.region;document.querySelector('#world-entry-fee').textContent=location.entryFee?`入场费：${location.entryFee} 金币`:'免费入场';
   preview.alt=location.name+' 3D场景预览';preview.hidden=false;document.querySelector('#world-preview-fallback').hidden=true;
   const source=assetUrl(location.preview);if(preview.src!==source)preview.src=source;
 }
@@ -39,7 +39,7 @@ async function loadGame(){
 async function run(action){
   if(busy)return;document.querySelector('#world-reload').hidden=true;const destination=selected?.id;busy=true;enableMarkers();document.querySelector('#world-warehouse').disabled=true;say(action==='enter'?'正在走向钓点…':'正在打开仓库…');
   try{const runtime=await loadGame();if(action==='enter'){await runtime.enter(destination);root.hidden=true;}else runtime.openWarehouse();document.querySelector('#world-reload').hidden=true;say('点击白色光点选择钓点');}
-  catch(error){say('暂时无法加载：'+error.message+'。可重新选择钓点或重新加载。');document.querySelector('#world-reload').hidden=false;}
+  catch(error){say(error.entryDenied?error.message:'暂时无法加载：'+error.message+'。可重新选择钓点或重新加载。');document.querySelector('#world-reload').hidden=!!error.entryDenied;}
   finally{busy=false;enableMarkers();document.querySelector('#world-warehouse').disabled=false;}
 }
 document.querySelector('#world-preview-close').addEventListener('click',()=>select(null));

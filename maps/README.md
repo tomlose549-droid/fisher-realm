@@ -66,7 +66,7 @@
 
 光点的地理锚点取玛瑙斯附近内格罗河/索利芒斯河交汇区域，约南纬3.14°、西经59.91°；插画地图上的位置按陆地轮廓校准，并非经纬度等距投影。参考资料：https://sigep.eco.br/sitio054/Poligonal_area_protecao_Sitio054_Ponta_das_Lajes_e_o_Encontro_das_Aguas_AM.pdf 。场景外观按用户参考图制作林中河道和木平台，而非等比例复原真实交汇区。预览为实际运行场景截图，首次点击不加载任一3D地图模块。
 
-亚马逊使用63种鱼的显式权重表，位于 `maps/amazon-confluence-fish.js`；品质总计为grey 22%、white 24%、light green 16%、green 12%、turquoise 10%、blue 7%、indigo 4%、dark purple 2.5%、violet 1.3%、pink 0.7%、yellow 0.3%、orange 0.15%、red 0.04%、dark red 0.01%。概率保留0.001%精度，总计100%，禁止自动均分或归一化。入场费由 `map-entry.js` 单处维护，每次成功进入2金币，旧湖泊0金币；新存档可先在免费湖泊获取金币。售价从全局鱼资料读取，背包、仓库、图鉴和各地图共用。
+亚马逊使用63种鱼的显式权重表，位于 `maps/amazon-confluence-fish.js`；品质总计为grey 22%、white 24%、light green 16%、green 12%、turquoise 10%、blue 7%、indigo 4%、dark purple 2.5%、violet 1.3%、pink 0.7%、yellow 0.3%、orange 0.15%、red 0.04%、dark red 0.01%。概率保留0.001%精度，总计100%，禁止自动均分或归一化。入场费由 `map-entry.js` 单处维护，每次成功进入5金币，旧湖泊0金币；新存档可先在免费湖泊获取金币。售价从全局鱼资料读取，背包、仓库、图鉴和各地图共用。
 
 雨林使用实例化枝叶、根系和植被、一次烘焙静态阴影、受限分辨率及频率的河面反射，主循环仍以25帧为目标并保留自适应分辨率。反复离开时释放程序纹理、网格、阴影和反射目标；公共鱼竿、渲染器和相机保留。失败创建不得把半成品留在场景或污染旧环境。
 

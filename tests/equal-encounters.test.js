@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createEqualEncounterTable,createEncounterTable} from '../fish-encounters.js';
-import {AMAZON_CONFLUENCE_ENCOUNTERS as table,AMAZON_FISH_IDS as ids} from '../maps/amazon-confluence-fish.js';
+// Independent equal-share fixture; the live Amazon table is now weighted.
+const ids=['AMAZON_LONG_SARDINE','AMAZON_SILVER_PACU','BANDED_LEPORINUS','GUPPY','AFRICAN_SHARPTOOTH_CATFISH','AMAZON_BRYCON','AMAZON_FRESHWATER_DRUM','RED_BELLIED_PIRANHA'];
+const table=createEqualEncounterTable(ids);
 import {withLure} from '../lure-encounters.js';
 import {ITEMS} from '../item-data.js';
 import {FISH_DATA} from '../fish-data.js';

@@ -1,3 +1,4 @@
+import {mapEntryFee} from './map-entry.js';
 import {SUMMER_POND,isSummerPondWater} from './maps/summer-pond.js';
 import {SUMMER_POND_ENCOUNTERS} from './maps/summer-pond-fish.js';
 import {AMAZON_CONFLUENCE,isAmazonWater} from './maps/amazon-confluence.js';
@@ -17,7 +18,7 @@ export function getMapFishPool(id=DEFAULT_MAP_ID){
 export function getMapEncounterTable(id=DEFAULT_MAP_ID){return getMapDefinition(id).encounters;}
 export function getMapContext(id=DEFAULT_MAP_ID){
   const {config,isWater,encounters}=getMapDefinition(id);
-  return Object.freeze({id:config.id,name:config.name,spawn:config.spawn,waterLevel:config.water.level,
+  return Object.freeze({id:config.id,name:config.name,entryFee:mapEntryFee(config.id),spawn:config.spawn,waterLevel:config.water.level,
     labels:config.labels,isWater:(x,z,margin)=>isWater(x,z,margin,config.water),fishPool:getMapFishPool(id),encounters});
 }
 export function listMaps(){return Object.values(definitions).map(d=>({id:d.config.id,name:d.config.name}));}

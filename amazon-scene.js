@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {AMAZON_CONFLUENCE,riverBank,riverCenter,riverBankOffset,riverHalfWidth} from './maps/amazon-confluence.js';
+import {AMAZON_CONFLUENCE,riverBank,riverCenter,riverBankOffset,riverHalfWidth,amazonWaterMaxZ} from './maps/amazon-confluence.js';
 import {createResourceScope} from './scene-resources.js';
 
 // Real geometry at meter scale; the reference image is never used as a scene backdrop.
@@ -11,7 +11,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     let seed=621831;
     const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
     const range=(a,b)=>a+random()*(b-a),Y=new THREE.Vector3(0,1,0),dummy=new THREE.Object3D(),color=new THREE.Color();
-    const platformShift=riverBankOffset(28,-1,config.water);
+    const platformShift=riverBankOffset(28,-1,config.water),waterEnd=amazonWaterMaxZ(config.water),waterSegments=145;
     const bankX=(x,z,side=x<riverCenter(z)?-1:1)=>x+riverBankOffset(z,side,config.water);
     function inPlatformClearing(x,z,padding=1.5){const p=config.water.platform;return x>p.minX-padding&&x<p.maxX+padding&&z>p.minZ-padding&&z<p.maxZ+padding;}
 
@@ -69,8 +69,8 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     const foliage=['#c3d994','#a1bc78','#d8e3a0','#d9d78b','#b1c981','#b9d49c'];
     // Continuous meandering banks share the exact boundary used by fishing rules.
     for(const side of [-1,1]){
-      const pos=[],uv=[],tints=[],indices=[],strips=[0,.45,1.5,4,12,30,75],segments=145;
-      for(let j=0;j<=segments;j++){const z=config.water.minZ+(config.water.maxZ-config.water.minZ)*j/segments;
+      const pos=[],uv=[],tints=[],indices=[],strips=[0,.45,1.5,4,12,30,75],segments=waterSegments;
+      for(let j=0;j<=segments;j++){const z=config.water.minZ+(waterEnd-config.water.minZ)*j/segments;
         for(let i=0;i<strips.length;i++){const x=riverBank(z,side,config.water)+side*strips[i],height=i===0?-.13:i===1?.14:.34+Math.min(2,strips[i]*.025)+.12*Math.sin(x*.9+z*.4);pos.push(x,height,z);uv.push(x/4,z/4);color.set(i<2?'#c0b18a':i<4?'#98a06b':'#6f8057').multiplyScalar(range(.83,1.08));tints.push(color.r,color.g,color.b);
           if(i&&j){const n=j*strips.length+i;if(side===1)indices.push(n,n-strips.length,n-1,n-1,n-strips.length,n-strips.length-1);else indices.push(n,n-1,n-strips.length,n-1,n-strips.length-1,n-strips.length);}}
       }
@@ -84,19 +84,19 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
       }
     }
     const treeRecords=[];
-    function tree(x,z,h,r){
+    function tree(x,z,h,r,far=false){
       if(inPlatformClearing(x,z))return;
       const lean=range(-1.6,1.6),base=.35;treeRecords.push({x,z,h});beam(trunks,[x,base,z],[x+lean,h,z+range(-1,1)],r);
-      for(let k=0;k<7;k++){const a=k*Math.PI*2/7+range(-.18,.18),length=range(2,4.5)*r,ex=x+Math.cos(a)*length,ez=z+Math.sin(a)*length;
+      for(let k=0;k<(far?3:7);k++){const a=k*Math.PI*2/(far?3:7)+range(-.18,.18),length=range(2,4.5)*r,ex=x+Math.cos(a)*length,ez=z+Math.sin(a)*length;
         const side=x<riverCenter(z)?-1:1,edge=riverBank(ez,side,config.water),inWater=side<0?ex>edge:ex<edge,y=inWater?-.05:.38;
         beam(roots,[x,base+range(.6,2)*r,z],[ex,y,ez],r*range(.28,.55),.65);beam(roots,[ex,y,ez],[ex+Math.cos(a)*range(.7,1.8),y-.04,ez+Math.sin(a)*range(.7,1.8)],r*.13);
       }
-      for(let k=0;k<5;k++){
+      for(let k=0;k<(far?3:5);k++){
         const a=k*2.399+range(-.3,.3),reach=range(2.2,4.2),cy=h*range(.72,.98),cx=x+lean+Math.cos(a)*reach,cz=z+Math.sin(a)*reach;
         beam(trunks,[x+lean*.7,h*.62,z],[cx,cy,cz],r*.25);
-        for(let j=0;j<(z< -55?2:4);j++){const la=a+j*1.5,reach=range(1.8,3.8);leafyTwig([cx,cy,cz],[cx+Math.cos(la)*reach,cy+range(-.8,1.2),cz+Math.sin(la)*reach],z< -55?4:6,range(.6,1.1));}
+        for(let j=0;j<(far||z< -55?2:4);j++){const la=a+j*1.5,reach=range(1.8,3.8);leafyTwig([cx,cy,cz],[cx+Math.cos(la)*reach,cy+range(-.8,1.2),cz+Math.sin(la)*reach],far||z< -55?4:6,range(.6,1.1));}
       }
-      if(z> -48)for(let k=0;k<2;k++){
+      if(!far&&z> -48)for(let k=0;k<2;k++){
         const vx=x+range(-1.8,1.8),vz=z+range(-1,1),bottom=range(1.6,4),top=h*range(.65,.92);let from=[vx,top,vz];
         for(let y=top-1;y>bottom;y-=1){const to=[vx+Math.sin(y*.65+k)*.32,y,vz+Math.cos(y*.5)*.3];beam(vines,from,to,.025);from=to;if(y%2<1)smallLeaves.add(to,[.25,.5,1],[range(.1,2),range(0,7),0],foliage[k+1]);}
       }
@@ -195,7 +195,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     const reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4(),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();
     const uniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()}};
     const waterGeo=new THREE.BufferGeometry(),wp=[],wi=[];
-    for(let j=0;j<=160;j++){const z=config.water.minZ+(config.water.maxZ-config.water.minZ)*j/160;wp.push(riverBank(z,-1,config.water),0,z,riverBank(z,1,config.water),0,z);if(j){const n=j*2;wi.push(n,n+1,n-2,n+1,n-1,n-2);}}
+    for(let j=0;j<=waterSegments;j++){const z=config.water.minZ+(waterEnd-config.water.minZ)*j/waterSegments;wp.push(riverBank(z,-1,config.water),0,z,riverBank(z,1,config.water),0,z);if(j){const n=j*2;wi.push(n,n+1,n-2,n+1,n-1,n-2);}}
     waterGeo.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));waterGeo.setIndex(wi);waterGeo.computeVertexNormals();
     const water=mesh(waterGeo,new THREE.ShaderMaterial({uniforms,side:THREE.DoubleSide,
       vertexShader:'varying vec3 vWorld;varying vec4 vMirror;uniform mat4 mirrorMatrix;void main(){vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;vMirror=mirrorMatrix*w;gl_Position=projectionMatrix*viewMatrix*w;}',
@@ -206,6 +206,19 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
       }`}),[0,config.water.level,0]);water.castShadow=water.receiveShadow=false;
     const pads=pool(new THREE.CircleGeometry(1,14,.1,Math.PI*1.88),standard('#ffffff',{side:THREE.DoubleSide,roughness:.55}),false);
     for(let i=0;i<630;i++){const z=range(-130,42),side=i%2?1:-1,x=riverBank(z,side,config.water)-side*range(.12,2.7),s=range(.08,.25);pads.add([x,.018,z],[s,s,1],[-Math.PI/2,0,range(0,7)],foliage[i%6]);}
+    // Sparse far-shore trees join the existing instance batches; no extra water pass/target.
+    if(config.water.basin){
+      for(const side of [-1,1])for(let z=60;z<waterEnd;z+=20)tree(riverBank(z,side,config.water)+side*range(2,6),z,range(9,15),range(.4,.65),true);
+      // A low far bank closes the basin beyond the fog, rather than exposing another cut edge.
+      const pos=[],uv=[],tints=[],indices=[],strips=[0,.45,2,8,30],steps=24;
+      for(let j=0;j<strips.length;j++)for(let i=0;i<=steps;i++){
+        const x=THREE.MathUtils.lerp(riverBank(waterEnd,-1,config.water),riverBank(waterEnd,1,config.water),i/steps),z=waterEnd+strips[j];
+        pos.push(x,j===0?-.13:j===1?.14:.45,z);uv.push(x/4,z/4);color.set(j<2?'#c0b18a':'#6f8057');tints.push(color.r,color.g,color.b);
+        if(i&&j){const n=j*(steps+1)+i;indices.push(n,n-steps-1,n-1,n-1,n-steps-1,n-steps-2);}
+      }
+      const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));cap.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));cap.setAttribute('color',new THREE.Float32BufferAttribute(tints,3));cap.setIndex(indices);cap.computeVertexNormals();mesh(cap,soil);
+      for(let i=0;i<12;i++)tree(THREE.MathUtils.lerp(config.water.basin.leftX,config.water.basin.rightX,(i+.5)/12),waterEnd+3,range(10,15),.5,true);
+    }
     pools.forEach(p=>p.finish());
     const resources=createResourceScope(root,{targets,shared:sharedResources});
     return {
@@ -218,7 +231,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
         try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parent,reflectionCamera);}
         finally{renderer.setRenderTarget(target);water.visible=visible;after();}
       },
-      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],platformShift,platformBounds:{...config.water.platform},riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines']}),
+      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],platformShift,platformBounds:{...config.water.platform},riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines',...(config.water.basin?['right-water-basin']:[])]}),
       dispose(){if(resources.disposed)return;resources.dispose();if(parent.background===background)parent.background=previous.background;if(parent.fog===fog)parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;}
     };
   }catch(error){createResourceScope(root,{targets,shared:sharedResources}).dispose();parent.background=previous.background;parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;throw error;}

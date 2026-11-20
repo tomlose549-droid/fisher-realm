@@ -53,6 +53,6 @@ test('overlapping entry is rejected and owner restore never replenishes a partia
 
 test('channel is exactly 1.5 times as wide, with the platform and seated player following the bank',()=>{
  const {water,spawn}=AMAZON_CONFLUENCE;
- for(let z=water.minZ;z<=water.maxZ;z+=.5){const original=13+2.5*Math.sin(z*.035+.5),width=2*riverHalfWidth(z,water);assert.ok(Math.abs(width-3*original)<1e-10);assert.ok(width>=31.5&&width<=46.5);for(const side of [-1,1])assert.ok(Math.abs(riverBankOffset(z,side,water)-side*original*.5)<1e-10);}
+ for(let z=water.minZ;z<=(water.basin?.startZ??water.maxZ);z+=.5){const original=13+2.5*Math.sin(z*.035+.5),width=2*riverHalfWidth(z,water);assert.ok(Math.abs(width-3*original)<1e-10);assert.ok(width>=31.5&&width<=46.5);for(const side of [-1,1])assert.ok(Math.abs(riverBankOffset(z,side,water)-side*original*.5)<1e-10);}
  const shift=riverBankOffset(28,-1,water);assert.ok(Math.abs(spawn.position[0]-(-13+shift))<1e-10);assert.ok(Math.abs(water.platform.minX-(-21.85+shift))<1e-10);assert.ok(Math.abs(water.platform.maxX-(-10.15+shift))<1e-10);assert.ok(Math.abs(water.platform.maxX-water.platform.minX-11.7)<1e-10);assert.equal(isAmazonWater(spawn.position[0],spawn.position[2]),false);
 });

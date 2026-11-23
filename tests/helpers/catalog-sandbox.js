@@ -26,5 +26,11 @@ export async function copyCatalogSandbox(temp,extra){
   const adjusted=map.replace('createEncounterTable(SUMMER_POND_PROBABILITIES)',
     `createEncounterTable([...SUMMER_POND_PROBABILITIES.map(row=>row.id==='BLUEGILL'?{...row,percent:1.5}:row),${JSON.stringify({id:extra.id,percent:1})}])`);
   await mkdir(join(temp,'maps'),{recursive:true});await writeFile(join(temp,'maps/summer-pond-fish.js'),adjusted);
+  // A synthetic fish stays absent from other explicit map allocations.
+  for(const file of copied)if(file.startsWith('maps/')&&file.endsWith('-fish.js')&&file!=='maps/summer-pond-fish.js'){
+    const path=join(temp,file),source=await readFile(path,'utf8');
+    const patched=source.replace(/createEncounterTable\((\w+)(?=,|\))/g,(_,table)=>'createEncounterTable([...'+table+','+JSON.stringify({id:extra.id,percent:0})+']');
+    await writeFile(path,patched);
+  }
   await writeFile(join(temp,'package.json'),'{"type":"module"}');
 }

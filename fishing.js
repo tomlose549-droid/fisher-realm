@@ -169,8 +169,8 @@ export function createFishing({scene,camera,player,mapContext,ownerState={fishNa
     attr(lineMeter,'aria-valuenow',resource.durability.toFixed(1));
     attr(staminaMeter,'aria-valuemax',resource.fishStaminaMaximum);
     attr(staminaMeter,'aria-valuenow',resource.fishStamina.toFixed(1));
-    if(session.struggling)setText(phaseLabel,(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒');
-    else setText(phaseLabel,session.fishPhase==='exhausted'?'耐力耗尽 · 永久休息':session.fishPhase==='switch-pause'?'换边停顿 · '+resource.phaseRemaining.toFixed(1)+' 秒':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中');
+    if(session.struggling)setText(phaseLabel,(resource.lastBurstActive?'最后挣扎 · ':resource.turnSpecialActive?'特殊挣扎 · ':'')+(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒');
+    else setText(phaseLabel,session.fishPhase==='exhausted'?(session.profile.behavior?.lastBurst&&!resource.lastBurstUsed?'耐力耗尽 · 收至'+session.profile.behavior.lastBurst.distance+'米触发最后挣扎':'耐力耗尽 · 永久休息'):session.fishPhase==='switch-pause'?'换边停顿 · '+resource.phaseRemaining.toFixed(1)+' 秒':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中');
     setText(notice,(session.lastCatchName||session.profile.name)+'已被钓');style(notice,'color',session.lastCatchColor);
     const opacity=session.noticeOpacity(t);style(notice,'opacity',String(opacity));hidden(notice,opacity===0);
     const stage=session.state;

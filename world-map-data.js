@@ -4,5 +4,7 @@ export const WORLD_LOCATION=Object.freeze({id:'summer-pond',entryFee:mapEntryFee
 // Approx. geographic anchor: Negro/Solimões confluence near Manaus, Brazil.
 // Source: https://sigep.eco.br/sitio054/Poligonal_area_protecao_Sitio054_Ponta_das_Lajes_e_o_Encontro_das_Aguas_AM.pdf
 export const AMAZON_LOCATION=Object.freeze({id:'amazon-confluence',entryFee:mapEntryFee('amazon-confluence'),name:'亚马逊 · 河道交汇区',region:'巴西 · 玛瑙斯附近',latitude:-3.14,longitude:-59.91,x:.303,y:.553,preview:'map-images/amazon-preview.png',markerId:'world-amazon-point'});
-export const WORLD_LOCATIONS=Object.freeze([WORLD_LOCATION,AMAZON_LOCATION]);
+// Illustrated Amazon-region anchor, deliberately offset from the existing marker.
+export const FLOODED_FOREST_LOCATION=Object.freeze({id:'amazon-flooded-forest',entryFee:mapEntryFee('amazon-flooded-forest'),name:'亚马逊 · 沉木水草区',region:'亚马逊 · 林间缓水钓点',x:.323,y:.603,preview:'map-images/flooded-forest-preview.png',markerId:'world-flooded-forest-point'});
+export const WORLD_LOCATIONS=Object.freeze([WORLD_LOCATION,AMAZON_LOCATION,FLOODED_FOREST_LOCATION]);
 export const WORLD_IMAGE='map-images/world.png';

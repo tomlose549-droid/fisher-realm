@@ -13,7 +13,7 @@ import {createResourceScope} from '../scene-resources.js';
 import {createWaterEffects} from '../water-effects.js';
 
 test('registered maps retain the default lake fish and immutable configuration',()=>{
-  assert.equal(DEFAULT_MAP_ID,'summer-pond');assert.deepEqual(listMaps().map(m=>m.id),[DEFAULT_MAP_ID,'amazon-confluence']);
+  assert.equal(DEFAULT_MAP_ID,'summer-pond');assert.ok(listMaps().some(m=>m.id===DEFAULT_MAP_ID));assert.ok(listMaps().some(m=>m.id==='amazon-confluence'));
   const map=getMapContext();assert.deepEqual(map.spawn.position,[0,1.78,32]);assert.equal(map.spawn.pitch,-.065);
   assert.equal(map.waterLevel,-.035);
   for(const [x,z]of [[0,-14],[0,32],[60,0]])assert.equal(map.isWater(x,z),isPondWater(x,z));

@@ -68,9 +68,10 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     }
     const leaves=pool(leafGeometry(),leafMat),smallLeaves=pool(leafGeometry(4),leafMat,false),pebbles=pool(new THREE.IcosahedronGeometry(1,1),standard('#6c7052'));
     const foliage=['#c3d994','#a1bc78','#d8e3a0','#d9d78b','#b1c981','#b9d49c'];
-    // Continuous meandering banks share the exact boundary used by fishing rules.
+    // Submerge the inner bank strip beneath the water edge, closing the exposed sky seam.
+    // Fishing retains the same analytic shoreline.
     for(const side of [-1,1]){
-      const pos=[],uv=[],tints=[],indices=[],strips=[0,.45,1.5,4,12,30,75],segments=waterSegments;
+      const pos=[],uv=[],tints=[],indices=[],strips=[-.42,.45,1.5,4,12,30,75],segments=waterSegments;
       for(let j=0;j<=segments;j++){const z=config.water.minZ+(waterEnd-config.water.minZ)*j/segments;
         for(let i=0;i<strips.length;i++){const x=riverBank(z,side,config.water)+side*strips[i],height=i===0?-.13:i===1?.14:.34+Math.min(2,strips[i]*.025)+.12*Math.sin(x*.9+z*.4);pos.push(x,height,z);uv.push(x/4,z/4);color.set(i<2?'#c0b18a':i<4?'#98a06b':'#6f8057').multiplyScalar(range(.83,1.08));tints.push(color.r,color.g,color.b);
           if(i&&j){const n=j*strips.length+i;if(side===1)indices.push(n,n-strips.length,n-1,n-1,n-strips.length,n-strips.length-1);else indices.push(n,n-1,n-strips.length,n-1,n-strips.length-1,n-strips.length);}}

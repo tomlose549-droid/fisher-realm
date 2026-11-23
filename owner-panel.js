@@ -1,8 +1,17 @@
 import {FISH_SPECIES} from './fishing-rules.js';
 
-export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich,onOwnerHack}){
+export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich,onOwnerHack,onGive}){
   const command=document.querySelector('#realm-command'),message=document.querySelector('#realm-command-message'),dialog=document.querySelector('#owner-dialog'),select=document.querySelector('#owner-fish'),status=document.querySelector('#owner-mode-status');
   for(const fish of FISH_SPECIES){const option=document.createElement('option');option.value=fish.name;option.textContent=fish.name;select.appendChild(option);}
+  const giveDialog=document.querySelector('#give-dialog'),giveSelect=document.querySelector('#give-fish'),giveStatus=document.querySelector('#give-status');
+  for(const fish of FISH_SPECIES){const option=document.createElement('option');option.value=fish.name;option.textContent=fish.name;giveSelect.append(option);}
+  document.querySelector('#give-form').addEventListener('submit',event=>{
+    event.preventDefault();if(!giveDialog.open)return;
+    const result=onGive(giveSelect.value);if(!result.ok){giveStatus.textContent=result.error;return;}
+    giveDialog.close();toast('已获得 '+result.name+' ×1 · 仓库箱子 '+(result.box+1));
+  });
+  document.querySelector('#give-cancel').addEventListener('click',()=>giveDialog.close());
+  giveDialog.addEventListener('close',()=>{if(!document.querySelector('dialog[open]'))document.querySelector('#settings-toggle').focus({preventScroll:true});});
   let lastStatus='';
   function update(){const mode=fishing.getOwnerState(),text=mode.remaining>0?`当前：${mode.fishName} · 剩余 ${mode.remaining} 条`:'当前：随机鱼种';if(text!==lastStatus){status.textContent=text;lastStatus=text;}}
   function open(){
@@ -20,6 +29,7 @@ export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich,onOwner
       message.textContent=result.ok?`已重置鱼堆、背包和金币，共清除 ${result.removed} 件物品。仓库与图鉴保留。`:result.error;
       if(result.ok)toast(`鱼堆、背包和金币已清空 · ${result.removed} 件物品`);return;
     }
+    if(value==='give'){command.value='';message.textContent='';onOpen();giveStatus.textContent='';giveSelect.selectedIndex=0;giveDialog.showModal();giveSelect.focus();return;}
     if(value==='rich'){command.value='';message.textContent='';onRich();return;}
     if(!open())message.textContent='未识别的内容';
   });

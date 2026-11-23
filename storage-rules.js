@@ -74,6 +74,18 @@ export class PlayerStorage{
     while(ids.has(String(this.inventory.nextId)))this.inventory.nextId++;
     const item=this.inventory.add(name);return item?{ok:true,item}:{ok:false,error:'未知鱼种'};
   }
+  giveFish(name){
+    if(!isFishName(name))return {ok:false,error:'请选择有效鱼种。'};
+    const order=[this.activeBox,...this.boxes.map((_,i)=>i).filter(i=>i!==this.activeBox)].filter(i=>this.boxes[i].unlocked);
+    const ids=new Set([...this.inventory.items,...this.boxes.flatMap(b=>b.items),...Object.values(this.equipment).filter(Boolean)].map(i=>i.id));
+    for(const index of order)for(let y=0;y<BOX_SIZE;y++)for(let x=0;x<BOX_SIZE;x++){
+      const probe={id:'',name};if(!fits(probe,x,y,BOX_SIZE,BOX_SIZE)||overlaps(this.boxes[index].items,probe,x,y))continue;
+      let next=this.inventory.nextId;while(ids.has(String(next)))next++;
+      const item={id:String(next),name,x,y};this.boxes[index].items.push(item);this.inventory.nextId=next+1;
+      return {ok:true,name,quantity:1,box:index,item};
+    }
+    return {ok:false,error:'已解锁的仓库没有足够的连续空格，未发放鱼。'};
+  }
   moveBag(id,x,y){return {ok:this.inventory.moveToBag(id,x,y)};}
   movePile(id){return {ok:this.inventory.moveToPile(id)};}
   openWarehouse(){const before=this.inventory.items.length;this.inventory.items=this.inventory.items.filter(i=>i.x!==null);return {ok:true,removed:before-this.inventory.items.length};}

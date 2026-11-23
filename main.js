@@ -139,8 +139,9 @@ async function fullscreen() {
 }
 document.querySelector('#fullscreen').addEventListener('click',fullscreen);
 const dialog=document.querySelector('#help-dialog');
-const ownerPanel=createOwnerPanel({fishing,toast,onClearAll:()=>inventory.clearAll(),onRich:()=>coinControls.openRich(),onOwnerHack:()=>shop.openOwnerHack(),onOpen:prepareModal});
+const ownerPanel=createOwnerPanel({fishing,toast,onGive:name=>{const result=playerStorage.run('giveFish',[name]);if(result.ok)discoveries.unlock(name);return result;},onClearAll:()=>inventory.clearAll(),onRich:()=>coinControls.openRich(),onOwnerHack:()=>shop.openOwnerHack(),onOpen:prepareModal});
 document.querySelector('#owner-dialog').addEventListener('close',finishModal);
+document.querySelector('#give-dialog').addEventListener('close',finishModal);
 createFishGuide({onOpen:prepareModal,onClose:finishModal,isDiscovered:id=>discoveries.has(id),getEncounters:encounters});
 document.querySelector('#help').addEventListener('click',()=>{prepareModal();renderFishHelp(document,FISH_DATA,encounters());dialog.showModal();});
 dialog.addEventListener('close',finishModal);

@@ -27,6 +27,9 @@ function layout(){
   surface.style.width=w+'px';surface.style.height=h+'px';
   panX=Math.max(-(w*zoom+box.width)/2+45,Math.min((w*zoom+box.width)/2-45,panX));panY=Math.max(-(h*zoom+box.height)/2+45,Math.min((h*zoom+box.height)/2-45,panY));
   surface.style.transform=`translate(-50%,-50%) translate(${panX}px,${panY}px) scale(${zoom})`;
+  // Keep nearby Amazon markers separately clickable, including narrow windows.
+  for(const loc of WORLD_LOCATIONS){const gap=Math.min(...WORLD_LOCATIONS.filter(o=>o.id!==loc.id).map(o=>Math.hypot((loc.x-o.x)*w*zoom,(loc.y-o.y)*h*zoom))),size=Math.max(12,Math.min(44,gap*.65))/zoom,marker=markers.get(loc.id);marker.style.width=size+'px';marker.style.height=size+'px';}
+
 }
 function balance(value){document.querySelector('#world-coins').textContent=value+' 金币';}
 function readBalance(){try{const slots=createSaveSlots(),saved=JSON.parse(slots.storage.getItem(PLAYER_STORAGE_KEY)),coins=saved?.storage?.coins;balance(Number.isSafeInteger(coins)&&coins>=0?coins:0);}catch{balance('—');}}

@@ -13,7 +13,7 @@ import {FishingSession} from '../fishing-rules.js';
 import {createMapSession} from '../map-session.js';
 
 test('Amazon is independently registered near Manaus and has all 63 weighted fish',()=>{
- assert.deepEqual(listMaps().map(m=>m.id),['summer-pond','amazon-confluence']);assert.equal(WORLD_LOCATIONS.length,2);assert.ok(Math.abs(AMAZON_LOCATION.latitude+3.14)<.01&&Math.abs(AMAZON_LOCATION.longitude+59.91)<.01);
+ assert.ok(listMaps().some(m=>m.id==='summer-pond'));assert.ok(listMaps().some(m=>m.id==='amazon-confluence'));assert.equal(WORLD_LOCATIONS.length,listMaps().length);assert.ok(Math.abs(AMAZON_LOCATION.latitude+3.14)<.01&&Math.abs(AMAZON_LOCATION.longitude+59.91)<.01);
  assert.equal(amazon.fishPool.length,63);assert.equal(amazon.probabilityFor('TILAPIA'),12);assert.equal(amazon.probabilityFor('AMAZON_GIANT_CATFISH'),.009);assert.equal(amazon.probabilityFor('ASIAN_AROWANA'),.001);assert.equal(amazon.ranges.at(-1).end,10000);assert.equal(lake.probabilityFor('TILAPIA'),15);assert.equal(getMapContext('amazon-confluence').entryFee,5);assert.equal(getMapContext('summer-pond').entryFee,0);
 });
 test('river geometry and water decisions share the same banks; 23 m forward cast is in water',()=>{

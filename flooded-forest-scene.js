@@ -109,6 +109,14 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
       tree(x,z,range(10,20)+row*2,range(.45,.95));
     }
     tree(bankX(-22,22),22,23,1.45);tree(bankX(22,17),17,24,1.6);tree(bankX(-24,35),35,22,1.3);
+    // Low-detail trees frame the backwater; leave its center open.
+    const vegetationSeed=seed;
+    if(config.water.basin)for(const side of [-1,1])for(let j=0;j<13;j++){
+      const z=52+j*12,x=riverBank(z,side,config.water)+side*range(2,6);
+      tree(x,z,range(10,17),range(.4,.7),true);
+      for(let k=0;k<12;k++)smallLeaves.add([x+range(-2,2),.35,z+range(-3,3)],[.5,range(.9,1.7),1],[range(.6,1.4),range(0,7),0],foliage[k%6]);
+    }
+    seed=vegetationSeed;
     // Lower arching boughs form an overhead rainforest canopy rather than rows of bare poles.
     for(const side of [-1,1])for(let j=0;j<10;j++){
       const z=22-j*11+range(-2,2),x=riverBank(z,side,config.water)+side*range(1,3),h=range(6.5,11),reach=range(6,12),tip=[x-side*reach,h+range(0,2),z-3];
@@ -159,6 +167,14 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
       const [a,b]=config.decorations[key],r=key==='fallenTree'?.48:.32;beam(trunks,a,b,r,.8);
       const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b);for(let k=1;k<5;k++){const p=av.clone().lerp(bv,k/5),end=p.clone().add(new THREE.Vector3(k%2?2:-1.5,key==='fallenTree'?1.1:.4,-1.5));beam(trunks,p.toArray(),end.toArray(),r*.26);moss.add([p.x,p.y+r*.7,p.z],[r*1.1,.08,r*.85],null,'#6b823e');if(key==='fallenTree')leafyTwig(p.toArray(),[p.x+.3,p.y+1.8,p.z],5,.5);}
     }
+    for(const {from,to,radius}of config.decorations.backwaterLogs??[]){
+      beam(trunks,from,to,radius,.85);
+      const a=new THREE.Vector3(...from),b=new THREE.Vector3(...to);
+      for(let k=1;k<=3;k++){const p=a.clone().lerp(b,k/4),sign=k%2?1:-1;
+        beam(trunks,p.toArray(),[p.x+sign*radius*3,p.y+radius*.9,p.z+radius*2],radius*.2);
+        moss.add([p.x,p.y+radius*.6,p.z],[radius*1.2,.035,radius*.8],null,'#667044');
+      }
+    }
     // Low overhead boughs and epiphytes make a sheltered forest opening.
     for(const side of [-1,1])for(let j=0;j<7;j++){const z=20-j*10,x=riverBank(z,side,config.water)+side*2,tip=[x-side*9,8+Math.sin(j)*1.3,z-5];beam(trunks,[x,3,z],tip,.25);for(let k=0;k<10;k++){const a=k*.628,p=new THREE.Vector3(x,3,z).lerp(new THREE.Vector3(...tip),.5+k*.045);leafyTwig(p.toArray(),[p.x+Math.cos(a)*3,p.y+.5,p.z+Math.sin(a)*3],8,1.2);}}
     // Submerged ribbons grow in clumps; their roots stay underwater and are purely visual.
@@ -177,17 +193,31 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     }`}),false);
     for(let i=0;i<5;i++){const a=skyRange(0,Math.PI*2),r=skyRange(105,170),x=Math.cos(a)*r,z=-15+Math.sin(a)*r,y=skyRange(34,56),s=skyRange(2.8,5.5);for(let j=0;j<7;j++)cloudPool.add([x+(j-3)*s*.95,y+Math.sin(j*.9)*s*.5,z+skyRange(-2,2)],[s*skyRange(.85,1.5),s*skyRange(.65,1.1),s*.8],null,'#ffffff');}
 
+    // A sparse bed of submerged ribbons is blended beneath the water shading.
+    // This avoids extra transparent meshes, surface reeds and reflection passes.
+    const bay=config.water.basin,grassPatches=config.decorations.backwaterGrass??[];
+    const grassBounds=new THREE.Vector4(bay?.leftX??0,bay?.startZ??0,bay?bay.rightX-bay.leftX:1,bay?bay.maxZ-bay.startZ:1);
+    const grassMask=texture((c,w,h)=>{
+      c.clearRect(0,0,w,h);let grassSeed=391751;
+      const r=(a,b)=>{grassSeed=(Math.imul(grassSeed,1664525)+1013904223)>>>0;return a+(b-a)*grassSeed/4294967296;};
+      const px=x=>(x-grassBounds.x)/grassBounds.z*w,pz=z=>(z-grassBounds.y)/grassBounds.w*h;
+      for(const [x,z,rx,rz]of grassPatches)for(let tuft=0;tuft<22;tuft++){
+        const a=r(0,Math.PI*2),radius=r(0,1),tx=x+Math.cos(a)*rx*radius,tz=z+Math.sin(a)*rz*radius;
+        for(let blade=0;blade<4;blade++){const dx=r(-1,1),dz=r(-1.5,1.5);c.strokeStyle='rgba(151,167,91,'+r(.22,.55)+')';c.lineWidth=r(.65,1.1);c.beginPath();c.moveTo(px(tx),pz(tz));c.quadraticCurveTo(px(tx+dx*.35),pz(tz+dz*.7),px(tx+dx),pz(tz+dz));c.stroke();}
+      }
+    });
+    grassMask.flipY=false;grassMask.wrapS=grassMask.wrapT=THREE.ClampToEdgeWrapping;
     // River water reflects the actual current scene. Reflection resolution/frequency are bounded.
     const reflectionTarget=new THREE.WebGLRenderTarget(...config.quality.fine.reflection,{depthBuffer:true});targets.push(reflectionTarget);
     const reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4(),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();
-    const uniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()}};
+    const uniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()},grassMask:{value:grassMask},grassBounds:{value:grassBounds}};
     const waterGeo=new THREE.BufferGeometry(),wp=[],wi=[];
     for(let j=0;j<=waterSegments;j++){const z=config.water.minZ+(waterEnd-config.water.minZ)*j/waterSegments;wp.push(riverBank(z,-1,config.water),0,z,riverBank(z,1,config.water),0,z);if(j){const n=j*2;wi.push(n,n+1,n-2,n+1,n-1,n-2);}}
     waterGeo.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));waterGeo.setIndex(wi);waterGeo.computeVertexNormals();
     const water=mesh(waterGeo,new THREE.ShaderMaterial({uniforms,side:THREE.DoubleSide,
       vertexShader:'varying vec3 vWorld;varying vec4 vMirror;uniform mat4 mirrorMatrix;void main(){vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;vMirror=mirrorMatrix*w;gl_Position=projectionMatrix*viewMatrix*w;}',
-      fragmentShader:`uniform float time;uniform sampler2D mirrorMap;uniform vec3 sunDir;varying vec3 vWorld;varying vec4 vMirror;
-      void main(){vec2 p=vWorld.xz;float t=time;vec3 eye=normalize(cameraPosition-vWorld);vec3 n=normalize(vec3((sin(p.x*5.2+p.y*.9+t*.52)+.32*cos(p.y*13.-t))* .010,1.,cos(p.y*8.-p.x*.5-t*.38)*.009));float f=.14+.68*pow(1.-max(dot(eye,n),0.),2.8);vec2 uv=vMirror.xy/vMirror.w*.5+.5+n.xz*.17;vec3 reflection=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb*.5+texture2D(mirrorMap,clamp(uv+vec2(.0015,.001),.002,.998)).rgb*.25+texture2D(mirrorMap,clamp(uv-vec2(.0015,.001),.002,.998)).rgb*.25;vec3 c=mix(vec3(.047,.028,.009),reflection*vec3(.81,.83,.56),f);float fleck=pow(max(dot(reflect(-sunDir,n),eye),0.),180.);c+=vec3(.84,.68,.30)*fleck*.65;float thread=pow(max(0.,sin(p.y*17.+sin(p.x*2.)*.7-t*.52)),35.);c+=vec3(.025,.023,.009)*thread;float haze=smoothstep(45.,160.,distance(cameraPosition,vWorld));c=mix(c,vec3(.24,.30,.17),haze*.6);gl_FragColor=vec4(c,1.);
+      fragmentShader:`uniform float time;uniform sampler2D mirrorMap;uniform sampler2D grassMask;uniform vec4 grassBounds;uniform vec3 sunDir;varying vec3 vWorld;varying vec4 vMirror;
+      void main(){vec2 p=vWorld.xz;float t=time;vec3 eye=normalize(cameraPosition-vWorld);vec3 n=normalize(vec3((sin(p.x*5.2+p.y*.9+t*.52)+.32*cos(p.y*13.-t))* .010,1.,cos(p.y*8.-p.x*.5-t*.38)*.009));float f=.14+.68*pow(1.-max(dot(eye,n),0.),2.8);vec2 uv=vMirror.xy/vMirror.w*.5+.5+n.xz*.17;vec3 reflection=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb*.5+texture2D(mirrorMap,clamp(uv+vec2(.0015,.001),.002,.998)).rgb*.25+texture2D(mirrorMap,clamp(uv-vec2(.0015,.001),.002,.998)).rgb*.25;vec3 c=mix(vec3(.047,.028,.009),reflection*vec3(.81,.83,.56),f);vec2 grassUV=(p-grassBounds.xy)/grassBounds.zw+n.xz*.035;float inside=step(0.,grassUV.x)*step(grassUV.x,1.)*step(0.,grassUV.y)*step(grassUV.y,1.);float submerged=texture2D(grassMask,clamp(grassUV,0.,1.)).a*inside;float clarity=(1.-smoothstep(35.,120.,distance(cameraPosition,vWorld)))*(1.-f*.65);c=mix(c,vec3(.13,.16,.055),submerged*clarity*.26);float fleck=pow(max(dot(reflect(-sunDir,n),eye),0.),180.);c+=vec3(.84,.68,.30)*fleck*.65;float thread=pow(max(0.,sin(p.y*17.+sin(p.x*2.)*.7-t*.52)),35.);c+=vec3(.025,.023,.009)*thread;float haze=smoothstep(45.,160.,distance(cameraPosition,vWorld));c=mix(c,vec3(.24,.30,.17),haze*.6);gl_FragColor=vec4(c,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
       }`}),[0,config.water.level,0]);water.castShadow=water.receiveShadow=false;
@@ -205,7 +235,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
         try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parent,reflectionCamera);}
         finally{renderer.setRenderTarget(target);water.visible=visible;after();}
       },
-      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],shorePosition:config.spawn.position,decorationColliders:0,decorations:config.decorations,riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,landmarks:['natural-bank','folding-chair','tackle-box','hanging-lantern','landing-net','fallen-tree','submerged-log','floating-log','submerged-grass','dense-canopy']}),
+      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],shorePosition:config.spawn.position,decorationColliders:0,decorations:config.decorations,riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,backwaterLogs:config.decorations.backwaterLogs?.length??0,submergedGrassPatches:grassPatches.length,landmarks:['open-backwater','natural-bank','folding-chair','tackle-box','hanging-lantern','landing-net','fallen-tree','submerged-log','floating-log','submerged-grass','dense-canopy']}),
       dispose(){if(resources.disposed)return;resources.dispose();if(parent.background===background)parent.background=previous.background;if(parent.fog===fog)parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;}
     };
   }catch(error){createResourceScope(root,{targets,shared:sharedResources}).dispose();parent.background=previous.background;parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;throw error;}

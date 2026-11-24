@@ -32,7 +32,7 @@ function compileTable(entries,weights,totalWeight){
   const qualityUnits=Object.fromEntries(FISH_QUALITIES.map(q=>[q,0]));let cumulative=0;const limits=[];
   const ranges=entries.filter(f=>weights.has(f.id)).map(f=>{
     if(!FISH_QUALITIES.includes(f.quality))throw new TypeError('Missing or invalid fish quality: '+f.id);
-    const weight=weights.get(f.id),units=weight*ENCOUNTER_UNITS/totalWeight,start=cumulative*ENCOUNTER_UNITS/totalWeight;cumulative+=weight;const end=cumulative*ENCOUNTER_UNITS/totalWeight;qualityUnits[f.quality]+=weight;limits.push(cumulative/totalWeight);
+    const weight=weights.get(f.id),units=weight*ENCOUNTER_UNITS/totalWeight,start=cumulative*ENCOUNTER_UNITS/totalWeight;cumulative+=weight;const end=cumulative*ENCOUNTER_UNITS/totalWeight;qualityUnits[f.quality]+=weight;limits.push(end/ENCOUNTER_UNITS);
     return Object.freeze({id:f.id,quality:f.quality,percent:weight*100/totalWeight,units,start,end,profile:profiles[f.id]});
   });
   const fishPool=Object.freeze(ranges.filter(r=>r.units>0).map(r=>r.profile));

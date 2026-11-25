@@ -1,3 +1,4 @@
+import {mapUnlocked} from './shop-progression.js';
 import {createMapEntry} from './map-entry.js';
 import {createShop} from './shop.js';
 import {createLureCasting} from './lure-casting.js';
@@ -212,7 +213,7 @@ function prepareWorldReturn(){
 function returnToWorld(){
   inWorld=true;keys.clear();stopDragging();fishing.release();gameTime.pause();fishing.pauseAudio();mapSession.leave();map=null;document.querySelector('#game').classList.add('world-mode');worldReturn();return true;
 }
-const mapEntry=createMapEntry({store:playerStorage,getFee:id=>getMapContext(id).entryFee,
+const mapEntry=createMapEntry({store:playerStorage,getFee:id=>getMapContext(id).entryFee,isUnlocked:id=>mapUnlocked(playerStorage.model.quests,id),
   async prepare(id){
     map=await mapSession.enter(id);map.setQuality(fine);
     document.querySelector('.location h2').textContent=map.context.name+' · '+(map.context.labels.spot??(id==='amazon-confluence'?'雨林木平台':'林间钓位'));
@@ -224,7 +225,7 @@ const mapEntry=createMapEntry({store:playerStorage,getFee:id=>getMapContext(id).
 });
 export const gameUI={
   setWorldReturn(callback){worldReturn=callback;},
-  subscribeBalance(callback){playerStorage.subscribe(()=>callback(playerStorage.model.coins));callback(playerStorage.model.coins);},
+  subscribeBalance(callback){playerStorage.subscribe(()=>callback(playerStorage.model.coins,playerStorage.model.quests));callback(playerStorage.model.coins,playerStorage.model.quests);},
   async enter(id=DEFAULT_MAP_ID){if(!inWorld)throw Error('请先返回世界地图');return mapEntry.enter(id);},
   openWarehouse(){document.querySelector('#warehouse-toggle').click();}
 };

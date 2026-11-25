@@ -1,6 +1,7 @@
+import {REDEEM_CODES} from './redeem-codes.js';
 import {FISH_SPECIES} from './fishing-rules.js';
 
-export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich,onOwnerHack,onGive}){
+export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich,onOwnerHack,onGive,onRedeem}){
   const command=document.querySelector('#realm-command'),message=document.querySelector('#realm-command-message'),dialog=document.querySelector('#owner-dialog'),select=document.querySelector('#owner-fish'),status=document.querySelector('#owner-mode-status');
   for(const fish of FISH_SPECIES){const option=document.createElement('option');option.value=fish.name;option.textContent=fish.name;select.appendChild(option);}
   const giveDialog=document.querySelector('#give-dialog'),giveSelect=document.querySelector('#give-fish'),giveStatus=document.querySelector('#give-status');
@@ -31,6 +32,10 @@ export function createOwnerPanel({fishing,onOpen,toast,onClearAll,onRich,onOwner
     }
     if(value==='give'){command.value='';message.textContent='';onOpen();giveStatus.textContent='';giveSelect.selectedIndex=0;giveDialog.showModal();giveSelect.focus();return;}
     if(value==='rich'){command.value='';message.textContent='';onRich();return;}
+    if(Object.hasOwn(REDEEM_CODES,value)){
+      const result=onRedeem(value);message.textContent=result.ok?`兑换成功：${result.coins}金币；${result.items.map(([name,n])=>name+' ×'+n).join('、')}已放入仓库。`:result.error;
+      if(result.ok){command.value='';toast(`兑换成功 · ${result.coins}金币及道具已发放`);}return;
+    }
     if(!open())message.textContent='未识别的内容';
   });
   document.querySelector('#owner-close').addEventListener('click',()=>dialog.close());

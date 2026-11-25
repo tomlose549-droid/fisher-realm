@@ -1,9 +1,10 @@
+import {REDEEM_CODES,restoreRedemptions} from './redeem-codes.js';
 import {productUnlocked,restoreShopProgress,findShopQuest,activeShopQuest,shopGiftRequirement,SHOP_TRACKS} from './shop-progression.js';
 import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,SIDE_QUEST,MAIN_QUESTS,rewardedMain,setMainProgress,sideQuestUnlocked} from './quest-rules.js';
 import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {FishInventory} from './inventory-rules.js';
-import {ITEMS,SHOP_BY_NAME,isFishName,isShopName,knownItem,quantityOf,quantityFields,stackLimit,itemUnitSalePrice,bestLure} from './item-data.js';
+import {ITEMS,SHOP_BY_NAME,isFishName,isShopName,isRewardName,knownItem,quantityOf,quantityFields,stackLimit,itemUnitSalePrice,bestLure} from './item-data.js';
 
 export const BOX_SIZE=10,BOX_COUNT=10,BOX_COST=1000;
 export const validCoins=value=>Number.isSafeInteger(value)&&value>=0;
@@ -34,7 +35,7 @@ export class PlayerStorage{
       this.inventory.items.push(item);
     }
     const storage=saved?.version===1&&saved.storage?.version===1?saved.storage:null;
-    this.quests=restoreQuests(storage?.quests);
+    this.quests=restoreQuests(storage?.quests);this.redemptions=restoreRedemptions(storage?.redemptions);
     if(storage){
       if(validCoins(storage.coins))this.coins=storage.coins;
       for(let i=0;i<BOX_COUNT;i++){
@@ -65,7 +66,7 @@ export class PlayerStorage{
     while(used.has(String(next)))next++;this.inventory.nextId=next;
   }
   clone(){
-    const copy=Object.assign(Object.create(PlayerStorage.prototype),structuredClone({coins:this.coins,activeBox:this.activeBox,boxes:this.boxes,equipment:this.equipment,pendingCast:this.pendingCast,castSequence:this.castSequence,quests:this.quests}));
+    const copy=Object.assign(Object.create(PlayerStorage.prototype),structuredClone({coins:this.coins,activeBox:this.activeBox,boxes:this.boxes,equipment:this.equipment,pendingCast:this.pendingCast,castSequence:this.castSequence,quests:this.quests,redemptions:this.redemptions}));
     copy.inventory=Object.assign(Object.create(FishInventory.prototype),structuredClone(this.inventory));return copy;
   }
   addFish(name){
@@ -132,8 +133,8 @@ export class PlayerStorage{
     this.coins-=cost;return {ok:true,name,quantity,cost};
   }
   receiveGoods(name,quantity){
-    if(!isShopName(name)||!Number.isSafeInteger(quantity)||quantity<1)return {ok:false,error:'请输入正整数购买数量。'};
-    const meta=SHOP_BY_NAME[name];
+    if(!(isShopName(name)||isRewardName(name))||!Number.isSafeInteger(quantity)||quantity<1)return {ok:false,error:'请输入正整数购买数量。'};
+    const meta=ITEMS[name];
     const boxes=structuredClone(this.boxes),order=[this.activeBox,...boxes.map((_,i)=>i).filter(i=>i!==this.activeBox)].filter(i=>boxes[i].unlocked);
     let remaining=quantity,nextId=this.inventory.nextId;
     const ids=new Set([...this.inventory.items,...boxes.flatMap(box=>box.items),...Object.values(this.equipment).filter(Boolean)].map(item=>item.id));
@@ -282,8 +283,16 @@ export class PlayerStorage{
     this.coins-=next.cost;this.inventory.level=next.level;
     return {ok:true,level:next.level,cost:next.cost};
   }
+  redeemCode(input){
+    const value=typeof input==='string'?input.trim():'';
+    if(!Object.hasOwn(REDEEM_CODES,value))return {ok:false,error:'兑换码无效。'};
+    const code=REDEEM_CODES[value];if(this.redemptions.codes.includes(code.id))return {ok:false,error:'当前存档已兑换过此兑换码，每个存档仅限一次。'};
+    if(!validCoins(this.coins+code.coins))return {ok:false,error:'金币金额超出可保存范围，兑换未执行。'};
+    const next=this.clone();for(const [name,quantity]of code.items){const result=next.receiveGoods(name,quantity);if(!result.ok)return {ok:false,error:'已解锁仓库没有足够的连续空格，兑换未执行，次数仍保留。'};}
+    next.coins+=code.coins;next.redemptions.codes.push(code.id);Object.assign(this,next);return {ok:true,coins:code.coins,items:code.items};
+  }
   payMapEntry(cost){if(!validCoins(cost))return {ok:false,error:'入场费无效。'};if(this.coins<cost)return {ok:false,error:`金币不足，需要 ${cost} 金币。`};this.coins-=cost;return {ok:true,cost};}
   setCoins(value){if(!validCoins(value))return {ok:false,error:'请输入非负整数，且不超过 9007199254740991。'};this.coins=value;return {ok:true};}
   clearAll(){const removed=this.inventory.items.reduce((sum,item)=>sum+quantityOf(item),0);this.inventory.items=[];this.coins=0;return {ok:true,removed};}
-  serialize(){return {...this.inventory.serialize(),storage:{version:1,...(hasQuestProgress(this.quests)?{quests:structuredClone(this.quests)}:{}),coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes),...((this.equipment.line||this.equipment.reel||this.castSequence)?{equipment:structuredClone(this.equipment),castSequence:this.castSequence,pendingCast:this.pendingCast?{...this.pendingCast}:null}:{})}};}
+  serialize(){return {...this.inventory.serialize(),storage:{version:1,...(this.redemptions.codes.length?{redemptions:structuredClone(this.redemptions)}:{}),...(hasQuestProgress(this.quests)?{quests:structuredClone(this.quests)}:{}),coins:this.coins,activeBox:this.activeBox,boxes:structuredClone(this.boxes),...((this.equipment.line||this.equipment.reel||this.castSequence)?{equipment:structuredClone(this.equipment),castSequence:this.castSequence,pendingCast:this.pendingCast?{...this.pendingCast}:null}:{})}};}
 }

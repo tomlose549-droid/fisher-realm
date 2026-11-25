@@ -1,4 +1,5 @@
-import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,shopUnlocked,secondShopUnlocked,SIDE_QUEST,MAIN_QUESTS,rewardedMain,setMainProgress,sideQuestUnlocked} from './quest-rules.js';
+import {productUnlocked,restoreShopProgress,findShopQuest,activeShopQuest,shopGiftRequirement,SHOP_TRACKS} from './shop-progression.js';
+import {restoreQuests,hasQuestProgress,currentQuest,giftRequirement,questReward,SIDE_QUEST,MAIN_QUESTS,rewardedMain,setMainProgress,sideQuestUnlocked} from './quest-rules.js';
 import {tackleFor,tackleStats,wearRoll} from './equipment-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
 import {FishInventory} from './inventory-rules.js';
@@ -124,7 +125,7 @@ export class PlayerStorage{
   }
   buy(name,quantity){
     if(!isShopName(name)||!Number.isSafeInteger(quantity)||quantity<1)return {ok:false,error:'请输入正整数购买数量。'};
-    if(!(SHOP_BY_NAME[name].shop==='shop'?secondShopUnlocked(this.quests):shopUnlocked(this.quests)))return {ok:false,error:'商店尚未解锁，请先拜访店主完成任务。'};
+    if(!productUnlocked(this.quests,SHOP_BY_NAME[name]))return {ok:false,error:'商店尚未解锁，请先拜访店主完成任务。'};
     const cost=SHOP_BY_NAME[name].price*quantity;
     if(!Number.isSafeInteger(cost)||cost>this.coins)return {ok:false,error:'金币不足，无法购买。'};
     const received=this.receiveGoods(name,quantity);if(!received.ok)return received;
@@ -157,6 +158,7 @@ export class PlayerStorage{
     this.coins+=reward.coins??0;return {ok:true};
   }
   submitQuestFish(questId,index,id){
+    if(findShopQuest(questId))return this.submitShopFish(questId,index,id);
     const box=Number.isInteger(index)&&this.boxes[index]?.unlocked?this.boxes[index]:null,item=box?.items.find(i=>i.id===id);
     const requirement=item?giftRequirement(this.quests,questId,item.name):-1;
     if(requirement<0)return {ok:false,error:'这条鱼不符合当前任务，或已不在仓库中。'};
@@ -170,12 +172,41 @@ export class PlayerStorage{
     Object.assign(this,next);return {ok:true,completed,questId};
   }
   submitQuestCoins(questId){
+    if(findShopQuest(questId))return this.submitShopCoins(questId);
     if(questId!==SIDE_QUEST.id||!sideQuestUnlocked(this.quests)||this.quests.side1Done)return {ok:false,error:'当前无法提交该任务。'};
     if(this.coins<SIDE_QUEST.coins)return {ok:false,error:'金币不足，需要 30 金币。'};
     const next=this.clone();next.coins-=SIDE_QUEST.coins;const awarded=next.awardQuest(questId);if(!awarded.ok)return awarded;
     next.quests.side1Done=true;Object.assign(this,next);return {ok:true,completed:true,questId};
   }
+  completeShopQuest(questId){
+    const found=findShopQuest(questId),progress=this.quests.shop[found.track],target=found.index+1;
+    if(target>progress.rewarded){const result=this.awardQuest(questId);if(!result.ok)return result;}
+    progress.completed=target;progress.rewarded=Math.max(target,progress.rewarded);progress.count=0;return {ok:true};
+  }
+  submitShopFish(questId,index,id){
+    const box=Number.isInteger(index)&&this.boxes[index]?.unlocked?this.boxes[index]:null,item=box?.items.find(i=>i.id===id),found=activeShopQuest(this.quests,questId);
+    if(!found||!item||shopGiftRequirement(this.quests,questId,item.name)<0)return {ok:false,error:'这条鱼不符合当前任务，或已不在仓库中。'};
+    const next=this.clone();next.quests.shop=restoreShopProgress(next.quests.shop);next.boxes[index].items=next.boxes[index].items.filter(i=>i.id!==id);
+    const progress=next.quests.shop[found.track];progress.count++;const completed=progress.count===found.quest.requirements[0].count;
+    if(completed){const result=next.completeShopQuest(questId);if(!result.ok)return result;}
+    Object.assign(this,next);return {ok:true,completed,questId};
+  }
+  submitShopCoins(questId){
+    const found=activeShopQuest(this.quests,questId);if(!found?.quest.coins)return {ok:false,error:'当前无法提交该任务。'};
+    if(this.coins<found.quest.coins)return {ok:false,error:`金币不足，需要 ${found.quest.coins} 金币。`};
+    const next=this.clone();next.quests.shop=restoreShopProgress(next.quests.shop);next.coins-=found.quest.coins;const result=next.completeShopQuest(questId);if(!result.ok)return result;
+    Object.assign(this,next);return {ok:true,completed:true,questId};
+  }
+  hackShopQuest(questId){
+    const found=findShopQuest(questId);if(!found)return {ok:false,error:'任务不存在。'};
+    const next=this.clone();next.quests.shop=restoreShopProgress(next.quests.shop);const progress=next.quests.shop[found.track],target=found.index+1;
+    if(progress.completed===target&&progress.rewarded>=target&&progress.count===0)return {ok:true,unchanged:true};
+    for(let i=progress.rewarded;i<target;i++){const result=next.awardQuest(SHOP_TRACKS[found.track][i].id);if(!result.ok)return result;}
+    progress.completed=target;progress.rewarded=Math.max(target,progress.rewarded);progress.count=0;Object.assign(this,next);return {ok:true,questId};
+  }
+
   hackQuest(owner,questId){
+    if(owner==='shop')return this.hackShopQuest(questId);
     if(owner!=='starter')return {ok:false,error:'这位店主暂时没有任务。'};
     const next=this.clone();
     if(questId===SIDE_QUEST.id){

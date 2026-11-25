@@ -1,3 +1,4 @@
+const {mapProgress}=require('./progression-fixture.cjs');
 // Local-only acceptance: fresh contexts never use a player's browser save.
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
@@ -68,11 +69,11 @@ async function main() {
       try {
         const page = await context.newPage(), errors = [];
         page.on('pageerror', error => errors.push(error.message));
-        await page.addInitScript(({name,backpackLevel,entryCoins,saved}) => {
+        await page.addInitScript(({name,backpackLevel,entryCoins,saved,progress}) => {
           if (!localStorage.getItem('fisher-realm-save-slots-v1')&&!localStorage.getItem('fisher-realm-inventory-v1')) localStorage.setItem(
-            'fisher-realm-inventory-v1', JSON.stringify({version:1, backpackLevel, storage:{version:1,coins:entryCoins}, items:saved?[
+            'fisher-realm-inventory-v1', JSON.stringify({version:1, backpackLevel, storage:{version:1,coins:entryCoins,quests:{version:1,mainCompleted:0,counts:[0,0],side1Done:false,shop:progress}}, items:saved?[
               {id:'1', name, x:0, y:0}, {id:'2', name, x:null, y:null}]:[]}));
-        }, {name:fish.name,backpackLevel:bagLevel,entryCoins,saved});
+        }, {name:fish.name,backpackLevel:bagLevel,entryCoins,saved,progress:mapProgress});
         await page.goto('http://127.0.0.1:' + server.address().port + '/', {waitUntil:'domcontentloaded'});
         await page.waitForFunction(()=>window.worldMap?.getState().ready);
         await page.locator(`[data-map-id="${map.id}"]`).click();

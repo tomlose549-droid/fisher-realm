@@ -1,3 +1,4 @@
+import {productUnlocked,sodaShopUnlocked,caveOwnerKnown} from './shop-progression.js';
 import {createShopQuests} from './shop-quests.js';
 import {shopUnlocked,secondShopUnlocked} from './quest-rules.js';
 import {BACKPACK_LEVELS} from './backpack-upgrades.js';
@@ -13,14 +14,14 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
   function stopImages(){stopProductImages();refit.cleanup();}
   const quests=createShopQuests({store,onClose});
   let activeTab='stock',upgrading=false;
-  const ownerButton=document.querySelector('#shop-owner');
+  const ownerButton=document.querySelector('#shop-owner'),caveButton=document.querySelector('#shop-cave-owner');
   function stopProductImages(){for(const card of cards){card.stop?.();card.stop=null;}}
   function renderStock(){
     const unlocked={starter:shopUnlocked(store.model.quests),shop:secondShopUnlocked(store.model.quests)};
-    document.querySelector('#shop-other-tab').hidden=!unlocked.shop;
-    if(['stock','other'].includes(activeTab))document.querySelector('#shop-intro').textContent=unlocked[activeTab==='other'?'shop':'starter']?'购入仓库 · 背包内的亮片与假饵每竿消耗一个，优先使用价值最高的。':'店主正在等候，点击木质人物图标与他交谈。';
+    document.querySelector('#shop-other-tab').hidden=!unlocked.shop;document.querySelector('#shop-soda-tab').hidden=!sodaShopUnlocked(store.model.quests);caveButton.disabled=!caveOwnerKnown(store.model.quests);
+    if(['stock','other'].includes(activeTab))document.querySelector('#shop-intro').textContent=(activeTab==='other'?cards.some(card=>card.product.shop==='shop'&&productUnlocked(store.model.quests,card.product)):unlocked.starter)?'购入仓库 · 背包内的亮片与假饵每竿消耗一个，优先使用价值最高的。':'店主正在等候，点击木质人物图标与他交谈。';
     for(const card of cards){
-      const available=unlocked[card.product.shop],visible=dialog.open&&available&&(card.product.shop==='shop'?activeTab==='other':activeTab==='stock');
+      const available=productUnlocked(store.model.quests,card.product),visible=dialog.open&&available&&(card.product.shop==='shop'?activeTab==='other':activeTab==='stock');
       if(card.unlocked!==available){
         card.unlocked=available;card.card.replaceChildren();card.card.classList.toggle('shop-product-locked',!available);
         if(available){card.card.removeAttribute('aria-label');card.card.append(...card.contents);}
@@ -42,17 +43,17 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
     if(!upgrading)upgradeStatus.textContent=next&&store.model.coins<next.cost?`金币不足，需要 ${next.cost} 金币。`:'';
   }
   function show(tab){
-    if(tab==='other'&&!secondShopUnlocked(store.model.quests))return;
-    activeTab=tab;document.querySelector('.shop-footer>div').hidden=false;ownerButton.hidden=!['stock','other'].includes(tab);ownerButton.setAttribute('aria-label',tab==='other'?'拜访 shop owner':"拜访 starter's shop owner");
-    for(const [name,panel] of [['stock','shop-products'],['refit','refit-panel'],['backpack','backpack-upgrade-panel'],['other','shop-empty-panel']]){
+    if(tab==='other'&&!secondShopUnlocked(store.model.quests)||tab==='soda'&&!sodaShopUnlocked(store.model.quests))return;
+    activeTab=tab;document.querySelector('.shop-footer>div').hidden=tab==='soda';ownerButton.hidden=!['stock','other','soda'].includes(tab);caveButton.hidden=tab!=='other';ownerButton.classList.toggle('owner-stonewood',tab==='soda');ownerButton.setAttribute('aria-label',tab==='other'?'拜访 shop owner':tab==='soda'?'拜访 soda shop owner':"拜访 starter's shop owner");
+    for(const [name,panel] of [['stock','shop-products'],['refit','refit-panel'],['backpack','backpack-upgrade-panel'],['other','shop-empty-panel'],['soda','shop-soda-panel']]){
       document.getElementById(panel).hidden=name!==tab;
       document.getElementById(`shop-${name}-tab`).setAttribute('aria-selected',String(name===tab));
     }
-    document.querySelector('#shop-title').textContent={stock:"starter's shop",refit:'改装',backpack:'背包升级',other:'shop'}[tab];
-    document.querySelector('#shop-intro').textContent={stock:'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。',refit:'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。',backpack:'逐级扩充背包，让每次湖畔之行多一份收获。',other:''}[tab];
+    document.querySelector('#shop-title').textContent={stock:"starter's shop",refit:'改装',backpack:'背包升级',other:'shop',soda:'soda shop'}[tab];
+    document.querySelector('#shop-intro').textContent={stock:'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。',refit:'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。',backpack:'逐级扩充背包，让每次湖畔之行多一份收获。',other:'',soda:''}[tab];
     status.textContent='';if(tab==='refit')refit.open();else refit.cleanup();renderUpgrade();renderStock();
   }
-  for(const tab of ['stock','refit','backpack','other'])document.getElementById(`shop-${tab}-tab`).addEventListener('click',()=>show(tab));
+  for(const tab of ['stock','refit','backpack','other','soda'])document.getElementById(`shop-${tab}-tab`).addEventListener('click',()=>show(tab));
   upgradeButton.addEventListener('click',()=>{
     if(upgrading||upgradeButton.disabled)return;
     upgrading=true;upgradeButton.disabled=true;
@@ -61,7 +62,8 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
     // Ignore queued double clicks; a deliberate next upgrade is a separate purchase.
     setTimeout(()=>{upgrading=false;const message=upgradeStatus.textContent;renderUpgrade();upgradeStatus.textContent=message;},450);
   });
-  ownerButton.addEventListener('click',()=>quests.open(activeTab==='other'?'shop':'starter'));
+  ownerButton.addEventListener('click',()=>quests.open(activeTab==='other'?'shop':activeTab==='soda'?'soda':'starter'));
+  caveButton.addEventListener('click',()=>{if(!caveButton.disabled)quests.open('cave');});
   store.subscribe(()=>{renderUpgrade();renderStock();});
   for(const product of SHOP_ITEMS){
     const card=document.createElement('form');card.className='shop-product';card.dataset.productId=product.id;

@@ -1,3 +1,4 @@
+import {restoreShopProgress} from '../shop-progression.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SHOP_ITEMS,SHOP_BY_NAME,quantityOf} from '../item-data.js';
@@ -13,7 +14,8 @@ import {createEqualEncounterTable} from '../fish-encounters.js';
 // Fixed scenario for the approved shop examples, independent of later map additions.
 const amazon=createEqualEncounterTable(['AMAZON_LONG_SARDINE','AMAZON_SILVER_PACU','BANDED_LEPORINUS','GUPPY','AFRICAN_SHARPTOOTH_CATFISH','AMAZON_BRYCON','AMAZON_FRESHWATER_DRUM','RED_BELLIED_PIRANHA']);
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
-const funded=()=>{const m=new PlayerStorage();m.quests.mainCompleted=4;m.coins=100000;return m;};
+const unlockStock=m=>{m.quests.shop=restoreShopProgress();m.quests.shop.main={completed:6,rewarded:6,count:0};return m;};
+const funded=()=>{const m=new PlayerStorage();m.quests.mainCompleted=4;m.coins=100000;return unlockStock(m);};
 function memory(){let blocked=false;const values=new Map();return {get blocked(){return blocked;},set blocked(v){blocked=v;},getItem:k=>values.get(k)??null,setItem(k,v){if(blocked)throw Error('quota');values.set(k,v);},removeItem:k=>values.delete(k)};}
 function equip(m,name,slot){assert.equal(m.buy(name,1).ok,true);const item=m.boxes[0].items.find(i=>i.name===name);assert.equal(m.equip(item.id,0,slot).ok,true);return item;}
 
@@ -45,7 +47,7 @@ test('new stacks cap at 100, highest priced bag lure is used first and resale ro
 
 test('new purchases and pending casts roll back on failed saves; full or fragmented boxes reject whole batches',()=>{
  for(const action of ['buy','equip','beginCast']){
-  const io=memory(),store=createPlayerStorage({storage:io});store.model.quests.mainCompleted=4;store.run('setCoins',[10000]);store.run('buy',['6号鱼线',1]);store.run('buy',['5号假饵',2]);const [line,lure]=store.model.boxes[0].items;
+  const io=memory(),store=createPlayerStorage({storage:io});store.model.quests.mainCompleted=4;unlockStock(store.model);store.run('setCoins',[10000]);store.run('buy',['6号鱼线',1]);store.run('buy',['5号假饵',2]);const [line,lure]=store.model.boxes[0].items;
   store.run('transfer',[lure.id,0,'bag',0,0]);if(action==='beginCast')store.run('equip',[line.id,0,'line']);const before=store.snapshot();io.blocked=true;
   const args={buy:['2号渔轮-常规级',1],equip:[line.id,0,'line'],beginCast:[lure.id,.2]}[action];assert.equal(store.run(action,args).ok,false);assert.deepEqual(store.snapshot(),before);
  }
@@ -80,11 +82,11 @@ test('medium lure applies the exact 20% increase after quality reduction and tak
 });
 
 test('new lures are debited exactly once per cast, admin bypasses them and map caches remain isolated',()=>{
- const io=memory(),store=createPlayerStorage({storage:io});store.model.quests.mainCompleted=4;store.run('setCoins',[1000]);store.run('buy',['4号亮片-中体型吸引',3]);const item=store.model.boxes[0].items[0];store.run('transfer',[item.id,0,'bag',0,0]);let base=amazon;
+ const io=memory(),store=createPlayerStorage({storage:io});store.model.quests.mainCompleted=4;unlockStock(store.model);store.run('setCoins',[1000]);store.run('buy',['4号亮片-中体型吸引',3]);const item=store.model.boxes[0].items[0];store.run('transfer',[item.id,0,'bag',0,0]);let base=amazon;
  const cast=createLureCasting({store,getEncounters:()=>base});assert.equal(cast.prepare({forced:true}).encounters,amazon);assert.equal(store.model.bestLure().quantity,3);const first=cast.prepare();close(first.encounters.probabilityFor('GUPPY'),3.65);assert.equal(store.model.bestLure().quantity,2);base=lake;assert.equal(cast.prepare().encounters.probabilityFor('AMAZON_LONG_SARDINE'),0);assert.equal(store.model.bestLure().quantity,1);io.blocked=true;assert.equal(cast.prepare().ok,false);assert.equal(store.model.bestLure().quantity,1);
 });
 
 test('second-shop stock and worn equipment persist only within the active save slot',()=>{
- const io=memory();let slots=createSaveSlots({storage:io}),store=createPlayerStorage({storage:slots.storage});store.model.quests.mainCompleted=4;store.run('setCoins',[10000]);for(const p of SHOP_ITEMS.filter(p=>p.shop==='shop'))assert.equal(store.run('buy',[p.name,p.stackLimit>1?101:1]).ok,true);
+ const io=memory();let slots=createSaveSlots({storage:io}),store=createPlayerStorage({storage:slots.storage});store.model.quests.mainCompleted=4;unlockStock(store.model);store.run('setCoins',[10000]);for(const p of SHOP_ITEMS.filter(p=>p.shop==='shop'))assert.equal(store.run('buy',[p.name,p.stackLimit>1?101:1]).ok,true);
  const line=store.model.boxes[0].items.find(i=>i.name==='6号鱼线');store.run('equip',[line.id,0,'line']);store.model.equipment.line.lineWear=17;store.run('setCoins',[123]);const before=store.snapshot();assert.equal(slots.create().ok,true);slots=createSaveSlots({storage:io});assert.equal(createPlayerStorage({storage:slots.storage}).model.boxes[0].items.length,0);assert.equal(slots.select('1').ok,true);slots=createSaveSlots({storage:io});assert.deepEqual(createPlayerStorage({storage:slots.storage}).snapshot(),before);
 });

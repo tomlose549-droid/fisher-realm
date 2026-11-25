@@ -1,3 +1,4 @@
+const {mapProgress,withMapAccess}=require('./progression-fixture.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const root=path.resolve(__dirname,'../..'),out=path.join(root,'.qa/forest-backwater');
@@ -6,7 +7,7 @@ const server=http.createServer((req,res)=>{try{const f=path.resolve(root,decodeU
 (async()=>{let b;try{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));b=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',args:['--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});
  const p=await b.newPage({viewport:{width:1440,height:960}}),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
- await p.addInitScript(()=>{if(!localStorage.getItem('fisher-realm-save-slots-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify({version:1,items:[],storage:{version:1,coins:500,boxes:[{unlocked:true,items:[]}]}}));});
+ await p.addInitScript(progress=>{if(!localStorage.getItem('fisher-realm-save-slots-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify({version:1,items:[],storage:{version:1,quests:{version:1,mainCompleted:0,counts:[0,0],side1Done:false,shop:progress},coins:500,boxes:[{unlocked:true,items:[]}]}}));},mapProgress);
  const state=()=>p.evaluate(()=>window.lakeside.getState());
  async function enter(id='amazon-flooded-forest'){const sel=id==='summer-pond'?'#world-lake-point':'#world-flooded-forest-point';if(await p.evaluate(id=>window.worldMap.getState().selectedMap!==id,id))await p.locator(sel).click();await p.locator(sel).click();await p.waitForFunction(()=>window.lakeside?.getState().screen==='lake');const s=await state();await p.waitForFunction(f=>window.lakeside.getState().frames>f+6,s.frames);assert.equal((await state()).mapSession.liveMaps,1);}
  async function leave(){await p.locator('#warehouse-toggle').click();await p.locator('#warehouse-dialog').waitFor({state:'visible'});const s=await state();assert.equal(s.mapSession.liveMaps,0);assert.equal(s.mapSession.liveFishing,0);await p.locator('#warehouse-close').click();return s.gpu;}

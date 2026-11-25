@@ -1,3 +1,4 @@
+const {withMapAccess}=require('./progression-fixture.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),http=require('node:http'),fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url');
 const root=path.resolve(__dirname,'../..'),types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.wav':'audio/wav'};
@@ -9,7 +10,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
  const {FISH_DATA}=await import(pathToFileURL(path.join(root,'fish-data.js')).href);
  const {PlayerStorage}=await import(pathToFileURL(path.join(root,'storage-rules.js')).href),model=new PlayerStorage();model.quests.mainCompleted=1;model.coins=1000;model.addFish('草鱼');model.buy('2号亮片',4);model.buy('1号亮片',2);
  for(const [name,x]of[['2号亮片',3],['1号亮片',4]]){const item=model.boxes[0].items.find(i=>i.name===name);assert.equal(model.transfer(item.id,0,'bag',x,0).ok,true);}model.buy('1号鱼线',1);assert.equal(model.equip(model.boxes[0].items.find(i=>i.name==='1号鱼线').id,0,'line').ok,true);
- await context.addInitScript(data=>{window.amazonTime=100;const random=Math.random;window.amazonUnit=null;Math.random=()=>window.amazonUnit===null?random():window.amazonUnit;if(!localStorage.getItem('fisher-realm-save-slots-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(data));},model.serialize());
+ await context.addInitScript(data=>{window.amazonTime=100;const random=Math.random;window.amazonUnit=null;Math.random=()=>window.amazonUnit===null?random():window.amazonUnit;if(!localStorage.getItem('fisher-realm-save-slots-v1'))localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify(data));},withMapAccess(model.serialize()));
  await page.route('**/game-time.js*',r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync(path.join(root,'game-time.js'),'utf8').replace('performance.now()/1000','globalThis.amazonTime').replace('now(raw=this.raw()){','now(raw=this.raw()){raw=this.raw();')}));
  const shots=path.join(root,'.qa/amazon');fs.mkdirSync(shots,{recursive:true});const state=()=>page.evaluate(()=>window.lakeside.getState()),world=()=>page.evaluate(()=>window.worldMap.getState());
  const selector=id=>id==='summer-pond'?'#world-lake-point':'#world-amazon-point';

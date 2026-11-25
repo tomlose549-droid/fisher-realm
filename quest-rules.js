@@ -1,3 +1,4 @@
+import {restoreShopProgress,shopGiftRequirement,findShopQuest,starterUnlocked,shopPageUnlocked} from './shop-progression.js';
 import {FISH_DATA,FISH_QUALITIES} from './fish-data.js';
 const fishByName=Object.fromEntries(FISH_DATA.map(f=>[f.name,f]));
 const requirement=(count,label,extra={})=>Object.freeze({count,label,...extra});
@@ -12,8 +13,8 @@ export const SIDE_QUEST=Object.freeze({id:'side-1',title:'支线1 · 任务1',co
 export const currentQuest=state=>MAIN_QUESTS[state.mainCompleted]??null;
 // Claimed rewards are a permanent prefix; the playable progress can move backwards.
 export const rewardedMain=state=>state.mainRewarded===undefined?state.mainCompleted:state.mainRewarded;
-export const shopUnlocked=state=>rewardedMain(state)>=1;
-export const secondShopUnlocked=state=>rewardedMain(state)>=4;
+export const shopUnlocked=starterUnlocked;
+export const secondShopUnlocked=shopPageUnlocked;
 export const sideQuestUnlocked=state=>rewardedMain(state)>=2;
 export function setMainProgress(state,completed,rewarded){
   state.mainCompleted=completed;state.counts=[0,0];
@@ -28,10 +29,11 @@ export function restoreQuests(raw){
   if(quest&&quest.requirements.every((r,i)=>raw.counts[i]===r.count))fail();
   const rewarded=rewardedMain(raw);
   if(!Number.isInteger(rewarded)||rewarded<raw.mainCompleted||rewarded>MAIN_QUESTS.length)fail();
-  return {version:1,mainCompleted:raw.mainCompleted,counts:[...raw.counts],side1Done:raw.side1Done,...(rewarded>raw.mainCompleted?{mainRewarded:rewarded}:{})};
+  return {version:1,mainCompleted:raw.mainCompleted,counts:[...raw.counts],side1Done:raw.side1Done,...(raw.shop===undefined?{}:{shop:restoreShopProgress(raw.shop)}),...(rewarded>raw.mainCompleted?{mainRewarded:rewarded}:{})};
 }
-export const hasQuestProgress=state=>rewardedMain(state)>0||state.counts.some(Boolean)||state.side1Done;
+export const hasQuestProgress=state=>rewardedMain(state)>0||state.counts.some(Boolean)||state.side1Done||!!state.shop;
 export function giftRequirement(state,questId,name){
+  if(findShopQuest(questId))return shopGiftRequirement(state,questId,name);
   const quest=currentQuest(state),fish=Object.hasOwn(fishByName,name)?fishByName[name]:null;
   if(!quest||quest.id!==questId||!fish)return -1;
   // Reserve the additional high-quality fish first; no fish counts toward both goals.
@@ -45,5 +47,6 @@ export function giftRequirement(state,questId,name){
 }
 // Rewards stay out of task descriptions and are granted with the whole submission transaction.
 export function questReward(id){
+  const extra=findShopQuest(id);if(extra)return extra.quest.reward;
   return {'main-1':{},'main-2':{coins:25},'main-3':{items:[['2号亮片',10]]},'main-4':{items:[['3号鱼线',1]]},'main-5':{coins:100},'side-1':{items:[['3号鱼线',1],['2号亮片',10]]}}[id];
 }

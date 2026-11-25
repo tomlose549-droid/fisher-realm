@@ -1,3 +1,4 @@
+import {REWARD_ITEMS} from './redeem-codes.js';
 import {wearFields,tackleFor} from './equipment-rules.js';
 import {FISH_CATALOG,FISH_PRICES} from './fish-data.js';
 
@@ -20,13 +21,15 @@ export const SHOP_ITEMS=Object.freeze([
   product('REEL_2','2号渔轮-常规级',899,2,2,'dark purple','#301934','reel',1,null,second('reel-2'))
 ]);
 export const SHOP_BY_NAME=Object.freeze(Object.fromEntries(SHOP_ITEMS.map(item=>[item.name,item])));
-export const ITEMS=Object.freeze({...FISH_CATALOG.items,...SHOP_BY_NAME});
+export const REWARD_BY_NAME=Object.freeze(Object.fromEntries(REWARD_ITEMS.map(item=>[item.name,item])));
+export const isRewardName=name=>typeof name==='string'&&Object.hasOwn(REWARD_BY_NAME,name);
+export const ITEMS=Object.freeze({...FISH_CATALOG.items,...SHOP_BY_NAME,...REWARD_BY_NAME});
 export const isFishName=name=>typeof name==='string'&&Object.hasOwn(FISH_CATALOG.items,name);
 export const isShopName=name=>typeof name==='string'&&Object.hasOwn(SHOP_BY_NAME,name);
 export const knownItem=name=>typeof name==='string'&&Object.hasOwn(ITEMS,name);
 export const quantityOf=item=>isShopName(item?.name)?(item.quantity??1):1;
 export const stackLimit=name=>isShopName(name)?SHOP_BY_NAME[name].stackLimit:1;
-export const unitSalePrice=name=>isFishName(name)?FISH_PRICES[name]:isShopName(name)?SHOP_BY_NAME[name].sellPrice:null;
+export const unitSalePrice=name=>isFishName(name)?FISH_PRICES[name]:isShopName(name)?SHOP_BY_NAME[name].sellPrice:isRewardName(name)?REWARD_BY_NAME[name].sellPrice:null;
 // Legacy items without wear are restored as full durability.
 export function itemUnitSalePrice(item){
   const max=tackleFor(item?.name)?.maxWear;

@@ -1,6 +1,6 @@
 {
   "name": "lakeside-fishing",
-  "version": "0.67.0",
+  "version": "0.68.0",
   "private": true,
   "type": "module",
   "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
@@ -63,7 +63,10 @@
       "map-entry.js",
       "maps/amazon-flooded-forest.js",
       "maps/amazon-flooded-forest-fish.js",
-      "flooded-forest-scene.js"
+      "flooded-forest-scene.js",
+      "maps/sac-actun.js",
+      "maps/sac-actun-fish.js",
+      "cenote-scene.js"
     ],
     "styles": [
       "style.css"

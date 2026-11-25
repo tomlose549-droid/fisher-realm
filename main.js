@@ -215,7 +215,8 @@ function returnToWorld(){
 const mapEntry=createMapEntry({store:playerStorage,getFee:id=>getMapContext(id).entryFee,
   async prepare(id){
     map=await mapSession.enter(id);map.setQuality(fine);
-    document.querySelector('.location h2').textContent=map.context.name+' · '+(id==='amazon-confluence'?'雨林木平台':'林间钓位');
+    document.querySelector('.location h2').textContent=map.context.name+' · '+(map.context.labels.spot??(id==='amazon-confluence'?'雨林木平台':'林间钓位'));
+    const weather=document.querySelector('.location p'),icon=weather.querySelector('svg'),breeze=weather.querySelector('span');breeze.textContent=map.context.labels.breeze??'微风拂面';weather.replaceChildren(icon,document.createTextNode((map.context.labels.weather??'晴朗夏日')+' '),breeze);
     yaw=targetYaw=map.context.spawn.yaw;pitch=targetPitch=map.context.spawn.pitch;camera.rotation.set(pitch,yaw,0);camera.updateMatrixWorld();return map;
   },
   activate(){inWorld=false;document.querySelector('#game').classList.remove('world-mode');gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;slowSamples=0;sceneDirty=true;canvas.focus({preventScroll:true});},

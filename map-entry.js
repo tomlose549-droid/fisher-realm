@@ -1,4 +1,4 @@
-export const MAP_ENTRY_FEES=Object.freeze({'summer-pond':0,'amazon-confluence':28,'amazon-flooded-forest':43});
+export const MAP_ENTRY_FEES=Object.freeze({'summer-pond':0,'amazon-confluence':28,'amazon-flooded-forest':43,'sac-actun':0});
 export function mapEntryFee(id){
  if(!Object.hasOwn(MAP_ENTRY_FEES,id))throw new RangeError('Unknown map: '+id);
  return MAP_ENTRY_FEES[id];

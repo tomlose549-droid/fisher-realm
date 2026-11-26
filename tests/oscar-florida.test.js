@@ -1,7 +1,8 @@
 import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {OSCAR,FLORIDA_GAR,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
+import {OSCAR,FLORIDA_GAR,FISH_SPECIES,pickFish} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {FISH_ITEMS,FishInventory} from '../inventory-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 for(const [fish,index,color,w,h,speed,stamina,rest,lo,hi,durations] of [[OSCAR,15,'#40e0d0',2,2,5.2,55,4.2,34,43,[6.3,2.8,.6]],[FLORIDA_GAR,16,'#301934',4,1,6.2,86,4.9,47,57,[4,2,1.5,.8,.2]]]){

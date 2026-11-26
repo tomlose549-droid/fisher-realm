@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FishingSession,TILAPIA,FISH_SPECIES,signedAngle} from '../fishing-rules.js';
+import {TILAPIA,FISH_SPECIES,signedAngle} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function start(fish,side=0,yaw=.4){const rolls=[0,side,0];const f=new FishingSession(()=>rolls.shift()??0,{fish});f.cast(0,yaw);f.hook(6);return f;}
 test('lateral 0 is sideways, lateral 30 turns 30 toward forward, lateral 90 is forward on both sides',()=>{

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {FISH_DATA,createFishCatalog} from '../fish-data.js';
-import {FishingSession} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 for(const id of ['RAINBOW_SNAKEHEAD','GOLDEN_COBRA_SNAKEHEAD','BARCA_SNAKEHEAD'])test(id+' actively fights in every late leg, alternates, rests after the final leg and starts a new round',()=>{
  const original=FISH_DATA.find(f=>f.id===id),fish={...original,speed:.05,stamina:10000},f=new FishingSession(()=>0,{fish});f.cast(0,0);assert.equal(f.hook(6),true);let t=6;

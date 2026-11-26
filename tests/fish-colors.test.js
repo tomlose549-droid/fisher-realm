@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {FISH_DATA,FISH_CATALOG} from '../fish-data.js';
 import {FishInventory,FISH_ITEMS} from '../inventory-rules.js';
-import {FishingSession} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {buildFishHelp} from '../fish-help.js';
 import {buildFishGuide} from '../fish-guide.js';
 import template from '../scripts/prepare-fish.cjs';

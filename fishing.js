@@ -1,227 +1,64 @@
 import * as THREE from './vendor/three.module.js';
-import {FishingSession,FISHING,signedAngle} from './fishing-rules.js';
+import {FISHING} from './fishing-rules.js';
+import {ThreeRodSession,hookScale,trailScale} from './multi-rod-rules.js';
+import {createFishingProps} from './fishing-props.js';
 import {createWaterEffects} from './water-effects.js';
 import {createFishingAudio} from './fishing-audio.js';
 import {createResourceScope} from './scene-resources.js';
 
-export function createFishing({scene,camera,player,mapContext,ownerState={fishName:null,remaining:0},canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000,prepareCast=()=>({ok:true}),onRoundEnd=()=>({})}){
-  if(!mapContext||typeof mapContext.isWater!=='function'||!Number.isFinite(mapContext.waterLevel))throw new TypeError('Fishing requires a map context');
-  const {waterLevel,isWater,fishPool,encounters}=mapContext,targetY=waterLevel+.095,surfaceY=waterLevel+.06;
-  const session=new FishingSession(Math.random,{randomSpecies:true,player,isWater,fishPool,encounters}),status=document.querySelector('#fishing-status'),notice=document.querySelector('#catch-notice');
-  session.restoreOwnerState(ownerState);
-  const now=getTime;let activeLure=null;
-  const sounds=createFishingAudio();
-  const root=new THREE.Group();root.name='player-fishing';scene.add(root);let disposed=false;
-  const distanceLabel=document.querySelector('#fish-distance'),distancePoint=new THREE.Vector3();
-  let lastDistanceText='';
-  const meters=document.querySelector('#fishing-meters'),lineFill=document.querySelector('#line-fill'),lineValue=document.querySelector('#line-value'),staminaFill=document.querySelector('#stamina-fill'),staminaValue=document.querySelector('#stamina-value'),phaseLabel=document.querySelector('#fish-phase');
-  const lineMeter=document.querySelector('#line-meter'),staminaMeter=document.querySelector('#stamina-meter');
-  const setText=(node,value)=>{if(node.textContent!==value)node.textContent=value;};
-  const hidden=(node,value)=>{if(node.hidden!==value)node.hidden=value;};
-  const styles=new WeakMap();
-  const style=(node,name,value)=>{let values=styles.get(node);if(!values){values=new Map();styles.set(node,values);}if(values.get(name)!==value){node.style.setProperty(name,value);values.set(name,value);}};
-  const attr=(node,name,value)=>{value=String(value);if(node.getAttribute(name)!==value)node.setAttribute(name,value);};
-  let lastLineColor=null,lastShoreYaw=null;
-  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.7,...extra});
-  const add=(geo,mat,parent,p,s)=>{const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);parent.add(m);return m;};
-  const axisY=new THREE.Vector3(0,1,0);
-  function beam(a,b,r0,r1,mat,parent){const v=new THREE.Vector3(...a),end=new THREE.Vector3(...b),d=end.clone().sub(v);const m=add(new THREE.CylinderGeometry(r1,r0,d.length(),8),mat,parent);m.position.copy(v).add(end).multiplyScalar(.5);m.quaternion.setFromUnitVectors(axisY,d.normalize());return m;}
-  const rod=new THREE.Group();rod.visible=false;rod.name='independent-fishing-rod';root.add(rod);
-  const cork=material('#b79764'),carbon=material('#30483c',{roughness:.32,metalness:.35}),metal=material('#8a9387',{metalness:.65,roughness:.35});
-  const points=[[0,-.25,.30],[0,0,0],[0,.23,-.7],[0,.43,-1.5],[0,.51,-2.2],[0,.53,-2.9]];
-  for(let i=1;i<points.length;i++)beam(points[i-1],points[i],.027-i*.0036,.024-i*.0036,i===1?cork:carbon,rod);
-  for(let i=2;i<points.length;i++){const p=points[i],guide=add(new THREE.TorusGeometry(.035-i*.004,.004,5,12),metal,rod,[0,p[1]-.025,p[2]]);guide.rotation.x=.2;}
-  const reel=add(new THREE.CylinderGeometry(.075,.075,.09,14),metal,rod,[.07,-.04,.03]);reel.rotation.z=Math.PI/2;
-  beam([.11,-.04,.03],[.17,-.11,.03],.009,.009,metal,rod);
-  const reelHandle=add(new THREE.SphereGeometry(.025,6,4),cork,rod,[.17,-.11,.03],[1.4,.7,.7]);
-  const lineArray=new Float32Array(25*3),lineGeometry=new THREE.BufferGeometry();lineGeometry.setAttribute('position',new THREE.BufferAttribute(lineArray,3).setUsage(THREE.DynamicDrawUsage));
-  const line=new THREE.Line(lineGeometry,new THREE.LineBasicMaterial({color:'#e4e9d5',transparent:true,opacity:.86}));line.frustumCulled=false;line.visible=false;root.add(line);
-  const marker=new THREE.Group();marker.visible=false;root.add(marker);
-  add(new THREE.SphereGeometry(.085,10,7),material('#e7e3c6'),marker,[0,.015,0],[.8,1.1,.8]);
-  add(new THREE.CylinderGeometry(.033,.04,.13,8),material('#cb6450'),marker,[0,.13,0]);
-  const ring=add(new THREE.RingGeometry(.18,.20,32),new THREE.MeshBasicMaterial({color:'#dce5b6',transparent:true,opacity:.35,side:THREE.DoubleSide,depthWrite:false}),marker,[0,.012,0]);ring.rotation.x=-Math.PI/2;
-  // Fish exists only in the rules. There is no visible fish mesh or fish texture.
-  const waterEffects=createWaterEffects(root,{waterLevel}),resources=createResourceScope(root);
-  const retrieveStart=new THREE.Vector3(),retrieveEnd=new THREE.Vector3(),sideVector=new THREE.Vector3(),lastWetSurface=new THREE.Vector3(player.x-Math.sin(mapContext.spawn.yaw)*FISHING.distance,surfaceY,player.z-Math.cos(mapContext.spawn.yaw)*FISHING.distance);
-  let shorelineDistance=4.5,lastLandedCast=null,lastTrailAt=-Infinity,retrievalProgress=0;
-  const target=new THREE.Vector3(),rodTip=new THREE.Vector3(),castDirection=new THREE.Vector3(),handOffset=new THREE.Vector3();
-  let pointerX=null,leftHeld=false,lastStatus='';
-  function getTarget(distance=session.distance){return target.set(player.x-Math.sin(session.fishYaw)*distance,targetY,player.z-Math.cos(session.fishYaw)*distance);}
-  function insideWater(x,z,margin=.995){return isWater(x,z,margin);}
-  function waterPoint(yaw){return insideWater(player.x-Math.sin(yaw)*FISHING.distance,player.z-Math.cos(yaw)*FISHING.distance,.98);}
-  function findShore(yaw){
-    let wet=null;
-    for(let d=.5;d<=55;d+=.5)if(insideWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d)){wet=d;break;}
-    if(wet===null)return Infinity;
-    let dry=wet-.5;for(let i=0;i<20;i++){const d=(dry+wet)*.5;if(insideWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d))wet=d;else dry=d;}return wet;
+export function createFishing({scene,camera,player,mapContext,ownerState={fishName:null,remaining:0},canvas,idleRod,toast,onReady,onCast,onHook,onCaught=()=>{},getTime=()=>performance.now()/1000,prepareCast=()=>({ok:true}),beginFight=()=>({ok:true}),onRoundEnd=()=>({ok:true})}){
+ if(!mapContext||typeof mapContext.isWater!=='function')throw TypeError('Fishing requires a map context');
+ const now=getTime,{waterLevel,isWater,fishPool,encounters}=mapContext,round=new ThreeRodSession({player,isWater,fishPool,encounters,ownerState,prepareCast,beginFight,finishFight:onRoundEnd});let reflectionVisibility=[];let session=round.session,disposed=false,pointerX=null,leftHeld=false,reflectionHidden=false,lastTrailAt=-Infinity,lastNetWave=-Infinity,shorelineDistance=4.5,lastShoreYaw=null;
+ const root=new THREE.Group();root.name='player-fishing';scene.add(root);const props=createFishingProps(root,{player,waterLevel,groundYaw:mapContext.spawn.yaw}),waves=createWaterEffects(root,{waterLevel}),resources=createResourceScope(root),sounds=createFishingAudio();
+ const doc=document,status=doc.querySelector('#fishing-status'),notice=doc.querySelector('#catch-notice'),distanceLabel=doc.querySelector('#fish-distance'),meters=doc.querySelector('#fishing-meters'),phaseLabel=doc.querySelector('#fish-phase');
+ const target=new THREE.Vector3(),projected=new THREE.Vector3(),lastWet=new THREE.Vector3(player.x-Math.sin(mapContext.spawn.yaw)*23,waterLevel+.06,player.z-Math.cos(mapContext.spawn.yaw)*23),up=new THREE.Vector3(0,1,0),hand=new THREE.Vector3();
+ const hud=doc.createElement('div');hud.id='rod-slots';hud.className='rod-slots';doc.querySelector('#game').append(hud);const buttons=[0,1,2].map(slot=>{const b=doc.createElement('button');b.type='button';b.dataset.rodSlot=slot;b.hidden=true;b.className='rod-slot';b.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();if(blocked())return;choose(slot,true);canvas.focus({preventScroll:true});});hud.append(b);return b;});
+ const netSpot=doc.createElement('button');netSpot.type='button';netSpot.id='net-spot';netSpot.className='net-spot';netSpot.hidden=true;netSpot.textContent='点击抄起';netSpot.addEventListener('pointerdown',e=>{if(e.button!==0||blocked())return;e.preventDefault();round.clickNet(now(),true);update(now());canvas.focus({preventScroll:true});});hud.append(netSpot);
+ const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+ const text=(node,value)=>{if(node.textContent!==value)node.textContent=value;},hide=(node,value)=>{if(node.hidden!==value)node.hidden=value;};
+ const setStyle=(node,key,value)=>{if(node.style.getPropertyValue(key)!==value)node.style.setProperty(key,value);};
+ function blocked(){return disposed||!!doc.querySelector('dialog[open]')||!doc.querySelector('#settings-panel').hidden;}
+ function shore(yaw){let wet=null;for(let d=.5;d<=55;d+=.5)if(isWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d)){wet=d;break;}if(wet===null)return Infinity;let dry=wet-.5;for(let i=0;i<20;i++){const d=(dry+wet)/2;if(isWater(player.x-Math.sin(yaw)*d,player.z-Math.cos(yaw)*d))wet=d;else dry=d;}return wet;}
+ function surface(s=session,d=s.distance){if(s.fishYaw!==lastShoreYaw){shorelineDistance=shore(s.fishYaw);lastShoreYaw=s.fishYaw;}target.set(player.x-Math.sin(s.fishYaw)*d,waterLevel+.06,player.z-Math.cos(s.fishYaw)*d);if(!isWater(target.x,target.z)){if(Number.isFinite(shorelineDistance))target.set(player.x-Math.sin(s.fishYaw)*Math.max(d,shorelineDistance+.24),waterLevel+.06,player.z-Math.cos(s.fishYaw)*Math.max(d,shorelineDistance+.24));if(!isWater(target.x,target.z))target.copy(lastWet);}lastWet.copy(target);return target;}
+ function waterPoint(yaw){return isWater(player.x-Math.sin(yaw)*23,player.z-Math.cos(yaw)*23,.98);}
+ function choose(slot,held=false){const result=round.choose(slot,now());if(!result.ok&&result.error)toast(result.error);update(now());if(result.ok&&held){leftHeld=true;session.setReeling(true,now());}return result.ok;}
+ function key(e){if(disposed)return false;if(e.code!=='Space')return false;if(e.repeat)return true;const t=now();update(t);if(round.selected)return true;if(round.rods.length===3){toast('最多同时抛出3根竿 · 点击咬钩的竿开始拉鱼');return true;}const yaw=camera.rotation.y;if(!waterPoint(yaw)){toast(mapContext.labels.castHint);return true;}const result=round.cast(t,yaw);if(result.ok){pointerX=null;onCast();update(t);}else if(result.error)toast(result.error);return true;}
+ function mouseButtons(e){if(disposed||(e.pointerType&&e.pointerType!=='mouse')||!Number.isInteger(e.buttons))return;leftHeld=(e.buttons&1)!==0;if(round.state==='fighting'&&session.reeling!==leftHeld)session.setReeling(leftHeld,now());}
+ function pointerMove(e){if(disposed)return;mouseButtons(e);if(round.state!=='fighting'){pointerX=e.clientX;return;}const dx=Number.isFinite(e.movementX)&&e.movementX!==0?e.movementX:pointerX===null?0:e.clientX-pointerX;pointerX=e.clientX;if(dx)session.setRodYaw(session.rodYaw-dx*.006,now());}
+ function pointerDown(e){if(disposed||e.button!==0)return false;const t=now();update(t);if(round.net){const rect=canvas.getBoundingClientRect();projected.copy(surface()).project(camera);const x=rect.left+(projected.x+1)*rect.width/2,y=rect.top+(1-projected.y)*rect.height/2;const hit=Math.hypot(e.clientX-x,e.clientY-y)<=55;if(round.clickNet(t,hit)){update(t);return true;}return round.state!=='fighting';}mouseButtons(e);if(round.state==='fighting'){session.setReeling(true,t);canvas.setPointerCapture(e.pointerId);canvas.focus();return true;}const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(props.ground.filter(p=>p.rod.visible).map(p=>p.hit),false);if(hits.length){choose(hits[0].object.userData.rodSlot,true);return true;}return false;}
+ function release(){if(disposed)return;leftHeld=false;session.setReeling(false,now());pointerX=null;}
+ function view(){if(disposed||!round.selected)return null;const stage=round.state;if(!['fighting','net-ready','net-scooping','net-struggling','caught'].includes(stage))return null;surface();hand.copy(target).sub(player);return {yaw:Math.atan2(-hand.x,-hand.z),pitch:Math.atan2(hand.y,Math.hypot(hand.x,hand.z))};}
+ function project(node,point){projected.copy(point).project(camera);const visible=projected.z>=-1&&projected.z<=1&&Math.abs(projected.x)<.98&&Math.abs(projected.y)<.98;if(visible){setStyle(node,'left',(projected.x+1)*50+'%');setStyle(node,'top',(1-projected.y)*50+'%');}hide(node,!visible);}
+ function updateDistanceLabel(){if(disposed)return;for(let i=0;i<3;i++){const r=round.rods.find(r=>r.slot===i),b=buttons[i];if(!r||r.session.state==='casting'){hide(b,true);continue;}props.projectedPoint(i,target);project(b,target);const bite=r.session.state==='bite';b.classList.toggle('biting',bite);b.setAttribute('aria-label','鱼竿'+(i+1)+(bite?'咬钩，点击开始拉鱼':'等待咬钩'));text(b,'竿'+(i+1)+(bite?' · '+Math.max(0,r.session.hookDeadline-now()).toFixed(1)+'秒':' · 静候'));}if(round.net?.state==='net-ready')project(netSpot,surface());else hide(netSpot,true);const distanceSession=round.state==='fighting'?session:!round.selected?round.rods.filter(r=>['waiting','bite'].includes(r.session.state)).at(-1)?.session:null;if(distanceSession){project(distanceLabel,surface(distanceSession));text(distanceLabel,distanceSession.distance.toFixed(1)+' 米');}else hide(distanceLabel,true);}
+ function updateMeters(resource){hide(meters,round.state!=='fighting');setStyle(meters,'--line-color',resource.lineColor);const values=[['line',resource.durability,resource.durabilityMaximum],['stamina',resource.fishStamina,resource.fishStaminaMaximum]];for(const [id,value,max]of values){setStyle(doc.querySelector('#'+id+'-fill'),'width',value/max*100+'%');text(doc.querySelector('#'+id+'-value'),value.toFixed(1)+' / '+max);const meter=doc.querySelector('#'+id+'-meter');for(const [key,v]of [['aria-valuemax',max],['aria-valuenow',value.toFixed(1)]])if(meter.getAttribute(key)!==String(v))meter.setAttribute(key,String(v));}if(session.struggling)text(phaseLabel,(resource.lastBurstActive?'最后挣扎 · ':resource.turnSpecialActive?'特殊挣扎 · ':'')+(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒');else text(phaseLabel,session.fishPhase==='exhausted'?(session.profile.behavior?.lastBurst&&!resource.lastBurstUsed?'耐力耗尽 · 收至'+session.profile.behavior.lastBurst.distance+'米触发最后挣扎':'耐力耗尽 · 永久休息'):session.fishPhase==='switch-pause'?'换边停顿 · '+resource.phaseRemaining.toFixed(1)+' 秒':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中');}
+ function update(t){if(disposed)return;round.advance(t);session=round.session;
+  for(const e of round.drainEvents()){
+   if(e.type==='hooked'){sounds.play('hooked');pointerX=null;lastTrailAt=-Infinity;waves.pulse('hook',surface(),e.at,hookScale(session.profile.name));onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
+   if(e.type==='missed')toast('竿'+(e.slot+1)+'错过咬钩 · 可补抛，补抛消耗1个亮片');
+   if(e.type==='failed'){if(e.reason==='line-broken')sounds.play('broken');const messages={'line-broken':'鱼线断了',escaped:'鱼跑出50米',landed:'鱼跑到了10米外陆地','net-timeout':'未及时抄鱼，鱼逃走了','net-escaped':'未及时确认，鱼从网中逃走了'};if(e.reason!=='interrupted')toast((messages[e.reason]||'钓鱼失败')+' · 空格重新抛竿');onReady(session.castYaw);}
+   if(e.type==='net-ready'){leftHeld=false;lastNetWave=-Infinity;waves.pulse('catch',surface(),e.at);toast('换上抄网 · 10秒内点击水波气泡处');}
+   if(e.type==='scoop')props.updateNet.startedAt=e.at;
+   if(e.type==='net-struggling')toast('鱼在网里挣扎 · 2.6秒内再点击一下');
+   if(e.type==='caught'){onCaught(session.lastCatchName);sounds.play('caught');}
+   if(e.type==='ready')onReady(session.castYaw);
+   if(e.type==='exhausted')toast('鱼已耗尽耐力 · 继续收线');
+   if(e.type==='settled'&&e.result?.destroyed)toast(e.result.name+'耐久耗尽 · 已卸下');
   }
-  function updateShore(){const yaw=session.fishYaw;if(yaw!==lastShoreYaw){shorelineDistance=findShore(yaw);lastShoreYaw=yaw;}}
-  // Motion uses the actual fish position. Effects stop at the shoreline when the
-  // allowed final ten meters include the player's dry-bank clearing.
-  function surfaceTarget(distance=session.distance){
-    getTarget(distance);
-    if(!insideWater(target.x,target.z)){
-      if(Number.isFinite(shorelineDistance))getTarget(Math.max(distance,shorelineDistance+.24));
-      if(!insideWater(target.x,target.z))target.copy(lastWetSurface);
-    }
-    target.y=surfaceY;lastWetSurface.copy(target);return target;
-  }
-  // Project after the main camera has moved so the label stays on the water point.
-  function updateDistanceLabel(){
-    if(disposed)return;
-    if(!['waiting','bite','fighting'].includes(session.state)){hidden(distanceLabel,true);return;}
-    distancePoint.copy(surfaceTarget());distancePoint.y=waterLevel+.155;distancePoint.project(camera);
-    if(distancePoint.z<-1||distancePoint.z>1||Math.abs(distancePoint.x)>1||Math.abs(distancePoint.y)>1){hidden(distanceLabel,true);return;}
-    const text=session.distance.toFixed(1)+' 米';
-    if(text!==lastDistanceText){distanceLabel.textContent=text;lastDistanceText=text;}
-    style(distanceLabel,'left',((distancePoint.x+1)*50)+'%');
-    style(distanceLabel,'top',((1-distancePoint.y)*50)+'%');
-    hidden(distanceLabel,false);
-  }
-  function retrieval(age){
-    const progress=THREE.MathUtils.clamp(age/FISHING.recastDelay,0,1);
-    const pull=THREE.MathUtils.clamp((age-.10)/.65,0,1),eased=THREE.MathUtils.smoothstep(pull,0,1);
-    const lift=progress<.4?THREE.MathUtils.smoothstep(progress,0,.4):1-THREE.MathUtils.smoothstep(progress,.4,1);
-    return {progress,eased,lift,arc:Math.sin(eased*Math.PI)};
-  }
-  function key(event){
-    if(disposed)return false;
-    if(event.repeat)return event.code==='Space';
-    const t=now();update(t);
-    if(session.state==='bite'){session.hook(t);if(leftHeld)session.setReeling(true,t);return true;}
-    if(event.code!=='Space')return false;
-    if(session.state==='idle'){
-      const heading=camera.rotation.y;
-      if(!waterPoint(heading)){toast(mapContext.labels.castHint);return true;}
-      const prepared=prepareCast({forced:session.ownerState.remaining>0});
-      if(!prepared.ok){toast(prepared.error||'本次未能抛竿，请重试');return true;}
-      session.cast(t,heading,{encounters:prepared.encounters??encounters,equipment:prepared.equipment});activeLure=prepared.lure??null;pointerX=null;onCast();
-    }
-    return true;
-  }
-  // Mouse chords emit pointermove, not another pointerdown. Read the real button mask.
-  function mouseButtons(event){
-    if(disposed||(event.pointerType&&event.pointerType!=='mouse')||!Number.isInteger(event.buttons))return;
-    leftHeld=(event.buttons&1)!==0;
-    if(session.state==='fighting'&&session.reeling!==leftHeld)session.setReeling(leftHeld,now());
-  }
-  function pointerMove(event){
-    if(disposed)return;mouseButtons(event);
-    if(session.state!=='fighting'){pointerX=event.clientX;return;}
-    const dx=Number.isFinite(event.movementX)&&event.movementX!==0?event.movementX:(pointerX===null?0:event.clientX-pointerX);
-    pointerX=event.clientX;if(dx)session.setRodYaw(session.rodYaw-dx*.006,now());
-  }
-  function pointerDown(event){if(disposed)return false;mouseButtons(event);if(event.button===0)leftHeld=true;if(event.button===0&&session.state==='fighting'){session.setReeling(true,now());canvas.setPointerCapture(event.pointerId);canvas.focus();return true;}return false;}
-  function release(){if(disposed)return;leftHeld=false;session.setReeling(false,now());pointerX=null;}
-  function view(){
-    if(disposed)return null;
-    if(!['fighting','caught'].includes(session.state))return null;
-    surfaceTarget();castDirection.copy(target).sub(player);
-    const yaw=Math.atan2(-castDirection.x,-castDirection.z);
-    let pitch=Math.atan2(castDirection.y,Math.hypot(castDirection.x,castDirection.z));
-    if(session.state==='caught'){
-      const progress=THREE.MathUtils.clamp((now()-session.catchAt)/FISHING.recastDelay,0,1);
-      pitch=THREE.MathUtils.lerp(pitch,mapContext.spawn.pitch,THREE.MathUtils.smoothstep(progress,0,1))+Math.sin(progress*Math.PI)*.45;
-    }
-    return {yaw,pitch};
-  }
-  function update(t){
-    if(disposed)return;
-    session.advance(t);
-    if(['fighting','caught'].includes(session.state))updateShore();
-    for(const event of session.drainEvents()){
-      const wear=['caught','missed','failed'].includes(event.type)?onRoundEnd(event.reason??event.type):null;
-      if(event.type==='cast'){updateShore();lastTrailAt=-Infinity;retrievalProgress=0;}
-      if(event.type==='hooked'){sounds.play('hooked');pointerX=null;waterEffects.pulse('hook',surfaceTarget(),event.at);onHook();toast('已提竿 · 移动鼠标转竿，按住左键收线');}
-      if(event.type==='missed'){toast('鱼脱钩了 · 按空格重新抛竿');onReady(session.castYaw);}
-      if(event.type==='failed'){
-        if(event.reason==='line-broken')sounds.play('broken');
-        const messages={'line-broken':'鱼线断了','escaped':'鱼跑出 50 米了','landed':'鱼跑到了 10 米外的陆地'};
-        if(event.reason!=='interrupted')toast((messages[event.reason]||'钓鱼失败')+' · 按空格重新抛竿');onReady(session.castYaw);
-      }
-      if(event.type==='exhausted')toast('鱼已耗尽耐力 · 现在可安心收线');
-      if(event.type==='caught'){
-        onCaught(session.lastCatchName);
-        sounds.play('caught');
-        retrieveStart.copy(surfaceTarget(FISHING.catchDistance));
-        retrieveEnd.set(.16,-.53,-.85).applyAxisAngle(axisY,session.fishYaw).add(player);
-        sideVector.set(Math.cos(session.fishYaw),0,-Math.sin(session.fishYaw));
-        waterEffects.pulse('catch',retrieveStart,event.at);
-      }
-      if(event.type==='ready')onReady(session.castYaw);
-      if(wear?.destroyed)toast(`${wear.name}耐久耗尽 · 已卸下，下一竿使用基础鱼线`);
-    }
-    if(session.active&&session.castAt!==lastLandedCast&&t>=session.castAt+FISHING.flight){
-      lastLandedCast=session.castAt;
-      if(t-session.castAt-FISHING.flight<1.15)waterEffects.pulse('landing',surfaceTarget(FISHING.distance),session.castAt+FISHING.flight);
-    }
-    if(session.state==='fighting'&&(session.reeling||session.struggling)&&t-lastTrailAt>=.18){
-      lastTrailAt=t;waterEffects.pulse('trail',surfaceTarget(),t,.8+session.efficiency*.24);
-    }
-    waterEffects.update(t);
-    const resource=session.snapshot(t);
-    if(lastLineColor!==resource.lineColor){line.material.color.set(resource.lineColor);lastLineColor=resource.lineColor;}
-    hidden(meters,!['fighting','caught'].includes(session.state));
-    style(meters,'--line-color',resource.lineColor);
-    style(lineFill,'width',(resource.durability/resource.durabilityMaximum*100)+'%');setText(lineValue,resource.durability.toFixed(1)+' / '+resource.durabilityMaximum);
-    style(staminaFill,'width',(resource.fishStamina/resource.fishStaminaMaximum*100)+'%');setText(staminaValue,resource.fishStamina.toFixed(1)+' / '+resource.fishStaminaMaximum);
-    attr(lineMeter,'aria-valuemax',resource.durabilityMaximum);
-    attr(lineMeter,'aria-valuenow',resource.durability.toFixed(1));
-    attr(staminaMeter,'aria-valuemax',resource.fishStaminaMaximum);
-    attr(staminaMeter,'aria-valuenow',resource.fishStamina.toFixed(1));
-    if(session.struggling)setText(phaseLabel,(resource.lastBurstActive?'最后挣扎 · ':resource.turnSpecialActive?'特殊挣扎 · ':'')+(session.phaseSide>0?'← 向左挣扎':'向右挣扎 →')+' · 削耐方向差 '+resource.struggleAngle.toFixed(0)+'° · '+resource.phaseRemaining.toFixed(1)+' 秒');
-    else setText(phaseLabel,session.fishPhase==='exhausted'?(session.profile.behavior?.lastBurst&&!resource.lastBurstUsed?'耐力耗尽 · 收至'+session.profile.behavior.lastBurst.distance+'米触发最后挣扎':'耐力耗尽 · 永久休息'):session.fishPhase==='switch-pause'?'换边停顿 · '+resource.phaseRemaining.toFixed(1)+' 秒':session.fishPhase==='rest'?'休息中 · '+resource.phaseRemaining.toFixed(1)+' 秒':'收竿中');
-    setText(notice,(session.lastCatchName||session.profile.name)+'已被钓');style(notice,'color',session.lastCatchColor);
-    const opacity=session.noticeOpacity(t);style(notice,'opacity',String(opacity));hidden(notice,opacity===0);
-    const stage=session.state;
-    let text='空格抛竿 · 23 米';
-    if(stage==='casting')text='抛竿中…';
-    if(stage==='waiting')text='静候咬钩 · 23 米';
-    if(stage==='bite')text=`鱼线在动 · 按任意键提竿  ${Math.max(0,session.hookDeadline-t).toFixed(2)} 秒`;
-    if(stage==='fighting')text=`${session.reeling?'正在收线':'按住左键收线'} · ${session.distance.toFixed(2)} 米 · 效率 ${Math.round(session.efficiency*100)}%`;
-    if(stage==='caught')text='收竿中…';
-    if(text!==lastStatus){status.textContent=text;lastStatus=text;}attr(status,'data-state',stage);
-    if(stage==='idle'){rod.visible=line.visible=marker.visible=false;idleRod.visible=true;canvas.style.cursor='grab';return;}
-    idleRod.visible=false;rod.visible=line.visible=true;canvas.style.cursor=stage==='fighting'?'crosshair':'grab';
-    handOffset.set(.34,-.47,-.12).applyAxisAngle(axisY,session.castYaw);rod.position.copy(player).add(handOffset);
-    rod.rotation.set(.025,session.rodYaw,0);
-    const castProgress=THREE.MathUtils.clamp((t-session.castAt)/FISHING.flight,0,1);
-    if(stage==='casting')rod.rotation.x+=Math.sin(castProgress*Math.PI)*.7;
-    const motion=stage==='caught'?retrieval(t-session.catchAt):null;
-    if(motion){
-      retrievalProgress=motion.progress;rod.rotation.x+=motion.lift*.65;
-      rod.rotation.y+=signedAngle(session.fishYaw-session.rodYaw)*motion.eased;
-    }
-    if(stage==='fighting'&&session.reeling)reelHandle.rotation.z=t*12;
-    rod.updateMatrixWorld(true);rodTip.set(...points.at(-1)).applyMatrix4(rod.matrixWorld);
-    getTarget();
-    if(stage==='casting'){const destination=target.clone();target.copy(player).lerp(destination,castProgress);target.y=THREE.MathUtils.lerp(player.y+.06,targetY,castProgress)+Math.sin(castProgress*Math.PI)*2.9;}
-    else if(stage==='waiting')target.y=targetY+Math.sin(t*2)*.015;
-    else if(stage==='bite')target.y=targetY+Math.sin((t-session.biteAt)*24)*.16;
-    else if(stage==='caught'){
-      target.copy(retrieveStart).lerp(retrieveEnd,motion.eased);
-      target.y+=motion.arc*1.10;
-      target.addScaledVector(sideVector,Math.sin(motion.eased*Math.PI*2)*.24*motion.arc);
-    }else surfaceTarget();
-    marker.visible=['casting','waiting','bite'].includes(stage);marker.position.copy(target);ring.material.opacity=stage==='bite'?.5:.25;
-    for(let i=0;i<25;i++){
-      const u=i/24,index=i*3,sag=stage==='fighting'?.055:stage==='caught'?.22+motion.arc*.36:.30;
-      lineArray[index]=THREE.MathUtils.lerp(rodTip.x,target.x,u);
-      lineArray[index+1]=THREE.MathUtils.lerp(rodTip.y,target.y,u)-Math.sin(u*Math.PI)*sag;
-      lineArray[index+2]=THREE.MathUtils.lerp(rodTip.z,target.z,u);
-      if(motion){const swing=Math.sin(u*Math.PI)*Math.sin(motion.eased*Math.PI*2)*.18;lineArray[index]+=sideVector.x*swing;lineArray[index+2]+=sideVector.z*swing;}
-    }
-    lineGeometry.attributes.position.needsUpdate=true;
-  }
-  return {
-    key,pointerMove,pointerDown,mouseButtons,release,view,update,updateDistanceLabel,
-    interrupt(){if(disposed)return;const t=now();update(t);if(['casting','waiting','bite','fighting'].includes(session.state)){session.fail('interrupted',t);update(t);}},
-    pauseAudio:()=>sounds.pause(),resumeAudio:()=>sounds.resume(),
-    dispose(){if(disposed)return;disposed=true;waterEffects.dispose();resources.dispose();sounds.dispose();hidden(distanceLabel,true);hidden(meters,true);hidden(notice,true);idleRod.visible=true;},
-    setForcedFish:name=>session.setForcedFish(name),getOwnerState:()=>session.ownerState,
-    isFighting:()=>!disposed&&session.state==='fighting',isActive:()=>!disposed&&session.active,
-    hideReflection(){if(disposed)return;rod.visible=line.visible=marker.visible=false;waterEffects.hide();},
-    restoreReflection(){if(disposed)return;const active=session.active;rod.visible=line.visible=active;marker.visible=['casting','waiting','bite'].includes(session.state);idleRod.visible=!active;waterEffects.show();},
-    getState:()=>({...session.snapshot(now()),lure:activeLure,visuals:{audio:sounds.snapshot(),fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:rod.rotation.x,retrievalProgress,lineVisible:line.visible,lineColor:line.material.color.getHexString(),lineEnd:Array.from(lineArray.slice(-3)),lineTip:Array.from(lineArray.slice(0,3)),waves:waterEffects.snapshot()}}),
-  };
+  for(const r of round.rods)if(!r.landed&&t>=r.session.castAt+FISHING.flight){r.landed=true;if(t-r.session.castAt-FISHING.flight<1.15)waves.pulse('landing',surface(r.session),r.session.castAt+FISHING.flight);}
+  if(round.state==='fighting'&&(session.reeling||session.struggling)&&t-lastTrailAt>=.18){lastTrailAt=t;waves.pulse('trail',surface(),t,(.8+session.efficiency*.24)*(session.struggling?trailScale(session.fishMoveSpeed):1));}
+  if(round.net&&t-lastNetWave>=.28){lastNetWave=t;waves.pulse('trail',surface(),t,round.state==='net-struggling'?1:.65);}
+  waves.update(t);const resource=round.snapshot(t);updateMeters(resource);text(notice,(resource.lastCatchName||'')+'已被钓');setStyle(notice,'color',resource.lastCatchColor);setStyle(notice,'opacity',String(resource.noticeOpacity));hide(notice,resource.noticeOpacity===0);
+  const stage=round.state;let message='空格抛竿 · 23米 · 最多3根竿';if(stage==='casting')message='抛竿中…';if(stage==='waiting')message=round.rods.length===3?'三竿静候咬钩 · 点击咬钩的竿':`静候咬钩 · ${round.rods.length}/3根竿 · 空格再抛`;if(stage==='bite')message='有鱼咬钩 · 3.7秒内点击对应的地面鱼竿';if(stage==='fighting')message=`${session.reeling?'正在收线':'按住左键收线'} · ${session.distance.toFixed(2)}米 · 效率${Math.round(session.efficiency*100)}%`;if(stage==='net-ready')message='点击水波气泡处抄鱼 · '+Math.max(0,round.net.deadline-t).toFixed(1)+'秒';if(stage==='net-scooping')message='抄网从右侧兜住…';if(stage==='net-struggling')message='鱼在网里挣扎 · 再点击一下 '+Math.max(0,round.net.deadline-t).toFixed(1)+'秒';if(stage==='caught')message='钓获成功 · 收回抄网';text(status,message);if(status.dataset.state!==stage)status.dataset.state=stage;
+  props.hide();props.updateGround(round.rods,t);idleRod.visible=!round.selected&&round.rods.length<3&&!round.rods.some(r=>r.session.state==='casting');canvas.style.cursor=stage==='fighting'?'crosshair':'grab';
+  if(round.net||stage==='caught'){props.updateNet(stage,surface(),session.fishYaw,t);idleRod.visible=false;}
+  else if(round.selected||session.state==='casting'&&round.rods.some(r=>r.session===session)){const tip=props.updateHeld(session,t);surface();if(session.state==='casting'){const p=Math.min(1,(t-session.castAt)/FISHING.flight);hand.copy(player).lerp(target,p);hand.y=THREE.MathUtils.lerp(player.y+.06,waterLevel+.095,p)+Math.sin(p*Math.PI)*2.9;target.copy(hand);}props.mainLine.line.material.color.set(resource.lineColor);props.drawLine(props.mainLine,tip,target,stage==='fighting'?.055:.3);}
+  if(reflectionHidden){props.hide();idleRod.visible=false;}
+ }
+ return {key,pointerMove,pointerDown,mouseButtons,release,view,update,updateDistanceLabel,
+  interrupt(){if(disposed)return;round.interrupt(now());update(now());},pauseAudio:()=>sounds.pause(),resumeAudio:()=>sounds.resume(),
+  dispose(){if(disposed)return;disposed=true;hud.remove();waves.dispose();resources.dispose();sounds.dispose();hide(distanceLabel,true);hide(meters,true);hide(notice,true);idleRod.visible=true;},
+  setForcedFish:name=>round.setForcedFish(name),getOwnerState:()=>round.ownerState,isFighting:()=>!disposed&&round.state==='fighting',isActive:()=>!disposed&&round.active,
+  hideReflection(){if(disposed)return;reflectionHidden=true;const objects=[props.held,props.mainLine.line,props.net,props.bubbles,...props.ground.flatMap(p=>[p.rod,p.line,p.marker])];reflectionVisibility=objects.map(o=>[o,o.visible]);props.hide();waves.hide();},restoreReflection(){if(disposed)return;reflectionHidden=false;for(const [o,visible]of reflectionVisibility)o.visible=visible;idleRod.visible=!round.selected&&round.rods.length<3&&!round.rods.some(r=>r.session.state==='casting');waves.show();},
+  getState:()=>({...round.snapshot(now()),lure:round.selected?.lure??round.rods.at(-1)?.lure??null,visuals:{audio:sounds.snapshot(),fishModelCount:scene.getObjectsByProperty('name','tilapia').length,shorelineDistance,rodLift:props.held.rotation.x,retrievalProgress:0,lineVisible:props.mainLine.line.visible,lineColor:props.mainLine.line.material.color.getHexString(),lineEnd:Array.from(props.mainLine.data.slice(-3)),lineTip:Array.from(props.mainLine.data.slice(0,3)),waves:waves.snapshot(),groundRodCount:props.ground.filter(p=>p.rod.visible).length,netVisible:props.net.visible,bubblesVisible:props.bubbles.visible,netRoll:props.net.rotation.z}})
+ };
 }

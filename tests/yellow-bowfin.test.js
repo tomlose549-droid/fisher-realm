@@ -1,7 +1,8 @@
 import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {YELLOW_BULLHEAD,BOWFIN,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
+import {YELLOW_BULLHEAD,BOWFIN,FISH_SPECIES,pickFish} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {FISH_ITEMS,FishInventory} from '../inventory-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 for(const [fish,index,color,w,h,speed,stamina,rest,lo,hi,durations,amount,interval] of [[YELLOW_BULLHEAD,17,'#008000',3,1,3.1,41,.9,33,36,[4,1.5],6,.17],[BOWFIN,18,'#0000ff',2,1,5.3,45,4.2,31,40,[1.9,.9,1.8,.5,1],3,.11]]){ test(fish.name+' exact profile, random slot and owner cast',()=>{assert.equal(pickFish(unitForFish(FISH_SPECIES[index],0)),fish);assert.equal(pickFish(unitForFish(FISH_SPECIES[index],1-1e-7)),fish);assert.deepEqual(fish,{name:fish.name,catchColor:color,strength:{amount,interval},restDuration:rest,speed,stamina,struggle:{minAngle:lo,maxAngle:hi,durations},specials:[]});const f=new FishingSession(()=>0);assert.equal(f.setForcedFish(fish.name),true);f.cast(0,0);assert.equal(f.fishStamina,stamina);assert.equal(f.profile,fish);});

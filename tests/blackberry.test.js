@@ -1,7 +1,8 @@
 import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BLACKBERRY_BASS,TILAPIA,BLUEGILL,REDEAR,pickFish,FISH_SPECIES,FishingSession} from '../fishing-rules.js';
+import {BLACKBERRY_BASS,TILAPIA,BLUEGILL,REDEAR,pickFish,FISH_SPECIES} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...BLACKBERRY_BASS,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
 test('blackberry profile, white notice and thirteen-species encounter ranges',()=>{

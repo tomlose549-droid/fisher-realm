@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {FishInventory,FISH_ITEMS,BAG_WIDTH,BAG_HEIGHT} from '../inventory-rules.js';
 import {GameTime} from '../game-time.js';
-import {FishingSession} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 
 test('inventory rejects inherited property names and malformed names while retaining valid fish',()=>{
  const invalid=['toString','constructor','__proto__','hasOwnProperty',{},[],null,42];

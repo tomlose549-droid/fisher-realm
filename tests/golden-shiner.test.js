@@ -2,7 +2,8 @@ import {getMapFishPool} from '../map-registry.js';
 import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {GOLDEN_SHINER,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
+import {GOLDEN_SHINER,FISH_SPECIES,pickFish} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...GOLDEN_SHINER,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);f.hook(6);return f;}
 test('golden shiner profile and active lake encounter boundaries',()=>{

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {AMAZON_CONFLUENCE,riverCenter,riverHalfWidth,riverBank,riverBankOffset,amazonWaterMaxZ,isAmazonWater} from '../maps/amazon-confluence.js';
 import {getMapContext} from '../map-registry.js';
-import {FishingSession} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 const {water,spawn}=AMAZON_CONFLUENCE;
 test('right basin extends the cut end, while fixed fishing station and forward channel retain their positions',()=>{
  assert.equal(water.basin.rightX-water.basin.leftX,203);assert.equal(amazonWaterMaxZ(),230);assert.deepEqual([spawn.yaw,spawn.pitch],[-.6844,.0447]);

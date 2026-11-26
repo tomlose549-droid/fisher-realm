@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FishingSession,TILAPIA,staminaDrain,durabilityTier,signedAngle} from '../fishing-rules.js';
+import {TILAPIA,staminaDrain,durabilityTier,signedAngle} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {isPondWater} from '../pond-boundary.js';
 const close=(a,b,epsilon=1e-7)=>assert.ok(Math.abs(a-b)<epsilon,`${a} != ${b}`);
 const radians=d=>d*Math.PI/180;

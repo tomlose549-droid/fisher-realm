@@ -37,6 +37,7 @@ export function createWaterEffects(scene,{waterLevel=0}={}){
     slot.group.position.set(position.x,waterLevel+.012,position.z);slot.group.visible=true;
     counts[kind]++;last[kind]={at:time,position:[position.x,waterLevel+.012,position.z],radius:settings.radius*strength};
   }
+  const dropData=new Float32Array(24*6*3),dropGeometry=new THREE.BufferGeometry();dropGeometry.setAttribute('position',new THREE.BufferAttribute(dropData,3).setUsage(THREE.DynamicDrawUsage));const drops=new THREE.Points(dropGeometry,new THREE.PointsMaterial({color:'#e3efe0',size:.07,transparent:true,opacity:.65,depthWrite:false}));drops.frustumCulled=false;root.add(drops);
   function update(time){
     if(resources.disposed)return;
     for(const slot of pool){
@@ -54,6 +55,8 @@ export function createWaterEffects(scene,{waterLevel=0}={}){
       }
     }
   }
+  const updateRings=update;
+  function updateAll(time){if(resources.disposed)return;updateRings(time);let count=0;for(const slot of pool){const age=time-slot.at;if(!['hook','catch','landing'].includes(slot.kind)||age<0||age>=.9)continue;for(let j=0;j<6;j++){const a=j*Math.PI/3,r=age*(.3+j*.045)*slot.strength,k=count++*3;dropData[k]=slot.group.position.x+Math.cos(a)*r;dropData[k+1]=waterLevel+.03+Math.max(0,Math.sin(age/.9*Math.PI))*(slot.kind==='hook'?.7:.42)*slot.strength;dropData[k+2]=slot.group.position.z+Math.sin(a)*r;}}dropGeometry.setDrawRange(0,count);drops.visible=count>0;dropGeometry.attributes.position.needsUpdate=true;}
   const resources=createResourceScope(root);
-  return{pulse,update,dispose:()=>resources.dispose(),hide(){root.visible=false;},show(){root.visible=true;},snapshot(){return {emitted:{...counts},last:{...last},active:pool.filter(s=>s.group.visible).length,poolSize:pool.length};}};
+  return{pulse,update:updateAll,dispose:()=>resources.dispose(),hide(){root.visible=false;},show(){root.visible=true;},snapshot(){return {emitted:{...counts},last:{...last},active:pool.filter(s=>s.group.visible).length,poolSize:pool.length};}};
 }

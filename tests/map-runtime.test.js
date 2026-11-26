@@ -8,7 +8,8 @@ import {createPond} from '../pond-scene.js';
 import {isPondWater} from '../pond-boundary.js';
 import {DEFAULT_MAP_ID,getMapDefinition,getMapContext,getMapFishPool,listMaps} from '../map-registry.js';
 import {FISH_CATALOG} from '../fish-data.js';
-import {FishingSession,pickFish} from '../fishing-rules.js';
+import {pickFish} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {createResourceScope} from '../scene-resources.js';
 import {createWaterEffects} from '../water-effects.js';
 

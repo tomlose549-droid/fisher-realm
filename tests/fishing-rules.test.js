@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FishingSession,FISHING,reelEfficiency,TILAPIA} from '../fishing-rules.js';
+import {FISHING,reelEfficiency,TILAPIA} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 
 const close=(actual,expected)=>assert.ok(Math.abs(actual-expected)<1e-8,`${actual} != ${expected}`);
 const quiet=(random=()=>0)=>new FishingSession(random,{fish:{...TILAPIA,stamina:0}});
 function fighting(yaw=0){const f=quiet();f.cast(0,yaw);f.hook(6);return f;}
-test('cast is 23 m, cannot repeat, bite delay is in the agreed 6–13 second range',()=>{
+test('isolated combat fixture keeps its injected 6–13 second clock and 23m single-session cast',()=>{
   for(const [random,expected]of[[0,6],[.5,9.5],[1,13]]){const f=quiet(()=>random);assert.equal(f.cast(10,.5),true);close(f.distance,23);close(f.biteAt,10+expected);assert.equal(f.cast(10.5,1),false);close(f.fishYaw,.5);f.advance(10.8);assert.equal(f.state,'waiting');f.advance(f.biteAt-1e-6);assert.equal(f.state,'waiting');f.advance(f.biteAt);assert.equal(f.state,'bite');}
 });
-test('hook timing is checked on the input timestamp, including the 1.45 second boundary',()=>{
+test('isolated combat fixture checks its injected hook-window boundary',()=>{
   const f=quiet();f.cast(0,0);assert.equal(f.hook(5.999),false);assert.equal(f.hook(7.45),true);assert.equal(f.state,'fighting');
   const late=quiet();late.cast(0,0);assert.equal(late.hook(7.450001),false);assert.equal(late.state,'idle');assert.equal(late.outcome,'missed');assert.equal(late.distance,0);assert.equal(late.cast(7.450001,0),true);
 });

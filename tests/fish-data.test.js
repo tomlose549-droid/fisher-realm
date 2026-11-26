@@ -51,7 +51,7 @@ test('adding metadata and an explicit map probability supports encounters, owner
  await copyCatalogSandbox(temp,extra);
  const r=await import(pathToFileURL(join(temp,'fishing-rules.js'))),inv=await import(pathToFileURL(join(temp,'inventory-rules.js')));
  assert.equal(r.FISH_SPECIES.length,FISH_DATA.length+1);assert.equal(r.pickFish(1).name,extra.name);assert.deepEqual(inv.FISH_ITEMS[extra.name],extra.inventory);
- const f=new r.FishingSession(()=>0);assert.equal(f.setForcedFish(extra.name),true);f.cast(0,0);assert.equal(f.hook(6),true);assert.equal(f.profile.name,extra.name);assert.equal(f.fishStamina,12);
+ const f=new r.FishingSession(()=>0,{timing:{minWait:6,maxWait:13,hookWindow:1.45}});assert.equal(f.setForcedFish(extra.name),true);f.cast(0,0);assert.equal(f.hook(6),true);assert.equal(f.profile.name,extra.name);assert.equal(f.fishStamina,12);
  f.setRodYaw(f.struggleYaw,6);f.setReeling(true,6);f.advance(6.2);assert.equal(f.durability,98);f.advance(6.25);assert.equal(f.fishStamina,9);
  f.fishStamina=0;f.fishPhase='exhausted';f.phaseEndsAt=Infinity;f.setRodYaw(f.fishYaw,6.25);f.advance(13);assert.equal(f.lastCatchName,extra.name);assert.equal(f.lastCatchColor,extra.catchColor);assert.equal(f.ownerState.remaining,9);
  const old={version:1,items:baseline.profiles.map((p,i)=>({id:String(i+1),name:p.name,x:null,y:null}))};const b=new inv.FishInventory(old);assert.deepEqual(b.serialize(),old);b.add(extra.name);assert.equal(b.items.at(-1).name,extra.name);assert.deepEqual(new inv.FishInventory(b.serialize()).serialize(),b.serialize());

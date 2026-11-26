@@ -8,7 +8,8 @@ import {createSaveSlots} from '../save-slots.js';
 import {tackleStats,tackleDescription} from '../equipment-rules.js';
 import {withLure} from '../lure-encounters.js';
 import {createLureCasting} from '../lure-casting.js';
-import {FishingSession,reelEfficiency} from '../fishing-rules.js';
+import {reelEfficiency} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {SUMMER_POND_ENCOUNTERS as lake} from '../maps/summer-pond-fish.js';
 import {createEqualEncounterTable} from '../fish-encounters.js';
 // Fixed scenario for the approved shop examples, independent of later map additions.

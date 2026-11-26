@@ -8,7 +8,7 @@ import {FishDiscoveries} from '../fish-discoveries.js';
 import {withLure} from '../lure-encounters.js';
 import {createLureCasting} from '../lure-casting.js';
 import {SUMMER_POND_ENCOUNTERS as base} from '../maps/summer-pond-fish.js';
-import {FishingSession} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 const owned=m=>[...m.inventory.items,...m.boxes.flatMap(b=>b.items)];
 const count=(m,name)=>owned(m).filter(i=>i.name===name).reduce((n,i)=>n+quantityOf(i),0);

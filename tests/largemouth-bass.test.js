@@ -1,7 +1,8 @@
 import {unitForFish} from './helpers/encounter-unit.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {LARGEMOUTH_BASS,FISH_SPECIES,pickFish,FishingSession} from '../fishing-rules.js';
+import {LARGEMOUTH_BASS,FISH_SPECIES,pickFish} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {FishInventory,FISH_ITEMS} from '../inventory-rules.js';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),rad=d=>d*Math.PI/180;
 function fight(fish={...LARGEMOUTH_BASS,speed:0},random=()=>0){const f=new FishingSession(random,{fish});f.cast(0,0);assert.equal(f.hook(6),true);return f;}

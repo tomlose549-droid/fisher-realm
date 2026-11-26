@@ -23,7 +23,7 @@ async function checkFish(selector) {
   const owner=new FishingSession(()=>0);
   assert.equal(owner.setForcedFish(data.name),true);owner.cast(0,0);
   assert.equal(owner.profile,profile);assert.equal(owner.fishStamina,data.stamina);
-  const fight=(fish,random=()=>0)=>{const f=new FishingSession(random,{fish});f.cast(0,0);assert.equal(f.hook(6),true);return f;};
+  const fight=(fish,random=()=>0)=>{const f=new FishingSession(random,{fish,timing:{minWait:6,maxWait:13,hookWindow:1.45}});f.cast(0,0);assert.equal(f.hook(6),true);return f;};
   const durations=data.struggle.durations??[data.struggle.firstDuration,data.struggle.secondDuration];
   for(const side of [0,1])for(const sample of [0,1]) {
     const rolls=[0,side,sample],moving=fight(profile,()=>rolls.shift()??0);

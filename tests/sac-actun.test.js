@@ -9,7 +9,7 @@ import {withLure} from '../lure-encounters.js';
 import {PlayerStorage} from '../storage-rules.js';
 import {createPlayerStorage} from '../player-storage.js';
 import {createLureCasting} from '../lure-casting.js';
-import {FishingSession} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {createMap} from '../cenote-scene.js';
 
 test('Sac Actun is registered as an independent 45-coin map with its own preview and fixed rocky bank',()=>{

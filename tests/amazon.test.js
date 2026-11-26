@@ -9,7 +9,7 @@ import {FISH_DATA,FISH_CATALOG} from '../fish-data.js';
 import {withLure} from '../lure-encounters.js';
 import {createLureCasting} from '../lure-casting.js';
 import {createPlayerStorage} from '../player-storage.js';
-import {FishingSession} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 import {createMapSession} from '../map-session.js';
 
 test('Amazon is independently registered near Manaus and has all 63 weighted fish',()=>{

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {FISH_DATA,FISH_CATALOG,createFishCatalog} from '../fish-data.js';import {FishingSession} from '../fishing-rules.js';import {buildFishHelp} from '../fish-help.js';import {buildFishGuide} from '../fish-guide.js';
+import {FISH_DATA,FISH_CATALOG,createFishCatalog} from '../fish-data.js';import {CombatSession as FishingSession} from './helpers/combat-session.js';import {buildFishHelp} from '../fish-help.js';import {buildFishGuide} from '../fish-guide.js';
 const dolphin=FISH_CATALOG.byId.PINK_RIVER_DOLPHIN,arapaima=FISH_CATALOG.byId.ARAPAIMA;
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 function fight(fish){const s=new FishingSession(()=>0,{fish});s.cast(0,0,{equipment:{lineMaximum:100000,reelBaseSpeed:3.75,fishSpeedScale:1}});s.hook(6);return s;}

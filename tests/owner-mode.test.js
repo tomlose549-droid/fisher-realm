@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FishingSession,FISH_SPECIES,TILAPIA,BLACKBERRY_BASS} from '../fishing-rules.js';
+import {FISH_SPECIES,TILAPIA,BLACKBERRY_BASS} from '../fishing-rules.js';
+import {CombatSession as FishingSession} from './helpers/combat-session.js';
 function session(){return new FishingSession(()=>0,{randomSpecies:true});}
 function catchOne(f,t){f.cast(t,0);assert.equal(f.hook(t+6),true);f.fishStamina=0;f.fishPhase='exhausted';f.phaseEndsAt=Infinity;f.setRodYaw(0,t+6);f.setReeling(true,t+6);f.advance(t+11);assert.equal(f.outcome,'caught');f.advance(t+12);}
 test('each supported species can be selected for ten catches; unknown names cannot',()=>{for(const fish of FISH_SPECIES){const f=session();assert.equal(f.setForcedFish(fish.name),true);f.cast(0,0);assert.equal(f.profile,fish);assert.deepEqual(f.ownerState,{fishName:fish.name,remaining:10});}const f=session();assert.equal(f.setForcedFish('unknown'),false);assert.equal(f.ownerState.remaining,0);});

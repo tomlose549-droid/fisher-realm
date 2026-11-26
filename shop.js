@@ -19,7 +19,7 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
   function renderStock(){
     const unlocked={starter:shopUnlocked(store.model.quests),shop:secondShopUnlocked(store.model.quests)};
     document.querySelector('#shop-other-tab').hidden=!unlocked.shop;document.querySelector('#shop-soda-tab').hidden=!sodaShopUnlocked(store.model.quests);caveButton.disabled=!caveOwnerKnown(store.model.quests);
-    if(['stock','other'].includes(activeTab))document.querySelector('#shop-intro').textContent=(activeTab==='other'?cards.some(card=>card.product.shop==='shop'&&productUnlocked(store.model.quests,card.product)):unlocked.starter)?'购入仓库 · 背包内的亮片与假饵每竿消耗一个，优先使用价值最高的。':'店主正在等候，点击木质人物图标与他交谈。';
+    if(['stock','other'].includes(activeTab))document.querySelector('#shop-intro').textContent=(activeTab==='other'?cards.some(card=>card.product.shop==='shop'&&productUnlocked(store.model.quests,card.product)):unlocked.starter)?'购入仓库 · 背包内的亮片与假饵首批最多三竿共用一个，超时补抛另扣一个，优先使用价值最高的。':'店主正在等候，点击木质人物图标与他交谈。';
     for(const card of cards){
       const available=productUnlocked(store.model.quests,card.product),visible=dialog.open&&available&&(card.product.shop==='shop'?activeTab==='other':activeTab==='stock');
       if(card.unlocked!==available){
@@ -50,7 +50,7 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
       document.getElementById(`shop-${name}-tab`).setAttribute('aria-selected',String(name===tab));
     }
     document.querySelector('#shop-title').textContent={stock:"starter's shop",refit:'改装',backpack:'背包升级',other:'shop',soda:'soda shop'}[tab];
-    document.querySelector('#shop-intro').textContent={stock:'购入仓库 · 背包亮片自动使用，每竿消耗一个，优先使用价值最高的亮片。',refit:'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。',backpack:'逐级扩充背包，让每次湖畔之行多一份收获。',other:'',soda:''}[tab];
+    document.querySelector('#shop-intro').textContent={stock:'购入仓库 · 背包亮片自动使用，首批最多三竿共用一个，超时补抛另扣一个，优先使用价值最高的亮片。',refit:'选择鱼线或渔轮槽，再从已有物品中装备；每个槽位仅可装一件。',backpack:'逐级扩充背包，让每次湖畔之行多一份收获。',other:'',soda:''}[tab];
     status.textContent='';if(tab==='refit')refit.open();else refit.cleanup();renderUpgrade();renderStock();
   }
   for(const tab of ['stock','refit','backpack','other','soda'])document.getElementById(`shop-${tab}-tab`).addEventListener('click',()=>show(tab));
@@ -79,7 +79,7 @@ export function createShop({store,encounters,getEncounters=()=>encounters,onOpen
       const reductions=Object.entries(product.modifiers).map(([quality,scale])=>`${labels[quality]}色降低 ${Number(((1-scale)*100).toFixed(2))}%`).join('，');
       const boost=product.areaBoost?'占格≥3的鱼在品质调整后概率最多再提高20%，以小鱼可分配概率为上限，小鱼最低降至0%。':'';
       const totals=Object.entries(table.qualityTotals).filter(([quality])=>Object.hasOwn(product.modifiers,quality)).map(([quality,value])=>`${labels[quality]} ${Number(value.toFixed(4))}%`).join(' · ');
-      effect.textContent=`${reductions}。${boost}当前地图：${totals}。放入背包后每竿消耗 1 个。`;
+      effect.textContent=`${reductions}。${boost}当前地图：${totals}。放入背包后首批最多三竿共用1个，超时补抛另扣1个。`;
     }else effect.textContent=tackleDescription(product.name);}
     const quantity=document.createElement('div');quantity.className='shop-quantity';
     const minus=document.createElement('button'),plus=document.createElement('button'),input=document.createElement('input');

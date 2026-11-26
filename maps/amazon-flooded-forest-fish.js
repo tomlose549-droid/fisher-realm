@@ -64,5 +64,10 @@ export const FLOODED_FOREST_PROBABILITIES=Object.freeze([
   Object.freeze({"id":"ASIAN_AROWANA","percent":0.001}),
   Object.freeze({"id":"BARCA_SNAKEHEAD","percent":0.001}),
   Object.freeze({"id":"ARAPAIMA","percent":0.008}),
+  Object.freeze({"id":"MEXICAN_BLINDFISH","percent":0}),
+  Object.freeze({"id":"YUCATAN_BLIND_SWAMP_EEL","percent":0}),
+  Object.freeze({"id":"MITCHELL_CAVE_SHRIMP","percent":0}),
+  Object.freeze({"id":"MO_CAVE_SHRIMP","percent":0}),
+  Object.freeze({"id":"YUCATAN_MOSQUITOFISH","percent":0}),
 ]);
 export const FLOODED_FOREST_ENCOUNTERS=createEncounterTable(FLOODED_FOREST_PROBABILITIES,{decimalPlaces:3});

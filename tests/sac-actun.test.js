@@ -12,9 +12,9 @@ import {createLureCasting} from '../lure-casting.js';
 import {FishingSession} from '../fishing-rules.js';
 import {createMap} from '../cenote-scene.js';
 
-test('Sac Actun is registered as an independent free map with its own preview and fixed rocky bank',()=>{
+test('Sac Actun is registered as an independent 45-coin map with its own preview and fixed rocky bank',()=>{
  const c=getMapContext(map.id),loc=WORLD_LOCATIONS.find(l=>l.id===map.id);
- assert.equal(listMaps().length,WORLD_LOCATIONS.length);assert.equal(c.entryFee,0);assert.equal(mapEntryFee(map.id),0);assert.equal(loc.markerId,'world-sac-actun-point');assert.equal(loc.preview,'map-images/sac-actun-preview.png');assert.ok(loc.latitude>20&&loc.latitude<21&&loc.longitude< -87&&loc.longitude> -88);assert.equal(c.labels.spot,'洞穴岩岸');assert.equal(c.isWater(map.spawn.position[0],map.spawn.position[2]),false);
+ assert.equal(listMaps().length,WORLD_LOCATIONS.length);assert.equal(c.entryFee,45);assert.equal(mapEntryFee(map.id),45);assert.equal(loc.markerId,'world-sac-actun-point');assert.equal(loc.preview,'map-images/sac-actun-preview.png');assert.ok(loc.latitude>20&&loc.latitude<21&&loc.longitude< -87&&loc.longitude> -88);assert.equal(c.labels.spot,'洞穴岩岸');assert.equal(c.isWater(map.spawn.position[0],map.spawn.position[2]),false);
  const [x,,z]=map.spawn.position;assert.equal(c.isWater(x-Math.sin(map.spawn.yaw)*23,z-Math.cos(map.spawn.yaw)*23,.98),true);assert.ok(getMapDefinition(map.id).load);assert.throws(()=>map.water.radii[0]=100,TypeError);
 });
 test('water follows its actual enclosing shore and rock ledge, ignoring underwater wood and tree roots',()=>{
@@ -24,10 +24,10 @@ test('water follows its actual enclosing shore and rock ledge, ignoring underwat
  assert.equal(c.isWater(map.landmarks.tree[0],map.landmarks.tree[2]),true);assert.equal(c.isWater(-26,20),false);assert.equal(c.isWater(80,0),false);
  const shifted={...map.water,center:[100,100],ledge:undefined};assert.equal(isSacActunWater(100,100,1,shifted),true);assert.equal(isSacActunWater(0,-15,1,shifted),false);
 });
-test('normal cave fishing uses five equal shares; lures preserve membership and admin remains global',()=>{
- const c=getMapContext(map.id),ids=["MEXICAN_BLINDFISH","YUCATAN_BLIND_SWAMP_EEL","MITCHELL_CAVE_SHRIMP","MO_CAVE_SHRIMP","YUCATAN_MOSQUITOFISH"];assert.equal(c.fishPool.length,5);assert.equal(c.encounters.probabilityFor('TILAPIA'),0);for(const id of ids)assert.equal(c.encounters.probabilityFor(id),20);
- for(const lure of [null,'1号亮片','2号亮片','3号亮片','4号亮片-中体型吸引','5号假饵']){const t=withLure(c.encounters,lure);assert.equal(t.fishPool.length,5);assert.equal(t.probabilityFor('TILAPIA'),0);assert.ok(Math.abs(t.ranges.reduce((n,r)=>n+r.percent,0)-100)<1e-8);for(const u of [0,.1,.5,.99,1])assert.ok(c.fishPool.includes(t.pick(u)));}
- const data=new PlayerStorage({version:1,items:[{id:'1',name:'5号假饵',quantity:2,x:0,y:0}]});let saved=JSON.stringify(data.serialize());const store=createPlayerStorage({storage:{getItem:()=>saved,setItem:(k,v)=>saved=v}}),lures=createLureCasting({store,encounters:c.encounters});assert.equal(lures.prepare().encounters.probabilityFor('TILAPIA'),0);assert.equal(store.model.inventory.items[0].quantity,1);assert.equal(lures.prepare({forced:true}).lure,null);assert.equal(store.model.inventory.items[0].quantity,1);
+test('normal cave fishing uses the approved weighted pool; lures preserve membership and admin remains global',()=>{
+ const c=getMapContext(map.id),ids=["MEXICAN_BLINDFISH","YUCATAN_BLIND_SWAMP_EEL","MITCHELL_CAVE_SHRIMP","MO_CAVE_SHRIMP","YUCATAN_MOSQUITOFISH"];assert.equal(c.fishPool.length,59);assert.equal(c.encounters.probabilityFor('TILAPIA'),7);for(const [i,id] of ids.entries())assert.equal(c.encounters.probabilityFor(id),[.15,.15,.3,.3,20][i]);
+ for(const lure of [null,'1号亮片','2号亮片','3号亮片','4号亮片-中体型吸引','5号假饵']){const t=withLure(c.encounters,lure);assert.equal(t.fishPool.length,59);assert.ok(t.probabilityFor('TILAPIA')>0);assert.ok(Math.abs(t.ranges.reduce((n,r)=>n+r.percent,0)-100)<1e-8);for(const u of [0,.1,.5,.99,1])assert.ok(c.fishPool.includes(t.pick(u)));}
+ const data=new PlayerStorage({version:1,items:[{id:'1',name:'5号假饵',quantity:2,x:0,y:0}]});let saved=JSON.stringify(data.serialize());const store=createPlayerStorage({storage:{getItem:()=>saved,setItem:(k,v)=>saved=v}}),lures=createLureCasting({store,encounters:c.encounters});assert.equal(lures.prepare().encounters.probabilityFor('TILAPIA'),withLure(c.encounters,'5号假饵').probabilityFor('TILAPIA'));assert.equal(store.model.inventory.items[0].quantity,1);assert.equal(lures.prepare({forced:true}).lure,null);assert.equal(store.model.inventory.items[0].quantity,1);
  const [x,,z]=map.spawn.position,s=new FishingSession(()=>0,{player:{x,z},isWater:c.isWater,fishPool:c.fishPool,encounters:c.encounters});s.setForcedFish('孔雀鲈');s.cast(0,map.spawn.yaw);assert.equal(s.profile.name,'孔雀鲈');
 });
 

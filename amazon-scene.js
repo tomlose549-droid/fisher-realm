@@ -1,10 +1,11 @@
+import {createAmazonQuality} from './amazon-quality.js';
 import * as THREE from './vendor/three.module.js';
 import {AMAZON_CONFLUENCE,riverBank,riverCenter,riverBankOffset,riverHalfWidth,amazonWaterMaxZ} from './maps/amazon-confluence.js';
 import {createResourceScope} from './scene-resources.js';
 
 // Real geometry at meter scale; the reference image is never used as a scene backdrop.
 export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{sharedResources=new Set()}={}){
-  const root=new THREE.Group();root.name='map-'+config.id;parent.add(root);
+  const root=new THREE.Group();root.name='map-'+config.id;root.userData.stationX=config.spawn.position[0];parent.add(root);
   const previous={background:parent.background,fog:parent.fog,exposure:renderer.toneMappingExposure,auto:renderer.shadowMap.autoUpdate,dirty:renderer.shadowMap.needsUpdate};
   const targets=[];
   try{
@@ -19,7 +20,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     parent.background=background;parent.fog=fog;renderer.toneMappingExposure=config.environment.exposure;
     const hemi=new THREE.HemisphereLight('#e0edc9','#706246',2.3),sun=new THREE.DirectionalLight('#fff0ba',3.4);
     sun.position.set(-18,34,16);sun.target.position.set(0,0,0);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-    Object.assign(sun.shadow.camera,{left:-46,right:46,top:45,bottom:-45,near:1,far:110});sun.shadow.bias=-.00025;sun.shadow.normalBias=.035;root.add(hemi,sun,sun.target,new THREE.AmbientLight('#a1b27e',.55));
+    Object.assign(sun.shadow.camera,{left:-46,right:46,top:45,bottom:-45,near:1,far:110});sun.shadow.bias=-.00025;sun.shadow.normalBias=.035;const ambient=new THREE.AmbientLight('#a1b27e',.55);root.add(hemi,sun,sun.target,ambient);
     renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
     function texture(paint,w=512,h=512,repeat=[1,1]){
       const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;paint(canvas.getContext('2d'),w,h);
@@ -57,7 +58,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     function mesh(geo,mat,p,s,parentNode=root){const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);m.castShadow=m.receiveShadow=true;parentNode.add(m);return m;}
     const cube=new THREE.BoxGeometry(1,1,1),cylinder=new THREE.CylinderGeometry(1,1,1,10),sphere=new THREE.SphereGeometry(1,10,7);
     const pools=[];
-    function pool(geo,mat,shadow=true,parentNode=root){const entries=[];const result={add(p,s,r=null,tint=null){entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();parentNode.add(inst);}};pools.push(result);return result;}
+    function pool(geo,mat,shadow=true,parentNode=root){const entries=[];const result={add(p,s,r=null,tint=null){entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();parentNode.add(inst);result.mesh=inst;}};pools.push(result);return result;}
     const trunks=pool(new THREE.CylinderGeometry(.68,1,1,12,3),barkMat),roots=pool(new THREE.CylinderGeometry(.48,1,1,8,2),barkMat),vines=pool(new THREE.CylinderGeometry(.7,1,1,5),standard('#4b5330'));
     function beam(target,a,b,radius,taper=1,tint=null){const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),delta=to.clone().sub(from);target.add(from.clone().add(to).multiplyScalar(.5).toArray(),[radius,delta.length(),radius*taper],new THREE.Quaternion().setFromUnitVectors(Y,delta.normalize()),tint);}
     function leafGeometry(rows=3){
@@ -193,14 +194,14 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     // River water reflects the actual current scene. Reflection resolution/frequency are bounded.
     const reflectionTarget=new THREE.WebGLRenderTarget(...config.quality.fine.reflection,{depthBuffer:true});targets.push(reflectionTarget);
     const reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4(),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();
-    const uniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()}};
+    const highQuality={value:0};const uniforms={highQuality,time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()}};
     const waterGeo=new THREE.BufferGeometry(),wp=[],wi=[];
     for(let j=0;j<=waterSegments;j++){const z=config.water.minZ+(waterEnd-config.water.minZ)*j/waterSegments;wp.push(riverBank(z,-1,config.water),0,z,riverBank(z,1,config.water),0,z);if(j){const n=j*2;wi.push(n,n+1,n-2,n+1,n-1,n-2);}}
     waterGeo.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));waterGeo.setIndex(wi);waterGeo.computeVertexNormals();
     const water=mesh(waterGeo,new THREE.ShaderMaterial({uniforms,side:THREE.DoubleSide,
       vertexShader:'varying vec3 vWorld;varying vec4 vMirror;uniform mat4 mirrorMatrix;void main(){vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;vMirror=mirrorMatrix*w;gl_Position=projectionMatrix*viewMatrix*w;}',
-      fragmentShader:`uniform float time;uniform sampler2D mirrorMap;uniform vec3 sunDir;varying vec3 vWorld;varying vec4 vMirror;
-      void main(){vec2 p=vWorld.xz;float t=time;vec3 eye=normalize(cameraPosition-vWorld);vec3 n=normalize(vec3((sin(p.x*5.2+p.y*.9+t*.52)+.32*cos(p.y*13.-t))* .010,1.,cos(p.y*8.-p.x*.5-t*.38)*.009));float f=.14+.68*pow(1.-max(dot(eye,n),0.),2.8);vec2 uv=vMirror.xy/vMirror.w*.5+.5+n.xz*.17;vec3 reflection=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb*.5+texture2D(mirrorMap,clamp(uv+vec2(.0015,.001),.002,.998)).rgb*.25+texture2D(mirrorMap,clamp(uv-vec2(.0015,.001),.002,.998)).rgb*.25;vec3 c=mix(vec3(.047,.028,.009),reflection*vec3(.81,.83,.56),f);float fleck=pow(max(dot(reflect(-sunDir,n),eye),0.),180.);c+=vec3(.84,.68,.30)*fleck*.65;float thread=pow(max(0.,sin(p.y*17.+sin(p.x*2.)*.7-t*.52)),35.);c+=vec3(.025,.023,.009)*thread;float haze=smoothstep(45.,160.,distance(cameraPosition,vWorld));c=mix(c,vec3(.24,.30,.17),haze*.6);gl_FragColor=vec4(c,1.);
+      fragmentShader:`uniform float highQuality;uniform float time;uniform sampler2D mirrorMap;uniform vec3 sunDir;varying vec3 vWorld;varying vec4 vMirror;
+      void main(){vec2 p=vWorld.xz;float t=time;vec3 eye=normalize(cameraPosition-vWorld);vec3 n=normalize(vec3((sin(p.x*5.2+p.y*.9+t*.52)+.32*cos(p.y*13.-t))* .010,1.,cos(p.y*8.-p.x*.5-t*.38)*.009));n=normalize(mix(n,vec3(0.,1.,0.),highQuality*.35));float f=mix(.14,.22,highQuality)+.68*pow(1.-max(dot(eye,n),0.),2.8);vec2 uv=vMirror.xy/vMirror.w*.5+.5+n.xz*.17;vec3 reflection=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb*.5+texture2D(mirrorMap,clamp(uv+vec2(.0015,.001),.002,.998)).rgb*.25+texture2D(mirrorMap,clamp(uv-vec2(.0015,.001),.002,.998)).rgb*.25;vec3 c=mix(mix(vec3(.047,.028,.009),vec3(.025,.055,.042),highQuality),reflection*mix(vec3(.81,.83,.56),vec3(.91,.98,.95),highQuality),f);float fleck=pow(max(dot(reflect(-sunDir,n),eye),0.),180.);c+=vec3(.84,.68,.30)*fleck*.65;float thread=pow(max(0.,sin(p.y*17.+sin(p.x*2.)*.7-t*.52)),35.);c+=vec3(.025,.023,.009)*thread;float haze=smoothstep(45.,160.,distance(cameraPosition,vWorld));c=mix(c,vec3(.24,.30,.17),haze*.6);gl_FragColor=vec4(c,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
       }`}),[0,config.water.level,0]);water.castShadow=water.receiveShadow=false;
@@ -220,10 +221,11 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
       for(let i=0;i<12;i++)tree(THREE.MathUtils.lerp(config.water.basin.leftX,config.water.basin.rightX,(i+.5)/12),waterEnd+3,range(10,15),.5,true);
     }
     pools.forEach(p=>p.finish());
+    const presentation=createAmazonQuality({root,renderer,camera,treeRecords,pools:{leaves,smallLeaves,trunks,roots,vines,pebbles},barkMat,woodMat,darkWood,soil,leafMat,hemi,sun,ambient,fog,waterUniform:highQuality});presentation.setQuality(true);
     const resources=createResourceScope(root,{targets,shared:sharedResources});
     return {
       update(elapsed){if(resources.disposed)return;wind.value=elapsed;uniforms.time.value=elapsed;},
-      setQuality(fine){if(!resources.disposed)reflectionTarget.setSize(...config.quality[fine?'fine':'fast'].reflection);},
+      setQuality(fine){if(!resources.disposed){presentation.setQuality(fine);reflectionTarget.setSize(...config.quality.fine.reflection);}},
       renderReflection({frame,fine,force=false,before=()=>{},after=()=>{}}){
         if(resources.disposed||(!force&&frame%config.quality[fine?'fine':'fast'].reflectionEvery!==0))return;
         reflectionCamera.copy(camera,false);reflectionCamera.position.y=2*config.water.level-camera.position.y;camera.getWorldDirection(lookDirection);lookTarget.copy(camera.position).add(lookDirection);lookTarget.y=2*config.water.level-lookTarget.y;reflectionCamera.up.set(0,-1,0);reflectionCamera.lookAt(lookTarget);reflectionCamera.updateMatrixWorld();reflectionMatrix.multiplyMatrices(reflectionCamera.projectionMatrix,reflectionCamera.matrixWorldInverse);
@@ -231,7 +233,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
         try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parent,reflectionCamera);}
         finally{renderer.setRenderTarget(target);water.visible=visible;after();}
       },
-      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],platformShift,platformBounds:{...config.water.platform},riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines',...(config.water.basin?['right-water-basin']:[])]}),
+      getDiagnostics:()=>({disposed:resources.disposed,presentation:presentation.snapshot(),treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],platformShift,platformBounds:{...config.water.platform},riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines',...(config.water.basin?['right-water-basin']:[])]}),
       dispose(){if(resources.disposed)return;resources.dispose();if(parent.background===background)parent.background=previous.background;if(parent.fog===fog)parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;}
     };
   }catch(error){createResourceScope(root,{targets,shared:sharedResources}).dispose();parent.background=previous.background;parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;throw error;}

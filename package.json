@@ -1,6 +1,6 @@
 {
   "name": "lakeside-fishing",
-  "version": "0.74.0",
+  "version": "0.75.0",
   "private": true,
   "type": "module",
   "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
@@ -70,7 +70,9 @@
       "shop-progression.js",
       "redeem-codes.js",
       "multi-rod-rules.js",
-      "fishing-props.js"
+      "fishing-props.js",
+      "amazon-quality.js",
+      "render-settings.js"
     ],
     "styles": [
       "style.css"

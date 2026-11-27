@@ -1,3 +1,4 @@
+import {createRenderSettings,nextFrameTime} from './render-settings.js';
 import {mapUnlocked} from './shop-progression.js';
 import {createMapEntry} from './map-entry.js';
 import {createShop} from './shop.js';
@@ -29,10 +30,11 @@ if(!releaseVersion()){
   throw new Error('页面入口已更新，请点击重新加载以获取最新版本。');
 }
 
+const renderSettings=createRenderSettings();
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 let adaptiveScale=1;
-function applyResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,fine?1.4:1)*adaptiveScale);renderer.setSize(innerWidth,innerHeight);sceneDirty=true;}
+function applyResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.4)*adaptiveScale);renderer.setSize(innerWidth,innerHeight);sceneDirty=true;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -43,7 +45,7 @@ const encounters=()=>map?.context.encounters??getMapContext().encounters;
 const equipment=createIdleRod(camera),rod=equipment.root;
 
 let targetYaw=0,targetPitch=-.065,yaw=targetYaw,pitch=targetPitch,dragging=false,touchId=null;
-let lastX = 0, lastY = 0, fine = true, frame = 0, explored = false, contextLost = false;
+let lastX = 0, lastY = 0, fine = renderSettings.value.quality==='high', frame = 0, explored = false, contextLost = false;
 const keys = new Set(), toastElement = document.querySelector('#toast');
 let toastTimer;
 function toast(message) { toastElement.textContent = message; toastElement.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastElement.classList.remove('visible'), 2400); }
@@ -130,9 +132,12 @@ document.addEventListener('keydown',e=>{
 });
 document.querySelector('#reset').addEventListener('click',()=>{reset();setSettingsOpen(false);});
 document.querySelector('#quality').addEventListener('click', () => {
-  fine=!fine;adaptiveScale=1;applyResolution();renderer.shadowMap.enabled=fine;renderer.shadowMap.needsUpdate=true;map?.setQuality(fine);
-  document.querySelector('#quality span').textContent=`画质 · ${fine?'精细':'流畅'}`;toast(fine?'精细画质 · 树荫与池塘倒影已开启':'流畅画质 · 降低分辨率与反射更新频率');
+  fine=!fine;renderSettings.set({quality:fine?'high':'low'});adaptiveScale=1;applyResolution();renderer.shadowMap.enabled=true;renderer.shadowMap.needsUpdate=true;map?.setQuality(fine);
+  document.querySelector('#quality span').textContent=`画质 · ${fine?'高':'低'}`;toast(fine?'高画质已开启':'低画质已开启');
 });
+document.querySelector('#quality span').textContent=`画质 · ${fine?'高':'低'}`;
+const frameSelect=document.querySelector('#max-fps');frameSelect.value=String(renderSettings.value.maxFps);
+frameSelect.addEventListener('change',()=>{renderSettings.set({maxFps:Number(frameSelect.value)});TARGET_FPS=renderSettings.value.maxFps;frameSelect.value=String(TARGET_FPS);nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;slowSamples=0;toast('最高帧率 · '+TARGET_FPS+'帧');});
 async function fullscreen() {
   setSettingsOpen(false);
   try { if (document.fullscreenElement) await document.exitFullscreen();else if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();else toast('当前预览不支持全屏，可在浏览器中打开游戏'); }
@@ -160,19 +165,19 @@ window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();applyResolution();});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();contextLost=true;window.showGameError('浏览器的 3D 渲染被中断，请关闭部分标签页后点击重新加载。');});
 
-// The requested 25 FPS cap keeps GPU demand stable; motion uses elapsed seconds.
-const TARGET_FPS=25,FRAME_MS=1000/TARGET_FPS;
+// The display cap is independent of elapsed-time fishing rules and reflection cadence.
+let TARGET_FPS=renderSettings.value.maxFps;
 const clock=new THREE.Timer();clock.connect(document);
 let elapsed=0,nextFrame=performance.now(),sampleStart=performance.now(),sampleFrames=0,measuredFps=0,slowSamples=0;
 function animate(now){
   if(contextLost)return;
   requestAnimationFrame(animate);
-  if(inWorld||!map){clock.update();sceneDirty=false;nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
-  if(document.hidden){nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
+  if(inWorld||!map){clock.update();sceneDirty=false;nextFrame=now+1000/TARGET_FPS;sampleStart=now;sampleFrames=0;return;}
+  if(document.hidden){nextFrame=now+1000/TARGET_FPS;sampleStart=now;sampleFrames=0;return;}
   // Keep the last canvas as a static backdrop; resize requests one fresh frame.
-  if(gameTime.paused&&!sceneDirty){clock.update();nextFrame=now+FRAME_MS;sampleStart=now;sampleFrames=0;return;}
+  if(gameTime.paused&&!sceneDirty){clock.update();nextFrame=now+1000/TARGET_FPS;sampleStart=now;sampleFrames=0;return;}
   if(now<nextFrame)return;
-  nextFrame+=FRAME_MS;if(nextFrame<=now)nextFrame=now+FRAME_MS;
+  nextFrame=nextFrameTime(now,nextFrame,TARGET_FPS);
   const refreshScene=sceneDirty;sceneDirty=false;
   clock.update();const dt=gameTime.paused?0:Math.min(clock.getDelta(),.12);elapsed+=dt;
   fishing.update(gameTime.now(now/1000));ownerPanel.update();const tracked=fishing.view();
@@ -185,7 +190,7 @@ function animate(now){
   fishing.updateDistanceLabel();
   rod.position.y=-.19+Math.sin(elapsed*1.1)*.004;rod.rotation.z=Math.sin(elapsed*.65)*.003;
   map.update(elapsed);
-  map.renderReflection({frame,fine,force:refreshScene,before:()=>{rod.visible=false;fishing.hideReflection();},after:()=>fishing.restoreReflection()});
+  map.renderReflection({frame,fine,time:elapsed,force:refreshScene,before:()=>{rod.visible=false;fishing.hideReflection();},after:()=>fishing.restoreReflection()});
   renderer.render(scene,camera);frame++;sampleFrames++;
   if(gameTime.paused){sampleStart=now;sampleFrames=0;return;}
   if(frame===3){sampleStart=performance.now();sampleFrames=0;}

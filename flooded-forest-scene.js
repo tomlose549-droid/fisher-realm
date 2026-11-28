@@ -1,7 +1,7 @@
 import {createAmazonQuality} from './amazon-quality.js';
 import {bankPlantHeight,discardUnsupportedVegetation} from './foliage-support.js';
 import * as THREE from './vendor/three.module.js';
-import {riverBank,riverCenter,riverBankOffset,riverHalfWidth,amazonWaterMaxZ} from './maps/amazon-confluence.js';
+import {riverBank,riverCenter,riverBankOffset,riverHalfWidth,amazonWaterMaxZ,isAmazonWater} from './maps/amazon-confluence.js';
 import {AMAZON_FLOODED_FOREST} from './maps/amazon-flooded-forest.js';
 import {createResourceScope} from './scene-resources.js';
 
@@ -141,7 +141,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
       for(let k=0;k<4;k++){const length=h*range(.65,1.2);smallLeaves.add([x,.35,z],[broad?length*.65:length*.28,length,1],[range(.4,1.65),a+k*1.8,range(-.3,.3)],foliage[(i+k)%6]);}
       if(i%4===0)pebbles.add([x,.25,z],[range(.1,.45),range(.1,.3),range(.1,.4)],[0,range(0,7),0]);
     }
-    for(const [authoredX,z]of[[-19,21],[-22.8,25],[-11,35],[18,22],[19,13],[-22,30]]){const x=bankX(authoredX,z);for(let k=0;k<12;k++)smallLeaves.add([x,.35,z],[range(.65,1.25),range(1.8,3.1),1],[range(.4,1.5),k*.53,range(-.2,.2)],foliage[k%6]);}
+    for(const [authoredX,z]of[[-19,21],[-22.8,25],[-11,35],[18,22],[19,13],[-22,30]]){const x=bankX(authoredX,z),build=()=>{for(let k=0;k<12;k++)smallLeaves.add([x,.35,z],[range(.65,1.25),range(1.8,3.1),1],[range(.4,1.5),k*.53,range(-.2,.2)],foliage[k%6]);};if(isAmazonWater(x,z,1,config.water))removedUnsupported+=discardUnsupportedVegetation([smallLeaves],build);else build();}
     // Dense midstory hides bare ground and breaks up the tall trunks into layered jungle.
     for(let i=0;i<260;i++){
       const z=range(-100,46),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(1.4,9);if(inPlatformClearing(x,z))continue;
@@ -230,6 +230,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     const pads=pool(new THREE.CircleGeometry(1,14,.1,Math.PI*1.88),standard('#ffffff',{side:THREE.DoubleSide,roughness:.55}),false);
     for(let i=0;i<630;i++){const z=range(-130,42),side=i%2?1:-1,x=riverBank(z,side,config.water)-side*range(.12,2.7),s=range(.08,.25);pads.add([x,.018,z],[s,s,1],[-Math.PI/2,0,range(0,7)],foliage[i%6]);}
     pools.forEach(p=>p.finish());grass.mesh.computeBoundingBox();const submergedGrassTop=grass.mesh.boundingBox.max.y;
+    smallLeaves.mesh.name='amazon-smallLeaves-classic';
     const presentation=createAmazonQuality({root,renderer,camera,config,treeRecords,pools:{leaves,smallLeaves,trunks,roots,vines,pebbles},barkMat,woodMat,darkWood,soil,leafMat,hemi,sun,ambient,fog,waterUniform:highQuality});presentation.setQuality(true);
     const resources=createResourceScope(root,{targets,shared:sharedResources});
     return {

@@ -9,14 +9,11 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{localStorage.setItem('fisher-realm-inventory-v1',JSON.stringify({version:1,items:[{id:'1',name:'美洲鳗鲡',x:0,y:0}]}));});
   await page.goto('http://127.0.0.1:'+server.address().port+'/');await page.locator('#loading').waitFor({state:'hidden'});
-  await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>Boolean(window.lakeside),null,{timeout:10000});
+  await page.evaluate(()=>localStorage.setItem('fisher-realm-render-settings-v1',JSON.stringify({quality:'low'})));await require('./enter-lake.cjs')(page);await page.waitForFunction(()=>Boolean(window.lakeside),null,{timeout:10000});
   const initial=await page.evaluate(()=>window.lakeside.getState());
   assert.equal(initial.scene,'summer-pond');assert.equal(initial.treeCount,137);assert.equal(initial.targetFps,25);
   assert.deepEqual(initial.camera,[0,1.78,32]);assert.deepEqual(initial.chairs.map(c=>c.horizontalDistance),[10,0,10]);
-  await page.locator('#settings-toggle').click();await page.locator('#quality').click();
-  await page.waitForFunction(()=>window.lakeside.getState().map.reflectionSize[0]===640);
-  await page.locator('#quality').click();
-  await page.waitForFunction(()=>window.lakeside.getState().map.reflectionSize[0]===1024);
+  await page.evaluate(()=>window.lakeside.setQuality('medium'));await page.waitForFunction(()=>window.lakeside.getState().map.presentation.backend==='realistic');await page.evaluate(()=>window.lakeside.setQuality('low'));
   await page.locator('#help').click();await page.waitForFunction(()=>window.lakeside.getState().paused);
   const reports=await page.evaluate(async()=>{
     const check=(condition,message)=>{if(!condition)throw Error(message);};
@@ -31,10 +28,10 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
     const memory=[],cycleReports=[];
     try{
       for(let i=0;i<3;i++){
-        const map=await createMapRuntime({scene,camera,renderer});map.update(1);map.setQuality(false);
+        const map=await createMapRuntime({scene,camera,renderer,quality:'low'});map.update(1);await map.setQuality(false);
         check(camera.position.toArray().join(',')==='0,1.78,32'&&camera.rotation.x===-.065&&camera.rotation.y===0,'successful map creation did not apply spawn');
-        check(map.getDiagnostics().reflectionSize.join(',')==='640,400','fast reflection size');
-        map.setQuality(true);camera.updateMatrixWorld();map.renderReflection({frame:1,fine:true,force:true});renderer.render(scene,camera);
+        check(map.getDiagnostics().reflectionSize.join(',')==='1024,640','fast reflection size');
+        await map.setQuality('low');camera.updateMatrixWorld();map.renderReflection({frame:1,fine:true,force:true});renderer.render(scene,camera);
         if(i===0){
           const render=renderer.render;let after=false;renderer.render=()=>{throw Error('intentional reflection failure');};
           try{map.renderReflection({frame:2,fine:true,force:true,after:()=>{after=true;}});}catch(error){check(error.message==='intentional reflection failure','unexpected reflection error');}
@@ -71,7 +68,7 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
       const previousRenderer=JSON.stringify({exposure:renderer.toneMappingExposure,autoUpdate:renderer.shadowMap.autoUpdate,needsUpdate:renderer.shadowMap.needsUpdate});
       const create=document.createElement;
       document.createElement=function(tag,...args){if(tag==='canvas')throw Error('intentional map create failure');return create.call(this,tag,...args);};
-      try{await createMapRuntime({scene,camera,renderer});throw Error('expected creation failure');}
+      try{await createMapRuntime({scene,camera,renderer,quality:'low'});throw Error('expected creation failure');}
       catch(error){check(error.message==='intentional map create failure','wrong create failure');}
       finally{document.createElement=create;}
       check(scene.children.length===2&&scene.background===background&&scene.fog===fog,'failed construction leaked map state');
@@ -90,24 +87,17 @@ const server=http.createServer((req,res)=>{try{const name=decodeURIComponent(new
       fishing=createFishing({scene:ownScene,camera:ownCamera,player:position,mapContext:context,canvas:{setPointerCapture(){},focus(){},style:{}},idleRod:equipment.root,toast(){},onReady(){},onCast(){},onHook(){},onCaught:name=>catches.push(name),getTime:()=>clock});
       check(fishing.key({code:'Space',repeat:false}),'cast input rejected');clock=1;fishing.update(clock);
       const waiting=fishing.getState();check(waiting.fishName===pool[0].name,'injected fish pool ignored');
-      check(Math.abs(waiting.visuals.lineEnd[1]-(7.095+Math.sin(2)*.015))<1e-5,'waiting float ignored water height');
+      check(waiting.visuals.groundRodCount===1,'waiting ground rod missing');
       check(Math.abs(waiting.visuals.waves.last.landing.position[1]-7.012)<1e-9,'landing ignored water height');
-      clock=6;fishing.key({code:'KeyA',repeat:false});fishing.update(clock);
-      check(fishing.getState().state==='fighting','hook input failed');
-      check(Math.abs(fishing.getState().visuals.waves.last.hook.position[1]-7.012)<1e-9,'hook ignored water height');
-      fishing.pointerDown({button:0,pointerId:1});clock=11.1;fishing.update(clock);
-      const caught=fishing.getState();check(caught.state==='caught'&&catches.join(',')===pool[0].name,'catch callback failed');
-      check(caught.visuals.rodLift>.025&&caught.visuals.retrievalProgress>0,'catch lift animation missing');
-      check(Math.abs(caught.visuals.waves.last.catch.position[1]-7.012)<1e-9,'catch wave ignored water height');
-      clock=11.8;fishing.update(clock);check(fishing.getState().state==='idle','recast reset failed');
+      // Full three-rod hook/net flow is exercised in realistic-lake.cjs; this suite isolates map context ownership.
       fishing.dispose();fishing.dispose();check(ownScene.children.length===0,'fishing resources leaked');
       check(equipment.root.parent===ownCamera,'fishing disposed shared idle rod');equipment.dispose();
     }finally{fishing?.dispose();equipment.dispose();window.Audio=AudioBefore;Math.random=random;}
     check(localStorage.getItem('fisher-realm-inventory-v1')===inventoryBefore,'map lifecycle changed inventory');
     check(localStorage.getItem('fisher-realm-discoveries-v1')===guideBefore,'map lifecycle changed discoveries');
-    check(listMaps().map(m=>m.id).join(',')==='summer-pond,amazon-confluence','registered production maps differ');
+    check(listMaps().map(m=>m.id).join(',')==='summer-pond,amazon-confluence,amazon-flooded-forest,sac-actun','registered production maps differ');
     return {cycles:cycleReports,memory,customShorelineMatchesTerrainAndShader:true,failedConstructionPreservesCamera:true,constructionFailureCleaned:true,reflectionFailureRestored:true,
-      injectedWaterAndPool:true,catchAndRetrieval:true,globalSavesPreserved:true,registeredMaps:listMaps()};
+      injectedWaterAndPool:true,globalSavesPreserved:true,registeredMaps:listMaps()};
   });
   assert.deepEqual(errors,[]);console.log(JSON.stringify(reports));
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}})().catch(error=>{console.error(error);process.exitCode=1;});

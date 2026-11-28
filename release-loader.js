@@ -14,7 +14,7 @@
     }finally{clearTimeout(timer);}
     if(typeof manifest.version!=='string'||!/^\d+\.\d+\.\d+(?:-[\da-z.-]+)?(?:\+[\da-z.-]+)?$/i.test(manifest.version))throw new Error('版本号无效。');
     const release=manifest.fisherRealm;
-    if(release?.modules?.includes('render-settings.js')&&!document.querySelector('#max-fps')){const next=new URL(location.href);if(next.searchParams.get('scene-ui')===manifest.version)throw new Error('页面仍是旧版本，请稍后重试。存档已保留。');next.searchParams.set('scene-ui',manifest.version);location.replace(next.href);return;}
+    if(release?.modules?.includes('render-settings.js')&&(!document.querySelector('#max-fps')||(release.modules.includes('rendering/scene.js')&&!document.querySelector('#auto-render')))){const next=new URL(location.href);if(next.searchParams.get('scene-ui')===manifest.version)throw new Error('页面仍是旧版本，请稍后重试。存档已保留。');next.searchParams.set('scene-ui',manifest.version);location.replace(next.href);return;}
     if(!release||!Array.isArray(release.modules)||!release.modules.includes('main.js')||!Array.isArray(release.styles)||!release.styles.length||!Array.isArray(release.preloadImages))throw new Error('版本资源清单无效。');
     const localPath=path=>{
       if(typeof path!=='string'||!path||path.startsWith('/')||path.includes('..')||/[\\:?#]/.test(path))throw new Error('资源路径无效。');
@@ -25,7 +25,7 @@
     const assetUrl=path=>{const url=new URL(path,base);if(url.origin!==base.origin||!url.pathname.startsWith(base.pathname))throw new Error('资源路径超出游戏目录。');url.searchParams.set('v',manifest.version);return url.href;};
     globalThis.fisherRelease=Object.freeze({version:manifest.version,assetUrl});
     document.querySelector('#game-version').textContent='V'+manifest.version;
-    const imports=Object.fromEntries(release.modules.map(path=>[localPath(path).href,assetUrl(path)]));
+    const imports=Object.fromEntries(release.modules.map(path=>[localPath(path).href,assetUrl(path)]));imports.three=assetUrl('vendor/three.module.js');for(const path of release.modules)if(path.startsWith('vendor/addons/'))imports['three/addons/'+path.slice('vendor/addons/'.length)]=assetUrl(path);
     const map=document.createElement('script');map.type='importmap';map.textContent=JSON.stringify({imports});document.head.append(map);
     // Do not start rendering until the versioned stylesheet is available.
     await Promise.all(release.styles.map(path=>new Promise((resolve,reject)=>{

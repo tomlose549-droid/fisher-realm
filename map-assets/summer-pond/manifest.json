@@ -1,0 +1,1031 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "buildVersion": 4,
+      "id": "rock_moss_set_01",
+      "source": "https://polyhaven.com/a/rock_moss_set_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_moss_set_01/rock_moss_set_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/rock_moss_set_01/lod0.gltf",
+          "bytes": 5723,
+          "triangles": 7569,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-0.ktx2",
+              "bytes": 230315,
+              "sha256": "929461867db4468808dbf7c08f67bc4081c5d672a19ac33bd6013dca97710b2b"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-1.ktx2",
+              "bytes": 138601,
+              "sha256": "ba0fe1421f1fabfefdbb535f3ca490963b932941110d0fe2455b2e89b3fa5326"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-2.ktx2",
+              "bytes": 34571,
+              "sha256": "56f4d2049921c2e834b3c8e183fe23e43d46447d4aeec6aec9349506818c783a"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/lod0-0.bin",
+              "bytes": 201416,
+              "sha256": "563f8b2acc6ffc80b35b0d1a45db1a28975a316e08722cd2f5021333b5c7d4e2"
+            }
+          ],
+          "sha256": "9a23b2599493051804b6070c142a294efc221b1e423f4b5d8d8abb95b5b91286"
+        },
+        {
+          "file": "map-assets/summer-pond/models/rock_moss_set_01/lod1.gltf",
+          "bytes": 5707,
+          "triangles": 2205,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-0.ktx2",
+              "bytes": 230315,
+              "sha256": "929461867db4468808dbf7c08f67bc4081c5d672a19ac33bd6013dca97710b2b"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-1.ktx2",
+              "bytes": 138601,
+              "sha256": "ba0fe1421f1fabfefdbb535f3ca490963b932941110d0fe2455b2e89b3fa5326"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-2.ktx2",
+              "bytes": 34571,
+              "sha256": "56f4d2049921c2e834b3c8e183fe23e43d46447d4aeec6aec9349506818c783a"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/lod1-0.bin",
+              "bytes": 66800,
+              "sha256": "a0994ef5ce0d2566e0b849c3dbe7083bf1224ce9f75cff1349228a46f67a6a42"
+            }
+          ],
+          "sha256": "1b9c7a4755b35d70d780b230e383be3e5587c4dcb1ada2da298c2c333623ee23"
+        },
+        {
+          "file": "map-assets/summer-pond/models/rock_moss_set_01/lod2.gltf",
+          "bytes": 5683,
+          "triangles": 671,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-0.ktx2",
+              "bytes": 230315,
+              "sha256": "929461867db4468808dbf7c08f67bc4081c5d672a19ac33bd6013dca97710b2b"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-1.ktx2",
+              "bytes": 138601,
+              "sha256": "ba0fe1421f1fabfefdbb535f3ca490963b932941110d0fe2455b2e89b3fa5326"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-2.ktx2",
+              "bytes": 34571,
+              "sha256": "56f4d2049921c2e834b3c8e183fe23e43d46447d4aeec6aec9349506818c783a"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/lod2-0.bin",
+              "bytes": 25756,
+              "sha256": "ca4ee739533fe7f413b04756868b4f3686e1356f7b5046e2fdc82d3915c3f5d8"
+            }
+          ],
+          "sha256": "0a0103489698fd3d6c11d151aeaf32c11dcec4bf4882333626cc68f08d6a48c7"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "fern_02",
+      "source": "https://polyhaven.com/a/fern_02",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/fern_02/fern_02_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/fern_02/lod0.gltf",
+          "bytes": 4061,
+          "triangles": 4045,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-0.ktx2",
+              "bytes": 230735,
+              "sha256": "3814afdd7dce734f5b5b869ad0492c854d9d74628e67ff7994680979fb1ec9fd"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-1.ktx2",
+              "bytes": 111566,
+              "sha256": "df9bb83d885d45e636968789351b15b553872a63d6ec2c00b93984ddf281dbb5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-2.ktx2",
+              "bytes": 26554,
+              "sha256": "bca888aeff1bbb8683b78e709870c2b9fa74a18b11fe91f749e7b48aeb38091e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/lod0-0.bin",
+              "bytes": 114004,
+              "sha256": "a7f54fd3c3d958220ed88f1112a1c6850440d96caee6efd13a2caca5d04e67d2"
+            }
+          ],
+          "sha256": "6e1cd983f85147ea220c76b3d1cf2f4f16fa2933ca33db93865d0ff06fd7c561"
+        },
+        {
+          "file": "map-assets/summer-pond/models/fern_02/lod1.gltf",
+          "bytes": 4041,
+          "triangles": 984,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-0.ktx2",
+              "bytes": 230735,
+              "sha256": "3814afdd7dce734f5b5b869ad0492c854d9d74628e67ff7994680979fb1ec9fd"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-1.ktx2",
+              "bytes": 111566,
+              "sha256": "df9bb83d885d45e636968789351b15b553872a63d6ec2c00b93984ddf281dbb5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-2.ktx2",
+              "bytes": 26554,
+              "sha256": "bca888aeff1bbb8683b78e709870c2b9fa74a18b11fe91f749e7b48aeb38091e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/lod1-0.bin",
+              "bytes": 33588,
+              "sha256": "69831d33b5bdd111bd12d694253baccbf4e010f61ffec7403e5baf7cd585e953"
+            }
+          ],
+          "sha256": "44eaf15ad52030541861649c015e26ff491b1bbccaaadf5b8f5c8cb943591828"
+        },
+        {
+          "file": "map-assets/summer-pond/models/fern_02/lod2.gltf",
+          "bytes": 4024,
+          "triangles": 413,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-0.ktx2",
+              "bytes": 230735,
+              "sha256": "3814afdd7dce734f5b5b869ad0492c854d9d74628e67ff7994680979fb1ec9fd"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-1.ktx2",
+              "bytes": 111566,
+              "sha256": "df9bb83d885d45e636968789351b15b553872a63d6ec2c00b93984ddf281dbb5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-2.ktx2",
+              "bytes": 26554,
+              "sha256": "bca888aeff1bbb8683b78e709870c2b9fa74a18b11fe91f749e7b48aeb38091e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/lod2-0.bin",
+              "bytes": 14000,
+              "sha256": "41a0ec9e94e9e3ec68515d21f1c81fc5f957776f27c87dee8a065f4cae39f8a0"
+            }
+          ],
+          "sha256": "a19654767baa58fa559f14fe3db8ce02b6ac52b25e91d0d61fa55a52b5df14d6"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "anthurium_botany_01",
+      "source": "https://polyhaven.com/a/anthurium_botany_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/anthurium_botany_01/anthurium_botany_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/anthurium_botany_01/lod0.gltf",
+          "bytes": 5755,
+          "triangles": 8046,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-0.ktx2",
+              "bytes": 290676,
+              "sha256": "ab2dd618881d6bcdc4fd76ddc1ab6ebe100b92ee44985aefad76eba61e329a1c"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-1.ktx2",
+              "bytes": 144969,
+              "sha256": "f113f038e6ec9033034abb3009e90c34a6effd5032172595d77f85a0d4aa0113"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-2.ktx2",
+              "bytes": 43264,
+              "sha256": "e093541564370dc9afe73807cc82d6d38cfe0e693d8d6f35fd15a80ac2a00683"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/lod0-0.bin",
+              "bytes": 239548,
+              "sha256": "6eb77f8229a184b9387156fc0ef979a6f25c0473079ad9d12a61d985db9113c4"
+            }
+          ],
+          "sha256": "6856e6c2b192d5c94c6ba94999955fa8f89e4c223cf0007d18db3b3370bb9858"
+        },
+        {
+          "file": "map-assets/summer-pond/models/anthurium_botany_01/lod1.gltf",
+          "bytes": 5736,
+          "triangles": 2848,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-0.ktx2",
+              "bytes": 290676,
+              "sha256": "ab2dd618881d6bcdc4fd76ddc1ab6ebe100b92ee44985aefad76eba61e329a1c"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-1.ktx2",
+              "bytes": 144969,
+              "sha256": "f113f038e6ec9033034abb3009e90c34a6effd5032172595d77f85a0d4aa0113"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-2.ktx2",
+              "bytes": 43264,
+              "sha256": "e093541564370dc9afe73807cc82d6d38cfe0e693d8d6f35fd15a80ac2a00683"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/lod1-0.bin",
+              "bytes": 89768,
+              "sha256": "2a01552a850f6c08c0bcf8a404f8ff78393b558945936d4c99cc74679d5dd65a"
+            }
+          ],
+          "sha256": "7ff5c4a065ddd34bc4a1a5aa386312dd40e939e961234c58b7d2ab7ad8487a47"
+        },
+        {
+          "file": "map-assets/summer-pond/models/anthurium_botany_01/lod2.gltf",
+          "bytes": 5736,
+          "triangles": 2854,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-0.ktx2",
+              "bytes": 290676,
+              "sha256": "ab2dd618881d6bcdc4fd76ddc1ab6ebe100b92ee44985aefad76eba61e329a1c"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-1.ktx2",
+              "bytes": 144969,
+              "sha256": "f113f038e6ec9033034abb3009e90c34a6effd5032172595d77f85a0d4aa0113"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-2.ktx2",
+              "bytes": 43264,
+              "sha256": "e093541564370dc9afe73807cc82d6d38cfe0e693d8d6f35fd15a80ac2a00683"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/lod2-0.bin",
+              "bytes": 89996,
+              "sha256": "28edce57cee466f421d46b115bc95ccb241e81d2c9f74e5179684663de8e71e7"
+            }
+          ],
+          "sha256": "2fc1ca8ed00432b2f049bc524d96536cd6d62df06d6568980c4c950e86352a28"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "tree_stump_01",
+      "source": "https://polyhaven.com/a/tree_stump_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/tree_stump_01/tree_stump_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/tree_stump_01/lod0.glb",
+          "bytes": 867652,
+          "triangles": 10258,
+          "resources": [],
+          "sha256": "303b549c3053bde2d1cc287390db62ec97d0a0e7b86ace6dcc88894d92bd9a1f"
+        },
+        {
+          "file": "map-assets/summer-pond/models/tree_stump_01/lod1.gltf",
+          "bytes": 1803,
+          "triangles": 2871,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-0.ktx2",
+              "bytes": 338066,
+              "sha256": "835c0718bf79ba432f6b4c0fcb9bcd29eb4d058c48be6bfad017a44b24464541"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-1.ktx2",
+              "bytes": 207531,
+              "sha256": "5b5a6d96be710e1f4e7f21e3ed3a6d2b2f0636964edd92f07c7d660748513d7f"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-2.ktx2",
+              "bytes": 57055,
+              "sha256": "a83b80142c1dce0336c6ae7468ade99c3c07b13a67774a98b2fb622bc2386f24"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/lod1-0.bin",
+              "bytes": 82636,
+              "sha256": "fedba6ecb9a1e785774380429a9d39862a557ab7de92f314efe11686592e06ad"
+            }
+          ],
+          "sha256": "72395ca3c1e51c19d31b612c615e83fa2dd8eb2190ea4488866e09c45cc3aa35"
+        },
+        {
+          "file": "map-assets/summer-pond/models/tree_stump_01/lod2.gltf",
+          "bytes": 1798,
+          "triangles": 736,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-0.ktx2",
+              "bytes": 338066,
+              "sha256": "835c0718bf79ba432f6b4c0fcb9bcd29eb4d058c48be6bfad017a44b24464541"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-1.ktx2",
+              "bytes": 207531,
+              "sha256": "5b5a6d96be710e1f4e7f21e3ed3a6d2b2f0636964edd92f07c7d660748513d7f"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-2.ktx2",
+              "bytes": 57055,
+              "sha256": "a83b80142c1dce0336c6ae7468ade99c3c07b13a67774a98b2fb622bc2386f24"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/lod2-0.bin",
+              "bytes": 26048,
+              "sha256": "52820ee2ee0b73f77b39e19b7dedd2cbcdfa81b55692e17511c08ac84ec311f3"
+            }
+          ],
+          "sha256": "a106d69b41e8ee1510802a22cba2d40175aaf40d9d7bdbdaae000777b6b62efd"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "island_tree_01",
+      "source": "https://polyhaven.com/a/island_tree_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/island_tree_01/island_tree_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/island_tree_01/lod0.gltf",
+          "bytes": 5027,
+          "triangles": 35817,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-0.ktx2",
+              "bytes": 336596,
+              "sha256": "d2d2ccdaad9f22d8573110bf99a9a04319a102598b7f418fc0773aab9f267f09"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-1.ktx2",
+              "bytes": 197773,
+              "sha256": "1394b9caa5845722dcb759a88761231e6caa130a052522748db150ab4132d4b5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-2.ktx2",
+              "bytes": 54327,
+              "sha256": "acaa93ae56f8eeb60d96c95e897a45e4d38994f386a422da10483a941794cf4e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-3.ktx2",
+              "bytes": 268754,
+              "sha256": "429c861b7f8d4b880518f2a801dbc039b6b0d850f5faf462c1cc6803f604d625"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-4.ktx2",
+              "bytes": 66966,
+              "sha256": "cf3e3dee8485e464d50c8a3b0db072747a543d857bfe75cc29f72e843d48afa5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-5.ktx2",
+              "bytes": 45624,
+              "sha256": "dfa5b5f25b6d2be2875f8afc87959e92901b48c6800bf608645a906c71bc4ac3"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-6.ktx2",
+              "bytes": 334926,
+              "sha256": "3bcf3f4ff3beba515e0ecdde8b5119f712bbdb57f1efb4a1eb7961d8dc6903c9"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-7.ktx2",
+              "bytes": 198215,
+              "sha256": "2300a114d7c4f6a36200b1a0d62cd727e7093c3a913722fc507a8007cb7534ec"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-8.ktx2",
+              "bytes": 46227,
+              "sha256": "49c74021d64ba5572d5a10780bef4c825e58cf311cf7787ff509b67ef2c00c98"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/lod0-0.bin",
+              "bytes": 4849304,
+              "sha256": "0910e77ea3c88b29f58806a412735a894e3686ca104f781605400e5fd585c2fe"
+            }
+          ],
+          "sha256": "b8cc99934d77eae6c25e6f50567b1a05a063fba52af698260efce67d916e1537"
+        },
+        {
+          "file": "map-assets/summer-pond/models/island_tree_01/impostor.glb",
+          "bytes": 96428,
+          "triangles": 4,
+          "resources": [],
+          "impostor": true,
+          "sha256": "b2af093fd0096395832c85827df353ad365eebccef2cf0381aa045ca9487fca1"
+        },
+        {
+          "file": "map-assets/summer-pond/models/island_tree_01/impostor.glb",
+          "bytes": 96428,
+          "triangles": 4,
+          "resources": [],
+          "impostor": true,
+          "sha256": "b2af093fd0096395832c85827df353ad365eebccef2cf0381aa045ca9487fca1"
+        }
+      ]
+    }
+  ],
+  "textures": {
+    "gravelly_sand": {
+      "map": {
+        "file": "map-assets/summer-pond/textures/gravelly_sand-map.ktx2",
+        "bytes": 193739
+      },
+      "normalMap": {
+        "file": "map-assets/summer-pond/textures/gravelly_sand-normalMap.ktx2",
+        "bytes": 331442
+      },
+      "roughnessMap": {
+        "file": "map-assets/summer-pond/textures/gravelly_sand-roughnessMap.ktx2",
+        "bytes": 26012
+      },
+      "aoMap": {
+        "file": "map-assets/summer-pond/textures/gravelly_sand-aoMap.ktx2",
+        "bytes": 55203
+      }
+    },
+    "brown_mud_02": {
+      "map": {
+        "file": "map-assets/summer-pond/textures/brown_mud_02-map.ktx2",
+        "bytes": 189144
+      },
+      "normalMap": {
+        "file": "map-assets/summer-pond/textures/brown_mud_02-normalMap.ktx2",
+        "bytes": 336232
+      },
+      "roughnessMap": {
+        "file": "map-assets/summer-pond/textures/brown_mud_02-roughnessMap.ktx2",
+        "bytes": 52834
+      },
+      "aoMap": {
+        "file": "map-assets/summer-pond/textures/brown_mud_02-aoMap.ktx2",
+        "bytes": 57436
+      }
+    }
+  },
+  "environment": "map-assets/summer-pond/environment/sky-clouds-1k.hdr",
+  "sources": [
+    {
+      "buildVersion": 4,
+      "id": "rock_moss_set_01",
+      "source": "https://polyhaven.com/a/rock_moss_set_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_moss_set_01/rock_moss_set_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/rock_moss_set_01/lod0.gltf",
+          "bytes": 5723,
+          "triangles": 7569,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-0.ktx2",
+              "bytes": 230315,
+              "sha256": "929461867db4468808dbf7c08f67bc4081c5d672a19ac33bd6013dca97710b2b"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-1.ktx2",
+              "bytes": 138601,
+              "sha256": "ba0fe1421f1fabfefdbb535f3ca490963b932941110d0fe2455b2e89b3fa5326"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-2.ktx2",
+              "bytes": 34571,
+              "sha256": "56f4d2049921c2e834b3c8e183fe23e43d46447d4aeec6aec9349506818c783a"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/lod0-0.bin",
+              "bytes": 201416,
+              "sha256": "563f8b2acc6ffc80b35b0d1a45db1a28975a316e08722cd2f5021333b5c7d4e2"
+            }
+          ],
+          "sha256": "9a23b2599493051804b6070c142a294efc221b1e423f4b5d8d8abb95b5b91286"
+        },
+        {
+          "file": "map-assets/summer-pond/models/rock_moss_set_01/lod1.gltf",
+          "bytes": 5707,
+          "triangles": 2205,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-0.ktx2",
+              "bytes": 230315,
+              "sha256": "929461867db4468808dbf7c08f67bc4081c5d672a19ac33bd6013dca97710b2b"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-1.ktx2",
+              "bytes": 138601,
+              "sha256": "ba0fe1421f1fabfefdbb535f3ca490963b932941110d0fe2455b2e89b3fa5326"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-2.ktx2",
+              "bytes": 34571,
+              "sha256": "56f4d2049921c2e834b3c8e183fe23e43d46447d4aeec6aec9349506818c783a"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/lod1-0.bin",
+              "bytes": 66800,
+              "sha256": "a0994ef5ce0d2566e0b849c3dbe7083bf1224ce9f75cff1349228a46f67a6a42"
+            }
+          ],
+          "sha256": "1b9c7a4755b35d70d780b230e383be3e5587c4dcb1ada2da298c2c333623ee23"
+        },
+        {
+          "file": "map-assets/summer-pond/models/rock_moss_set_01/lod2.gltf",
+          "bytes": 5683,
+          "triangles": 671,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-0.ktx2",
+              "bytes": 230315,
+              "sha256": "929461867db4468808dbf7c08f67bc4081c5d672a19ac33bd6013dca97710b2b"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-1.ktx2",
+              "bytes": 138601,
+              "sha256": "ba0fe1421f1fabfefdbb535f3ca490963b932941110d0fe2455b2e89b3fa5326"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/textures/map-2.ktx2",
+              "bytes": 34571,
+              "sha256": "56f4d2049921c2e834b3c8e183fe23e43d46447d4aeec6aec9349506818c783a"
+            },
+            {
+              "file": "map-assets/summer-pond/models/rock_moss_set_01/lod2-0.bin",
+              "bytes": 25756,
+              "sha256": "ca4ee739533fe7f413b04756868b4f3686e1356f7b5046e2fdc82d3915c3f5d8"
+            }
+          ],
+          "sha256": "0a0103489698fd3d6c11d151aeaf32c11dcec4bf4882333626cc68f08d6a48c7"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "fern_02",
+      "source": "https://polyhaven.com/a/fern_02",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/fern_02/fern_02_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/fern_02/lod0.gltf",
+          "bytes": 4061,
+          "triangles": 4045,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-0.ktx2",
+              "bytes": 230735,
+              "sha256": "3814afdd7dce734f5b5b869ad0492c854d9d74628e67ff7994680979fb1ec9fd"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-1.ktx2",
+              "bytes": 111566,
+              "sha256": "df9bb83d885d45e636968789351b15b553872a63d6ec2c00b93984ddf281dbb5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-2.ktx2",
+              "bytes": 26554,
+              "sha256": "bca888aeff1bbb8683b78e709870c2b9fa74a18b11fe91f749e7b48aeb38091e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/lod0-0.bin",
+              "bytes": 114004,
+              "sha256": "a7f54fd3c3d958220ed88f1112a1c6850440d96caee6efd13a2caca5d04e67d2"
+            }
+          ],
+          "sha256": "6e1cd983f85147ea220c76b3d1cf2f4f16fa2933ca33db93865d0ff06fd7c561"
+        },
+        {
+          "file": "map-assets/summer-pond/models/fern_02/lod1.gltf",
+          "bytes": 4041,
+          "triangles": 984,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-0.ktx2",
+              "bytes": 230735,
+              "sha256": "3814afdd7dce734f5b5b869ad0492c854d9d74628e67ff7994680979fb1ec9fd"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-1.ktx2",
+              "bytes": 111566,
+              "sha256": "df9bb83d885d45e636968789351b15b553872a63d6ec2c00b93984ddf281dbb5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-2.ktx2",
+              "bytes": 26554,
+              "sha256": "bca888aeff1bbb8683b78e709870c2b9fa74a18b11fe91f749e7b48aeb38091e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/lod1-0.bin",
+              "bytes": 33588,
+              "sha256": "69831d33b5bdd111bd12d694253baccbf4e010f61ffec7403e5baf7cd585e953"
+            }
+          ],
+          "sha256": "44eaf15ad52030541861649c015e26ff491b1bbccaaadf5b8f5c8cb943591828"
+        },
+        {
+          "file": "map-assets/summer-pond/models/fern_02/lod2.gltf",
+          "bytes": 4024,
+          "triangles": 413,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-0.ktx2",
+              "bytes": 230735,
+              "sha256": "3814afdd7dce734f5b5b869ad0492c854d9d74628e67ff7994680979fb1ec9fd"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-1.ktx2",
+              "bytes": 111566,
+              "sha256": "df9bb83d885d45e636968789351b15b553872a63d6ec2c00b93984ddf281dbb5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/textures/map-2.ktx2",
+              "bytes": 26554,
+              "sha256": "bca888aeff1bbb8683b78e709870c2b9fa74a18b11fe91f749e7b48aeb38091e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/fern_02/lod2-0.bin",
+              "bytes": 14000,
+              "sha256": "41a0ec9e94e9e3ec68515d21f1c81fc5f957776f27c87dee8a065f4cae39f8a0"
+            }
+          ],
+          "sha256": "a19654767baa58fa559f14fe3db8ce02b6ac52b25e91d0d61fa55a52b5df14d6"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "anthurium_botany_01",
+      "source": "https://polyhaven.com/a/anthurium_botany_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/anthurium_botany_01/anthurium_botany_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/anthurium_botany_01/lod0.gltf",
+          "bytes": 5755,
+          "triangles": 8046,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-0.ktx2",
+              "bytes": 290676,
+              "sha256": "ab2dd618881d6bcdc4fd76ddc1ab6ebe100b92ee44985aefad76eba61e329a1c"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-1.ktx2",
+              "bytes": 144969,
+              "sha256": "f113f038e6ec9033034abb3009e90c34a6effd5032172595d77f85a0d4aa0113"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-2.ktx2",
+              "bytes": 43264,
+              "sha256": "e093541564370dc9afe73807cc82d6d38cfe0e693d8d6f35fd15a80ac2a00683"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/lod0-0.bin",
+              "bytes": 239548,
+              "sha256": "6eb77f8229a184b9387156fc0ef979a6f25c0473079ad9d12a61d985db9113c4"
+            }
+          ],
+          "sha256": "6856e6c2b192d5c94c6ba94999955fa8f89e4c223cf0007d18db3b3370bb9858"
+        },
+        {
+          "file": "map-assets/summer-pond/models/anthurium_botany_01/lod1.gltf",
+          "bytes": 5736,
+          "triangles": 2848,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-0.ktx2",
+              "bytes": 290676,
+              "sha256": "ab2dd618881d6bcdc4fd76ddc1ab6ebe100b92ee44985aefad76eba61e329a1c"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-1.ktx2",
+              "bytes": 144969,
+              "sha256": "f113f038e6ec9033034abb3009e90c34a6effd5032172595d77f85a0d4aa0113"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-2.ktx2",
+              "bytes": 43264,
+              "sha256": "e093541564370dc9afe73807cc82d6d38cfe0e693d8d6f35fd15a80ac2a00683"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/lod1-0.bin",
+              "bytes": 89768,
+              "sha256": "2a01552a850f6c08c0bcf8a404f8ff78393b558945936d4c99cc74679d5dd65a"
+            }
+          ],
+          "sha256": "7ff5c4a065ddd34bc4a1a5aa386312dd40e939e961234c58b7d2ab7ad8487a47"
+        },
+        {
+          "file": "map-assets/summer-pond/models/anthurium_botany_01/lod2.gltf",
+          "bytes": 5736,
+          "triangles": 2854,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-0.ktx2",
+              "bytes": 290676,
+              "sha256": "ab2dd618881d6bcdc4fd76ddc1ab6ebe100b92ee44985aefad76eba61e329a1c"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-1.ktx2",
+              "bytes": 144969,
+              "sha256": "f113f038e6ec9033034abb3009e90c34a6effd5032172595d77f85a0d4aa0113"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/textures/map-2.ktx2",
+              "bytes": 43264,
+              "sha256": "e093541564370dc9afe73807cc82d6d38cfe0e693d8d6f35fd15a80ac2a00683"
+            },
+            {
+              "file": "map-assets/summer-pond/models/anthurium_botany_01/lod2-0.bin",
+              "bytes": 89996,
+              "sha256": "28edce57cee466f421d46b115bc95ccb241e81d2c9f74e5179684663de8e71e7"
+            }
+          ],
+          "sha256": "2fc1ca8ed00432b2f049bc524d96536cd6d62df06d6568980c4c950e86352a28"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "tree_stump_01",
+      "source": "https://polyhaven.com/a/tree_stump_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/tree_stump_01/tree_stump_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/tree_stump_01/lod0.glb",
+          "bytes": 867652,
+          "triangles": 10258,
+          "resources": [],
+          "sha256": "303b549c3053bde2d1cc287390db62ec97d0a0e7b86ace6dcc88894d92bd9a1f"
+        },
+        {
+          "file": "map-assets/summer-pond/models/tree_stump_01/lod1.gltf",
+          "bytes": 1803,
+          "triangles": 2871,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-0.ktx2",
+              "bytes": 338066,
+              "sha256": "835c0718bf79ba432f6b4c0fcb9bcd29eb4d058c48be6bfad017a44b24464541"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-1.ktx2",
+              "bytes": 207531,
+              "sha256": "5b5a6d96be710e1f4e7f21e3ed3a6d2b2f0636964edd92f07c7d660748513d7f"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-2.ktx2",
+              "bytes": 57055,
+              "sha256": "a83b80142c1dce0336c6ae7468ade99c3c07b13a67774a98b2fb622bc2386f24"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/lod1-0.bin",
+              "bytes": 82636,
+              "sha256": "fedba6ecb9a1e785774380429a9d39862a557ab7de92f314efe11686592e06ad"
+            }
+          ],
+          "sha256": "72395ca3c1e51c19d31b612c615e83fa2dd8eb2190ea4488866e09c45cc3aa35"
+        },
+        {
+          "file": "map-assets/summer-pond/models/tree_stump_01/lod2.gltf",
+          "bytes": 1798,
+          "triangles": 736,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-0.ktx2",
+              "bytes": 338066,
+              "sha256": "835c0718bf79ba432f6b4c0fcb9bcd29eb4d058c48be6bfad017a44b24464541"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-1.ktx2",
+              "bytes": 207531,
+              "sha256": "5b5a6d96be710e1f4e7f21e3ed3a6d2b2f0636964edd92f07c7d660748513d7f"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/textures/map-2.ktx2",
+              "bytes": 57055,
+              "sha256": "a83b80142c1dce0336c6ae7468ade99c3c07b13a67774a98b2fb622bc2386f24"
+            },
+            {
+              "file": "map-assets/summer-pond/models/tree_stump_01/lod2-0.bin",
+              "bytes": 26048,
+              "sha256": "52820ee2ee0b73f77b39e19b7dedd2cbcdfa81b55692e17511c08ac84ec311f3"
+            }
+          ],
+          "sha256": "a106d69b41e8ee1510802a22cba2d40175aaf40d9d7bdbdaae000777b6b62efd"
+        }
+      ]
+    },
+    {
+      "buildVersion": 4,
+      "id": "island_tree_01",
+      "source": "https://polyhaven.com/a/island_tree_01",
+      "license": "CC0-1.0",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/island_tree_01/island_tree_01_1k.gltf",
+      "lods": [
+        {
+          "file": "map-assets/summer-pond/models/island_tree_01/lod0.gltf",
+          "bytes": 5027,
+          "triangles": 35817,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-0.ktx2",
+              "bytes": 336596,
+              "sha256": "d2d2ccdaad9f22d8573110bf99a9a04319a102598b7f418fc0773aab9f267f09"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-1.ktx2",
+              "bytes": 197773,
+              "sha256": "1394b9caa5845722dcb759a88761231e6caa130a052522748db150ab4132d4b5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-2.ktx2",
+              "bytes": 54327,
+              "sha256": "acaa93ae56f8eeb60d96c95e897a45e4d38994f386a422da10483a941794cf4e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-3.ktx2",
+              "bytes": 268754,
+              "sha256": "429c861b7f8d4b880518f2a801dbc039b6b0d850f5faf462c1cc6803f604d625"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-4.ktx2",
+              "bytes": 66966,
+              "sha256": "cf3e3dee8485e464d50c8a3b0db072747a543d857bfe75cc29f72e843d48afa5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-5.ktx2",
+              "bytes": 45624,
+              "sha256": "dfa5b5f25b6d2be2875f8afc87959e92901b48c6800bf608645a906c71bc4ac3"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-6.ktx2",
+              "bytes": 334926,
+              "sha256": "3bcf3f4ff3beba515e0ecdde8b5119f712bbdb57f1efb4a1eb7961d8dc6903c9"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-7.ktx2",
+              "bytes": 198215,
+              "sha256": "2300a114d7c4f6a36200b1a0d62cd727e7093c3a913722fc507a8007cb7534ec"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-8.ktx2",
+              "bytes": 46227,
+              "sha256": "49c74021d64ba5572d5a10780bef4c825e58cf311cf7787ff509b67ef2c00c98"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/lod0-0.bin",
+              "bytes": 4849304,
+              "sha256": "0910e77ea3c88b29f58806a412735a894e3686ca104f781605400e5fd585c2fe"
+            }
+          ],
+          "sha256": "b8cc99934d77eae6c25e6f50567b1a05a063fba52af698260efce67d916e1537"
+        },
+        {
+          "file": "map-assets/summer-pond/models/island_tree_01/lod1.gltf",
+          "bytes": 5023,
+          "triangles": 31257,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-0.ktx2",
+              "bytes": 336596,
+              "sha256": "d2d2ccdaad9f22d8573110bf99a9a04319a102598b7f418fc0773aab9f267f09"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-1.ktx2",
+              "bytes": 197773,
+              "sha256": "1394b9caa5845722dcb759a88761231e6caa130a052522748db150ab4132d4b5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-2.ktx2",
+              "bytes": 54327,
+              "sha256": "acaa93ae56f8eeb60d96c95e897a45e4d38994f386a422da10483a941794cf4e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-3.ktx2",
+              "bytes": 268754,
+              "sha256": "429c861b7f8d4b880518f2a801dbc039b6b0d850f5faf462c1cc6803f604d625"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-4.ktx2",
+              "bytes": 66966,
+              "sha256": "cf3e3dee8485e464d50c8a3b0db072747a543d857bfe75cc29f72e843d48afa5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-5.ktx2",
+              "bytes": 45624,
+              "sha256": "dfa5b5f25b6d2be2875f8afc87959e92901b48c6800bf608645a906c71bc4ac3"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-6.ktx2",
+              "bytes": 334926,
+              "sha256": "3bcf3f4ff3beba515e0ecdde8b5119f712bbdb57f1efb4a1eb7961d8dc6903c9"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-7.ktx2",
+              "bytes": 198215,
+              "sha256": "2300a114d7c4f6a36200b1a0d62cd727e7093c3a913722fc507a8007cb7534ec"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-8.ktx2",
+              "bytes": 46227,
+              "sha256": "49c74021d64ba5572d5a10780bef4c825e58cf311cf7787ff509b67ef2c00c98"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/lod1-0.bin",
+              "bytes": 3268148,
+              "sha256": "e5afeca7947b9f0fd810ff64004cd2f59b4bd0b20cdb9e7f93448c04134e519a"
+            }
+          ],
+          "sha256": "d2bcb2231b24464141707e59f857924518064f124bac58988bbccf812e451f32"
+        },
+        {
+          "file": "map-assets/summer-pond/models/island_tree_01/lod2.gltf",
+          "bytes": 5019,
+          "triangles": 29851,
+          "resources": [
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-0.ktx2",
+              "bytes": 336596,
+              "sha256": "d2d2ccdaad9f22d8573110bf99a9a04319a102598b7f418fc0773aab9f267f09"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-1.ktx2",
+              "bytes": 197773,
+              "sha256": "1394b9caa5845722dcb759a88761231e6caa130a052522748db150ab4132d4b5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-2.ktx2",
+              "bytes": 54327,
+              "sha256": "acaa93ae56f8eeb60d96c95e897a45e4d38994f386a422da10483a941794cf4e"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-3.ktx2",
+              "bytes": 268754,
+              "sha256": "429c861b7f8d4b880518f2a801dbc039b6b0d850f5faf462c1cc6803f604d625"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-4.ktx2",
+              "bytes": 66966,
+              "sha256": "cf3e3dee8485e464d50c8a3b0db072747a543d857bfe75cc29f72e843d48afa5"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-5.ktx2",
+              "bytes": 45624,
+              "sha256": "dfa5b5f25b6d2be2875f8afc87959e92901b48c6800bf608645a906c71bc4ac3"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-6.ktx2",
+              "bytes": 334926,
+              "sha256": "3bcf3f4ff3beba515e0ecdde8b5119f712bbdb57f1efb4a1eb7961d8dc6903c9"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-7.ktx2",
+              "bytes": 198215,
+              "sha256": "2300a114d7c4f6a36200b1a0d62cd727e7093c3a913722fc507a8007cb7534ec"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/textures/map-8.ktx2",
+              "bytes": 46227,
+              "sha256": "49c74021d64ba5572d5a10780bef4c825e58cf311cf7787ff509b67ef2c00c98"
+            },
+            {
+              "file": "map-assets/summer-pond/models/island_tree_01/lod2-0.bin",
+              "bytes": 2849380,
+              "sha256": "79d601b70b34aa78b13327ad55f8b80f1c3388bb05e925d7900a9c8304bc8eb4"
+            }
+          ],
+          "sha256": "a3258429c0b3a77eac7886f1a7f3cc824c4eb0221552aa5151555c80be8a6ad8"
+        }
+      ]
+    },
+    {
+      "id": "gravelly_sand",
+      "source": "https://polyhaven.com/a/gravelly_sand",
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "brown_mud_02",
+      "source": "https://polyhaven.com/a/brown_mud_02",
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "kloofendal_48d_partly_cloudy_puresky",
+      "source": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+      "license": "CC0-1.0",
+      "file": "map-assets/summer-pond/environment/sky-clouds-1k.hdr",
+      "bytes": 1435119
+    }
+  ]
+}

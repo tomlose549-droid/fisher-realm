@@ -94,3 +94,9 @@
 ## 任务解锁门槛
 
 新存档与无shop新任务字段的旧存档仅显示美国奥基乔比湖。shop主线1解锁amazon-confluence，主线3解锁amazon-flooded-forest，支线2任务2解锁sac-actun；三者费用分别为28/43/45金币。world-map.js按当前存档隐藏未解锁光点/预览，main.js注入mapUnlocked供入场控制器检查，未解锁不得创建场景或扣入场费。解锁来自独立任务链永久领奖前缀，owner hack退回任务不撤销解锁。地图数据/场景/鱼池仍独立于这些存档门槛。
+
+### 写实湖岸显示资源（0.77.0）
+
+`map-runtime.js`统一提供异步`setQuality`、`update`、`resize`、`renderReflection`、诊断与幂等释放。地图/鱼池/水域上下文仍来自本目录，显示资源位于`rendering/`；当前只为summer-pond启用中高档写实资源。画质变化不可重建MapSession或Fishing，准备期间由入口暂停GameTime；回到世界地图释放当前显示资源。
+
+`rendering/config.js`保存本图视觉分档和原水域参数引用，`map-assets/summer-pond/manifest.json`声明模型、LOD、PBR贴图、环境和授权。新生态可复用Assets/ResourceScope/水体与实例批次接口，先提供独立视觉配置与素材清单，再在地图定义绑定自己的显示构建器；不得覆盖已有图配置或另建主循环/输入/存档。几何岸线与玩法水域须共用同一份参数，沉木与植被始终纯视觉。

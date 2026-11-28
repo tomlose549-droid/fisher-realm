@@ -1,3 +1,4 @@
+import {createSceneQuality} from './scene-quality.js';
 import * as THREE from './vendor/three.module.js';
 import {SUMMER_POND,shorelinePoint,groundHeight} from './maps/summer-pond.js';
 import {createResourceScope} from './scene-resources.js';
@@ -30,7 +31,7 @@ export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sha
   function box(parent,material,p,s){return mesh(boxGeometry,material,parent,p,s);}
   function beam(parent,a,b,r1,r2,material,sides=8){const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),d=end.clone().sub(start);const m=mesh(new THREE.CylinderGeometry(r2,r1,d.length(),sides),material,parent);m.position.copy(start).add(end).multiplyScalar(.5);m.quaternion.setFromUnitVectors(Y,d.normalize());return m;}
   const pools=[],dummy=new THREE.Object3D(),color=new THREE.Color();
-  function pool(geometry,material,shadow=true){const entries=[];const p={entries,add(position,scale,rotation,tint){entries.push({position,scale,rotation,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geometry,material,entries.length);entries.forEach((e,i)=>{dummy.position.set(...e.position);dummy.scale.set(...e.scale);dummy.quaternion.identity();if(e.rotation?.isQuaternion)dummy.quaternion.copy(e.rotation);else if(e.rotation)dummy.rotation.set(...e.rotation);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));});inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();scene.add(inst);}};pools.push(p);return p;}
+  function pool(geometry,material,shadow=true){const entries=[];const p={entries,add(position,scale,rotation,tint){entries.push({position,scale,rotation,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geometry,material,entries.length);entries.forEach((e,i)=>{dummy.position.set(...e.position);dummy.scale.set(...e.scale);dummy.quaternion.identity();if(e.rotation?.isQuaternion)dummy.quaternion.copy(e.rotation);else if(e.rotation)dummy.rotation.set(...e.rotation);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));});inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();scene.add(inst);p.mesh=inst;}};pools.push(p);return p;}
   function pooledBeam(p,a,b,r1,r2){const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),d=end.clone().sub(start);p.add(start.clone().add(end).multiplyScalar(.5).toArray(),[r1,d.length(),r2],new THREE.Quaternion().setFromUnitVectors(Y,d.normalize()),'#77583b');}
 
   // Saturated summer sky and rounded white cloud banks.
@@ -133,11 +134,11 @@ export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sha
 
   const reflectionTarget=new THREE.WebGLRenderTarget(...config.quality.fine.reflection,{depthBuffer:true}),reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4();
   targets.push(reflectionTarget);
-  const waterUniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()},shoreCenter:{value:new THREE.Vector2(...config.water.center)},shoreRadii:{value:new THREE.Vector2(...config.water.radii)}};
+  const highQuality={value:0};const waterUniforms={highQuality,time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()},shoreCenter:{value:new THREE.Vector2(...config.water.center)},shoreRadii:{value:new THREE.Vector2(...config.water.radii)}};
   const water=mesh(new THREE.PlaneGeometry(480,480),new THREE.ShaderMaterial({uniforms:waterUniforms,
     vertexShader:'varying vec3 vWorld;varying vec4 vMirror;uniform mat4 mirrorMatrix;void main(){vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;vMirror=mirrorMatrix*w;gl_Position=projectionMatrix*viewMatrix*w;}',
-    fragmentShader:`uniform float time;uniform sampler2D mirrorMap;uniform vec3 sunDir;uniform vec2 shoreCenter;uniform vec2 shoreRadii;varying vec3 vWorld;varying vec4 vMirror;
-    void main(){vec2 p=vWorld.xz;float t=time;float a=sin(p.x*3.5+p.y*1.2+t*.8)+.38*sin(p.y*8.-t*1.1);float b=cos(p.y*5.5-p.x*.8-t*.75);vec3 n=normalize(vec3(a*.017,1.,b*.013));vec3 eye=normalize(cameraPosition-vWorld);float f=.24+.46*pow(1.-max(dot(eye,n),0.),2.5);vec2 uv=vMirror.xy/vMirror.w*.5+.5;uv+=n.xz*.035;vec3 reflected=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb;float shore=clamp((length((p-shoreCenter)/shoreRadii)-.83)/.16,0.,1.);vec3 base=mix(vec3(.024,.16,.095),vec3(.15,.23,.075),shore*.65);vec3 c=mix(base,reflected*vec3(.68,.87,.72),f*.85);float spec=pow(max(dot(reflect(-sunDir,n),eye),0.),170.);c+=vec3(.9,.8,.43)*spec*.65;float threads=pow(max(0.,sin(p.y*9.+sin(p.x*.8)+t*.9)),25.);c+=vec3(.025,.045,.035)*threads*(1.-shore*.5);gl_FragColor=vec4(c,1.);
+    fragmentShader:`uniform float highQuality;uniform float time;uniform sampler2D mirrorMap;uniform vec3 sunDir;uniform vec2 shoreCenter;uniform vec2 shoreRadii;varying vec3 vWorld;varying vec4 vMirror;
+    void main(){vec2 p=vWorld.xz;float t=time;float a=sin(p.x*3.5+p.y*1.2+t*.8)+.38*sin(p.y*8.-t*1.1);float b=cos(p.y*5.5-p.x*.8-t*.75);vec3 n=normalize(vec3(a*.017,1.,b*.013));n=normalize(mix(n,vec3(0.,1.,0.),highQuality*.28));vec3 eye=normalize(cameraPosition-vWorld);float f=mix(.24,.29,highQuality)+.46*pow(1.-max(dot(eye,n),0.),2.5);vec2 uv=vMirror.xy/vMirror.w*.5+.5;uv+=n.xz*.035;vec3 reflected=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb;float shore=clamp((length((p-shoreCenter)/shoreRadii)-.83)/.16,0.,1.);vec3 base=mix(vec3(.024,.16,.095),vec3(.15,.23,.075),shore*.65);vec3 c=mix(base,reflected*mix(vec3(.68,.87,.72),vec3(.82,.96,.91),highQuality),f*.85);float spec=pow(max(dot(reflect(-sunDir,n),eye),0.),170.);c+=vec3(.9,.8,.43)*spec*.65;float threads=pow(max(0.,sin(p.y*9.+sin(p.x*.8)+t*.9)),25.);c+=vec3(.025,.045,.035)*threads*(1.-shore*.5);gl_FragColor=vec4(c,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }`}),scene);water.rotation.x=-Math.PI/2;water.position.y=config.water.level;water.castShadow=false;water.receiveShadow=false;
@@ -146,6 +147,7 @@ export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sha
   const ripples=[];for(let i=0;i<6;i++){const ring=mesh(new THREE.RingGeometry(.98,1,40),new THREE.MeshBasicMaterial({color:'#b9cf88',transparent:true,opacity:.10,side:THREE.DoubleSide,depthWrite:false}),scene,[range(-19,19),.009,range(-35,19)]);ring.rotation.x=-Math.PI/2;ring.castShadow=false;ring.userData.phase=random();ripples.push(ring);}
   const birds=[];for(let i=0;i<5;i++){const b=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-.3,.07,0),new THREE.Vector3(0,0,0),new THREE.Vector3(.3,.07,0)]),new THREE.LineBasicMaterial({color:'#3f6260'}));b.position.set(range(-25,25),range(17,23),range(-80,-54));b.userData.origin=b.position.clone();b.userData.phase=range(0,6);scene.add(b);birds.push(b);}
   pools.forEach(p=>p.finish());
+  const presentation=createSceneQuality({root:scene,renderer,config,materials:[{material:materials.bark,kind:'bark',tint:'#d4c3a9'},{material:materials.wood,kind:'wood',tint:'#e2c6a0'},{material:materials.darkWood,kind:'wood',tint:'#9d8568'},{material:trunkPool.mesh.material,kind:'bark',tint:'#d5bea1'},{material:land.material,kind:'grassland',tint:'#ffffff'},{material:dirtMat,kind:'ground',keepMap:true},{material:rockPool.mesh.material,kind:'stone',tint:'#ffffff'},{material:leafMat,kind:'leaf',tint:'#eaf2d6'},{material:crownPool.mesh.material,kind:'leaf',tint:'#ffffff'},{material:bushPool.mesh.material,kind:'leaf',tint:'#ffffff'},{material:grassMaterial,kind:'leaf',tint:'#ffffff'}],pools:[{pool:trunkPool,kind:'trunk'},{pool:crownPool,kind:'crown'},{pool:leafPool,kind:'leaf'},{pool:bushPool,kind:'bush'},{pool:rockPool,kind:'rock'},{pool:grassPool,kind:'grass'}],lights:[{light:hemi,intensity:1.9,tint:'#d8e8ed',groundTint:'#8b9265'},{light:sun,intensity:2.6,tint:'#fff1d2'}],waterUniform:highQuality});
   const resources=createResourceScope(scene,{targets,shared:sharedResources}),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();
   return {
     update(elapsed){
@@ -154,7 +156,7 @@ export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sha
       for(const b of birds){const o=b.userData.origin;b.position.x=o.x+Math.sin(elapsed*.035+b.userData.phase)*8;b.position.y=o.y+Math.sin(elapsed*2+b.userData.phase)*.12;b.rotation.z=Math.sin(elapsed*3+b.userData.phase)*.1;}
       vegetationTime.value=elapsed;waterUniforms.time.value=elapsed;
     },
-    setQuality(fine){if(!resources.disposed)reflectionTarget.setSize(...config.quality[fine?'fine':'fast'].reflection);},
+    setQuality(fine){if(!resources.disposed){presentation.setQuality(fine);reflectionTarget.setSize(...config.quality.fine.reflection);}},
     renderReflection({frame,fine,force=false,before=()=>{},after=()=>{}}){
       if(resources.disposed||(!force&&!(frame>0&&frame%config.quality[fine?'fine':'fast'].reflectionEvery===0)))return;
       reflectionCamera.copy(camera,false);reflectionCamera.position.y=2*water.position.y-camera.position.y;
@@ -165,7 +167,7 @@ export function createPond(parentScene, camera, renderer,config=SUMMER_POND,{sha
       try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parentScene,reflectionCamera);}
       finally{renderer.setRenderTarget(target);water.visible=visible;after();}
     },
-    getDiagnostics:()=>({chairs,treeCount:treeRecords.length,disposed:resources.disposed,objects:scene.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height]}),
+    getDiagnostics:()=>({presentation:presentation.snapshot(),chairs,treeCount:treeRecords.length,disposed:resources.disposed,objects:scene.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height]}),
     dispose(){
       if(resources.disposed)return;resources.dispose();
       if(parentScene.background===background)parentScene.background=previous.background;

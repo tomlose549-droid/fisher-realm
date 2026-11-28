@@ -1,23 +1,8 @@
 import * as THREE from './vendor/three.module.js';
 
-// Shared small procedural PBR textures; no network assets or gameplay RNG.
-function surfaceTexture(kind,w,h){
- const height=new Float32Array(w*h),pixels=new Uint8Array(w*h*4),normal=new Uint8Array(w*h*4);
- const noise=(x,y)=>{let a=Math.imul(x+31,374761393)^Math.imul(y+17,668265263);a=Math.imul(a^(a>>>13),1274126177);return ((a^(a>>>16))>>>0)/4294967295;};
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  const u=x/w,v=y/h,n=noise(x,y),coarse=noise(x>>3,y>>3);let a,rgb;
-  if(kind==='leaf'){const vein=Math.exp(-Math.abs(u-.5)*100),ribs=Math.pow(Math.max(0,Math.cos(v*95+Math.abs(u-.5)*20)),12);a=.52+vein*.3+ribs*.1+n*.05;rgb=[86+a*66,119+a*66,47+a*45];}
-  else if(kind==='wood'){const grain=Math.sin(u*21+Math.sin(v*150)*.12+Math.sin(u*6)*2);a=.45+grain*.17+coarse*.17+n*.06;rgb=[99+a*59,78+a*49,53+a*36];}
-  else if(kind==='bark'){const furrow=Math.pow(Math.abs(Math.sin(u*57+Math.sin(v*19)*.9+Math.sin(v*71)*.12)),.35);a=.12+furrow*.65+coarse*.13+n*.08;const moss=Math.max(0,Math.sin(u*22+v*7))*.15;rgb=[46+a*64-moss*10,44+a*57+moss*25,29+a*42];}
-  else{a=.15+coarse*.55+n*.3;rgb=[68+a*55,64+a*39,38+a*31];}
-  const i=y*w+x,k=i*4;height[i]=a;pixels[k]=rgb[0];pixels[k+1]=rgb[1];pixels[k+2]=rgb[2];pixels[k+3]=255;
- }
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x,k=i*4,dx=height[y*w+(x+1)%w]-height[y*w+(x+w-1)%w],dy=height[((y+1)%h)*w+x]-height[((y+h-1)%h)*w+x],l=Math.hypot(dx*1.8,dy*1.8,1);normal[k]=128-dx*1.8/l*127;normal[k+1]=128-dy*1.8/l*127;normal[k+2]=128+127/l;normal[k+3]=255;}
- const make=(data,color)=>{const t=new THREE.DataTexture(data,w,h);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.generateMipmaps=true;t.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;t.needsUpdate=true;return t;};
- return {map:make(pixels,true),normalMap:make(normal,false)};
-}
+import {surfaceTexture} from './scene-materials.js';
 
-export function createAmazonQuality({root,renderer,camera,pools,treeRecords,barkMat,woodMat,darkWood,soil,leafMat,hemi,sun,ambient,fog,waterUniform}){
+export function createAmazonQuality({root,renderer,camera,config,pools,treeRecords,barkMat,woodMat,darkWood,soil,leafMat,hemi,sun,ambient,fog,waterUniform}){
  const textures={bark:surfaceTexture('bark',512,512),wood:surfaceTexture('wood',512,512),ground:surfaceTexture('ground',512,512),leaf:surfaceTexture('leaf',128,256)};
  textures.bark.map.repeat.set(2,3);textures.bark.normalMap.repeat.set(2,3);
  const materialPairs=new Map();
@@ -25,7 +10,7 @@ export function createAmazonQuality({root,renderer,camera,pools,treeRecords,bark
  material(barkMat,'bark');material(woodMat,'wood');const dark=material(darkWood,'wood');dark.color.set('#8e7860');material(soil,'ground');material(leafMat,'leaf');
  const bindings=[];root.traverse(o=>{if(o.isMesh&&materialPairs.has(o.material))bindings.push({mesh:o,low:o.material,high:materialPairs.get(o.material)});});
  const highRoot=new THREE.Group();highRoot.name='amazon-high-quality';root.add(highRoot);const legacy=[],chunks=[],geometryCache=new Map();
- const station={x:root.userData.stationX,z:28};
+ const station={x:config.spawn.position[0],z:config.spawn.position[2]};
  function foliageGeometry(original,level){const key=original.uuid+':'+level;if(geometryCache.has(key))return geometryCache.get(key);if(level===2){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,-.5,.5,0,0,1,.035,.5,.5,0],3));g.setAttribute('uv',new THREE.Float32BufferAttribute([.5,1,0,.5,.5,0,1,.5],2));g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();geometryCache.set(key,g);return g;}const rows=level===0?5:3,pos=[],uv=[],indices=[];
   for(let j=0;j<=rows;j++)for(let i=0;i<3;i++){const t=j/rows,u=i/2,x=(u-.5)*Math.pow(Math.sin(Math.PI*t),.62);pos.push(x,t,Math.sin(t*Math.PI)*.11-Math.abs(x)*.16);uv.push(u,1-t);if(i&&j){const n=j*3+i;indices.push(n,n-1,n-3,n-1,n-4,n-3);}}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();geometryCache.set(key,g);return g;
@@ -49,10 +34,10 @@ export function createAmazonQuality({root,renderer,camera,pools,treeRecords,bark
  for(let i=0;i<720;i++){const a=rand()*Math.PI*2,r=Math.sqrt(rand()),x=128+Math.cos(a)*r*115,y=128+Math.sin(a)*r*96;const light=1-y/256;ctx.fillStyle=`rgb(${Math.floor(38+light*48+rand()*25)},${Math.floor(68+light*55+rand()*25)},${Math.floor(24+light*19)})`;ctx.beginPath();ctx.ellipse(x,y,4+rand()*10,2+rand()*5,rand()*6.28,0,Math.PI*2);ctx.fill();}
  const crownMap=new THREE.CanvasTexture(canvas);crownMap.colorSpace=THREE.SRGBColorSpace;
  const crownMat=new THREE.MeshStandardMaterial({map:crownMap,alphaTest:.45,side:THREE.DoubleSide,roughness:.85,emissive:'#304620',emissiveMap:crownMap,emissiveIntensity:.22});
- const cards=[];for(const t of treeRecords)for(let j=0;j<4;j++){const angle=j*2.4+rand(),r=1.3+rand()*2.2;for(let k=0;k<3;k++){const o=new THREE.Object3D();o.position.set(t.x+Math.cos(angle)*r,t.h*(.88+rand()*.13),t.z+Math.sin(angle)*r);o.rotation.set(rand()*.25,k*Math.PI/3+angle,rand()*.3-.15);o.scale.set(5+rand()*3,3+rand()*2,1);o.updateMatrix();cards.push(o.matrix.clone());}}
+ const cards=[];for(const t of treeRecords)for(let j=0;j<4;j++){const angle=j*2.4+rand(),r=1.3+rand()*2.2;for(let k=0;k<3;k++){const o=new THREE.Object3D();o.position.set((t.top?.[0]??t.x)+Math.cos(angle)*r,t.h-1.2+rand()*1.3,(t.top?.[2]??t.z)+Math.sin(angle)*r);o.rotation.set(rand()*.25,k*Math.PI/3+angle,rand()*.3-.15);o.scale.set(5+rand()*3,3+rand()*2,1);o.updateMatrix();cards.push(o.matrix.clone());}}
  const crowns=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),crownMat,cards.length);cards.forEach((m,i)=>crowns.setMatrixAt(i,m));crowns.name='amazon-leafy-crowns';crowns.castShadow=false;crowns.receiveShadow=true;crowns.computeBoundingSphere();highRoot.add(crowns);
- let high=true;
- function setQuality(value){high=!!value;highRoot.visible=high;legacy.forEach(o=>o.visible=!high);bindings.forEach(b=>{b.mesh.material=high?b.high:b.low;});hemi.intensity=high?2.6:2.3;sun.intensity=high?2.8:3.4;ambient.intensity=high?.72:.55;hemi.color.set(high?'#e4f0e6':'#e0edc9');hemi.groundColor.set(high?'#625e48':'#706246');sun.color.set(high?'#fff2d3':'#fff0ba');fog.color.set(high?'#b0c4b8':'#a5b78f');fog.near=high?65:55;fog.far=high?195:170;renderer.toneMappingExposure=high?1.02:.94;waterUniform.value=high?1:0;renderer.shadowMap.needsUpdate=true;}
+ const forest=config.id==='amazon-flooded-forest',base={hemi:hemi.intensity,sun:sun.intensity,ambient:ambient.intensity,sky:hemi.color.clone(),ground:hemi.groundColor.clone(),sunColor:sun.color.clone(),fog:fog.color.clone(),near:fog.near,far:fog.far,exposure:renderer.toneMappingExposure};let high=true;
+ function setQuality(value){high=!!value;highRoot.visible=high;legacy.forEach(o=>o.visible=!high);bindings.forEach(b=>{b.mesh.material=high?b.high:b.low;});hemi.intensity=high?(forest?2.0:2.6):base.hemi;sun.intensity=high?(forest?2.1:2.8):base.sun;ambient.intensity=high?(forest?.5:.72):base.ambient;hemi.color.copy(high?new THREE.Color(forest?'#dce8ce':'#e4f0e6'):base.sky);hemi.groundColor.copy(high?new THREE.Color(forest?'#424e33':'#625e48'):base.ground);sun.color.copy(high?new THREE.Color('#fff2d3'):base.sunColor);fog.color.copy(high?new THREE.Color(forest?'#829c87':'#b0c4b8'):base.fog);fog.near=high?(forest?43:65):base.near;fog.far=high?(forest?160:195):base.far;renderer.toneMappingExposure=high?(forest?.95:1.02):base.exposure;waterUniform.value=high?1:0;renderer.shadowMap.needsUpdate=true;}
  // Both material alternatives stay owned by the one root, even when detached from visible meshes.
  const assets=new THREE.Mesh(new THREE.BufferGeometry(),[...materialPairs.keys(),...materialPairs.values()]);assets.name='amazon-quality-resources';assets.visible=false;root.add(assets);
  return {setQuality,snapshot:()=>({quality:high?'high':'low',chunkCount:chunks.length,lodLevels:3})};

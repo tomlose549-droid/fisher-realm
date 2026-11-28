@@ -10,7 +10,7 @@ export async function createMapRuntime({scene,camera,renderer,id=DEFAULT_MAP_ID,
   const reflections=createReflectionSchedule((definition.config.quality.fine.reflectionEvery??3)/25);
   camera.position.set(...context.spawn.position);camera.rotation.set(context.spawn.pitch,context.spawn.yaw,0);
   return Object.freeze({context,playerPosition:new THREE.Vector3(...context.spawn.position),
-    update:elapsed=>view.update(elapsed),setQuality:fine=>view.setQuality(id==='amazon-confluence'?fine:true),
+    update:elapsed=>view.update(elapsed),setQuality:fine=>view.setQuality(fine),
     renderReflection:options=>{if(Number.isFinite(options.time)){if(reflections.due(options.time,options.force))view.renderReflection({...options,fine:true,force:true});}else view.renderReflection(options);},
     getDiagnostics:()=>view.getDiagnostics(),dispose:()=>view.dispose()});
 }

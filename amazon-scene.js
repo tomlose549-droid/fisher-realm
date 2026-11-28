@@ -1,3 +1,4 @@
+import {bankPlantHeight,discardUnsupportedVegetation} from './foliage-support.js';
 import {createAmazonQuality} from './amazon-quality.js';
 import * as THREE from './vendor/three.module.js';
 import {AMAZON_CONFLUENCE,riverBank,riverCenter,riverBankOffset,riverHalfWidth,amazonWaterMaxZ} from './maps/amazon-confluence.js';
@@ -7,7 +8,7 @@ import {createResourceScope} from './scene-resources.js';
 export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{sharedResources=new Set()}={}){
   const root=new THREE.Group();root.name='map-'+config.id;root.userData.stationX=config.spawn.position[0];parent.add(root);
   const previous={background:parent.background,fog:parent.fog,exposure:renderer.toneMappingExposure,auto:renderer.shadowMap.autoUpdate,dirty:renderer.shadowMap.needsUpdate};
-  const targets=[];
+  const targets=[];let removedUnsupported=0;
   try{
     let seed=621831;
     const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
@@ -58,7 +59,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     function mesh(geo,mat,p,s,parentNode=root){const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);m.castShadow=m.receiveShadow=true;parentNode.add(m);return m;}
     const cube=new THREE.BoxGeometry(1,1,1),cylinder=new THREE.CylinderGeometry(1,1,1,10),sphere=new THREE.SphereGeometry(1,10,7);
     const pools=[];
-    function pool(geo,mat,shadow=true,parentNode=root){const entries=[];const result={add(p,s,r=null,tint=null){entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();parentNode.add(inst);result.mesh=inst;}};pools.push(result);return result;}
+    function pool(geo,mat,shadow=true,parentNode=root){const entries=[];const result={entries,add(p,s,r=null,tint=null){if(mat===leafMat&&p[1]===.35)p=[p[0],bankPlantHeight(p[0],p[2],config.water),p[2]];entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();parentNode.add(inst);result.mesh=inst;}};pools.push(result);return result;}
     const trunks=pool(new THREE.CylinderGeometry(.68,1,1,12,3),barkMat),roots=pool(new THREE.CylinderGeometry(.48,1,1,8,2),barkMat),vines=pool(new THREE.CylinderGeometry(.7,1,1,5),standard('#4b5330'));
     function beam(target,a,b,radius,taper=1,tint=null){const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),delta=to.clone().sub(from);target.add(from.clone().add(to).multiplyScalar(.5).toArray(),[radius,delta.length(),radius*taper],new THREE.Quaternion().setFromUnitVectors(Y,delta.normalize()),tint);}
     function leafGeometry(rows=3){
@@ -87,9 +88,9 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     const treeRecords=[];
     function tree(x,z,h,r,far=false){
       if(inPlatformClearing(x,z))return;
-      const lean=range(-1.6,1.6),base=.35;treeRecords.push({x,z,h});beam(trunks,[x,base,z],[x+lean,h,z+range(-1,1)],r);
+      const lean=range(-1.6,1.6),base=bankPlantHeight(x,z,config.water),top=[x+lean,h,z+range(-1,1)];treeRecords.push({x,z,h,top});beam(trunks,[x,base,z],top,r);
       for(let k=0;k<(far?3:7);k++){const a=k*Math.PI*2/(far?3:7)+range(-.18,.18),length=range(2,4.5)*r,ex=x+Math.cos(a)*length,ez=z+Math.sin(a)*length;
-        const side=x<riverCenter(z)?-1:1,edge=riverBank(ez,side,config.water),inWater=side<0?ex>edge:ex<edge,y=inWater?-.05:.38;
+        const side=x<riverCenter(z)?-1:1,edge=riverBank(ez,side,config.water),inWater=side<0?ex>edge:ex<edge,y=inWater?-.05:bankPlantHeight(ex,ez,config.water);
         beam(roots,[x,base+range(.6,2)*r,z],[ex,y,ez],r*range(.28,.55),.65);beam(roots,[ex,y,ez],[ex+Math.cos(a)*range(.7,1.8),y-.04,ez+Math.sin(a)*range(.7,1.8)],r*.13);
       }
       for(let k=0;k<(far?3:5);k++){
@@ -97,10 +98,10 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
         beam(trunks,[x+lean*.7,h*.62,z],[cx,cy,cz],r*.25);
         for(let j=0;j<(far||z< -55?2:4);j++){const la=a+j*1.5,reach=range(1.8,3.8);leafyTwig([cx,cy,cz],[cx+Math.cos(la)*reach,cy+range(-.8,1.2),cz+Math.sin(la)*reach],far||z< -55?4:6,range(.6,1.1));}
       }
-      if(!far&&z> -48)for(let k=0;k<2;k++){
+      if(!far&&z> -48)removedUnsupported+=discardUnsupportedVegetation([vines,smallLeaves],()=>{for(let k=0;k<2;k++){
         const vx=x+range(-1.8,1.8),vz=z+range(-1,1),bottom=range(1.6,4),top=h*range(.65,.92);let from=[vx,top,vz];
         for(let y=top-1;y>bottom;y-=1){const to=[vx+Math.sin(y*.65+k)*.32,y,vz+Math.cos(y*.5)*.3];beam(vines,from,to,.025);from=to;if(y%2<1)smallLeaves.add(to,[.25,.5,1],[range(.1,2),range(0,7),0],foliage[k+1]);}
-      }
+      }});
     }
     // Near trees carry roots and hanging vines; distant trees need only instanced silhouettes.
     for(const side of [-1,1])for(let row=0;row<2;row++)for(let j=0;j<21;j++){
@@ -111,15 +112,17 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     // Lower arching boughs form an overhead rainforest canopy rather than rows of bare poles.
     for(const side of [-1,1])for(let j=0;j<10;j++){
       const z=22-j*11+range(-2,2),x=riverBank(z,side,config.water)+side*range(1,3),h=range(6.5,11),reach=range(6,12),tip=[x-side*reach,h+range(0,2),z-3];
-      beam(trunks,[x,.6,z],[x-side*1.8,h*.55,z-1],range(.4,.7));beam(trunks,[x-side*1.8,h*.55,z-1],tip,range(.23,.42));
-      for(let k=0;k<9;k++){const u=.25+random()*.75,start=[x-side*reach*u,h*.55+(tip[1]-h*.55)*u,z-3*u],a=range(0,7),length=range(2,4);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.8,1),start[2]+Math.sin(a)*length],6,range(.8,1.4));}
+      beam(trunks,[x,bankPlantHeight(x,z,config.water),z],[x-side*1.8,h*.55,z-1],range(.4,.7));beam(trunks,[x-side*1.8,h*.55,z-1],tip,range(.23,.42));
+      for(let k=0;k<9;k++){const u=.25+random()*.75,start=[x-side*1.8*(1-u)-side*reach*u,h*.55+(tip[1]-h*.55)*u,z-1-2*u],a=range(0,7),length=range(2,4);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.8,1),start[2]+Math.sin(a)*length],6,range(.8,1.4));}
     }
+    removedUnsupported+=discardUnsupportedVegetation([trunks,vines,leaves,smallLeaves],()=>{
     // Broad boughs bridge the river high overhead, leaving a softly lit opening downriver.
     for(const [authoredX,z,side]of [[-21,17,-1],[21,0,1],[-18,-17,-1],[25,-35,1]]){
       const x=bankX(authoredX,z,side);
       const tip=[x-side*17,12,z-9];beam(trunks,[x,5,z],tip,.32);
       for(let k=0;k<14;k++){const u=.15+random()*.85,start=[x-side*17*u,5+7*u,z-9*u],a=range(0,7),length=range(2,4.2);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.5,1.5),start[2]+Math.sin(a)*length],7,range(.8,1.4));}
     }
+        });
     // Understory fans, ferns and broad tropical foliage: all drawn in two instanced batches.
     for(let i=0;i<1600;i++){
       const z=range(-156,47),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(.4,12);
@@ -132,12 +135,12 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
     // Dense midstory hides bare ground and breaks up the tall trunks into layered jungle.
     for(let i=0;i<260;i++){
       const z=range(-100,46),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(1.4,9);if(inPlatformClearing(x,z))continue;
-      const height=range(1.5,4.5);beam(vines,[x,.3,z],[x,height,z],.035);
-      for(let k=0;k<6;k++){const a=k*1.05+random()*.4,length=range(1,2.2),y=height*(.4+k*.09);leafyTwig([x,y,z],[x+Math.cos(a)*length,y+range(.1,.7),z+Math.sin(a)*length],4,range(.45,.9));}
+      const height=range(1.5,4.5),base=bankPlantHeight(x,z,config.water);beam(vines,[x,base,z],[x,base+height,z],.035);
+      for(let k=0;k<6;k++){const a=k*1.05+random()*.4,length=range(1,2.2),y=base+height*(.4+k*.09);leafyTwig([x,y,z],[x+Math.cos(a)*length,y+range(.1,.7),z+Math.sin(a)*length],4,range(.45,.9));}
     }
     // Fine fern leaflets sit on connected fronds along the visible bank.
     for(let i=0;i<220;i++){const z=range(-56,43),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(.5,4);if(inPlatformClearing(x,z))continue;
-      for(let k=0;k<4;k++){const a=k*1.57+random(),length=range(.7,1.7);leafyTwig([x,.4,z],[x+Math.cos(a)*length,.7+length*.3,z+Math.sin(a)*length],7,range(.15,.28));}
+      for(let k=0;k<4;k++){const a=k*1.57+random(),length=range(.7,1.7),base=bankPlantHeight(x,z,config.water);leafyTwig([x,base,z],[x+Math.cos(a)*length,base+.3+length*.3,z+Math.sin(a)*length],7,range(.15,.28));}
     }
     // A few warm red heliconia bracts beside the platform.
     const red=standard('#a84322');for(const [authoredX,z]of[[-22.7,24],[-23.2,29],[19,20]]){const x=bankX(authoredX,z);beam(vines,[x,.4,z],[x,2.4,z],.035);for(let k=0;k<5;k++){const bract=mesh(new THREE.ConeGeometry(.12,.65,7),red,[x+(k%2?.18:-.18),1.1+k*.25,z]);bract.rotation.z=k%2?-.9:.9;}}
@@ -221,7 +224,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
       for(let i=0;i<12;i++)tree(THREE.MathUtils.lerp(config.water.basin.leftX,config.water.basin.rightX,(i+.5)/12),waterEnd+3,range(10,15),.5,true);
     }
     pools.forEach(p=>p.finish());
-    const presentation=createAmazonQuality({root,renderer,camera,treeRecords,pools:{leaves,smallLeaves,trunks,roots,vines,pebbles},barkMat,woodMat,darkWood,soil,leafMat,hemi,sun,ambient,fog,waterUniform:highQuality});presentation.setQuality(true);
+    const presentation=createAmazonQuality({root,renderer,camera,config,treeRecords,pools:{leaves,smallLeaves,trunks,roots,vines,pebbles},barkMat,woodMat,darkWood,soil,leafMat,hemi,sun,ambient,fog,waterUniform:highQuality});presentation.setQuality(true);
     const resources=createResourceScope(root,{targets,shared:sharedResources});
     return {
       update(elapsed){if(resources.disposed)return;wind.value=elapsed;uniforms.time.value=elapsed;},
@@ -233,7 +236,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_CONFLUENCE,{share
         try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parent,reflectionCamera);}
         finally{renderer.setRenderTarget(target);water.visible=visible;after();}
       },
-      getDiagnostics:()=>({disposed:resources.disposed,presentation:presentation.snapshot(),treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],platformShift,platformBounds:{...config.water.platform},riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines',...(config.water.basin?['right-water-basin']:[])]}),
+      getDiagnostics:()=>({disposed:resources.disposed,presentation:presentation.snapshot(),foliageCleanup:{removedUnsupportedInstances:removedUnsupported,groundedPlants:true},treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],platformShift,platformBounds:{...config.water.platform},riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,surfacePlantCount:pads.mesh.count,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,landmarks:['wood-platform','tackle-seat','wood-shelf','lantern','landing-net','buttress-roots','hanging-vines',...(config.water.basin?['right-water-basin']:[])]}),
       dispose(){if(resources.disposed)return;resources.dispose();if(parent.background===background)parent.background=previous.background;if(parent.fog===fog)parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;}
     };
   }catch(error){createResourceScope(root,{targets,shared:sharedResources}).dispose();parent.background=previous.background;parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;throw error;}

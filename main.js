@@ -1,4 +1,5 @@
 import {createRenderSettings,nextFrameTime} from './render-settings.js';
+import {Metrics,AutoQuality} from './rendering/performance.js';
 import {mapUnlocked} from './shop-progression.js';
 import {createMapEntry} from './map-entry.js';
 import {createShop} from './shop.js';
@@ -33,8 +34,9 @@ if(!releaseVersion()){
 const renderSettings=createRenderSettings();
 const canvas=document.querySelector('#scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-let adaptiveScale=1;
-function applyResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.4)*adaptiveScale);renderer.setSize(innerWidth,innerHeight);sceneDirty=true;}
+let adaptiveScale=1,renderBusy=false,renderOperation=0,initialPreparation=null,renderSettledAt=0;
+const renderMetrics=new Metrics(renderer),autoQuality=new AutoQuality();renderer.info.autoReset=false;
+function applyResolution(){const tier=renderSettings.value.quality,limit=map?.context.id==='summer-pond'?({low:1.4,medium:1,high:1.35}[tier]):tier==='medium'?1:1.4;renderer.setPixelRatio(Math.min(devicePixelRatio,limit)*adaptiveScale);renderer.setSize(innerWidth,innerHeight);map?.resize();sceneDirty=true;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -45,7 +47,7 @@ const encounters=()=>map?.context.encounters??getMapContext().encounters;
 const equipment=createIdleRod(camera),rod=equipment.root;
 
 let targetYaw=0,targetPitch=-.065,yaw=targetYaw,pitch=targetPitch,dragging=false,touchId=null;
-let lastX = 0, lastY = 0, fine = renderSettings.value.quality==='high', frame = 0, explored = false, contextLost = false;
+let lastX = 0, lastY = 0, fine = renderSettings.value.quality!=='low', frame = 0, explored = false, contextLost = false;
 const keys = new Set(), toastElement = document.querySelector('#toast');
 let toastTimer;
 function toast(message) { toastElement.textContent = message; toastElement.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastElement.classList.remove('visible'), 2400); }
@@ -62,7 +64,7 @@ function prepareModal(){
   for(const open of document.querySelectorAll('dialog[open]'))open.close();
   sceneDirty=true;
 }
-function finishModal(){discoveries.flush();playerStorage.flush();if(!inWorld&&!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();clock.reset();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;}}
+function finishModal(){discoveries.flush();playerStorage.flush();if(!inWorld&&!renderBusy&&!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();clock.reset();renderMetrics.resetWindow();nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;}}
 const saveSlots=createSaveSlots();
 const playerStorage=createPlayerStorage({storage:saveSlots.storage,onSaveError:()=>toast('存储空间不足或不可用，请稍后重试保存')});
 const inventory=createInventory({store:playerStorage,toast,onOpen:prepareModal,onClose:finishModal});
@@ -75,7 +77,7 @@ const coinControls=createCoinControls({store:playerStorage,toast,onOpen:prepareM
 const lureCasting=createLureCasting({store:playerStorage,getEncounters:encounters});
 const shop=createShop({store:playerStorage,getEncounters:encounters,onOpen:prepareModal,onClose:finishModal,isFishing:()=>fishing.isActive()});
 const mapSession=createMapSession({
-  createMap:id=>createMapRuntime({scene,camera,renderer,id}),
+  createMap:prepareMapView,
   createFishing:(next,ownerState)=>createFishing({ownerState,onRoundEnd:outcome=>lureCasting.finish(outcome),prepareCast:options=>lureCasting.prepare(options),beginFight:()=>lureCasting.beginFight(),scene,camera,player:next.playerPosition,mapContext:next.context,canvas,idleRod:rod,toast,getTime:()=>gameTime.now(),onCaught:name=>{inventory.addFish(name);discoveries.unlock(name);},onReady:heading=>{targetYaw=heading;targetPitch=next.context.spawn.pitch;keys.clear();stopDragging();},onCast:()=>{dismissWelcome();keys.clear();stopDragging();},onHook:()=>{keys.clear();stopDragging();}}),
   onRelease:()=>renderer.renderLists.dispose()
 });
@@ -86,7 +88,7 @@ createSavePanel({saves:saveSlots,onOpen:prepareModal,onClose:finishModal,beforeC
 canvas.style.cursor = 'grab';
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
-  if(inWorld||!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
+  if(renderBusy||inWorld||!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
   if(fishing.pointerDown(e))return;
   if(fishing.isFighting())return;
   if (e.button !== 2 && e.pointerType !== 'touch') return;
@@ -95,7 +97,7 @@ canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId); canvas.style.cursor='grabbing';canvas.focus();
 });
 canvas.addEventListener('pointermove', e => {
-  if(inWorld||!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
+  if(renderBusy||inWorld||!settingsPanel.hidden||Boolean(document.querySelector('dialog[open]')))return;
   fishing.pointerMove(e);if(fishing.isFighting())return;
   if (!dragging || e.pointerId !== touchId) return;
   const dx=e.clientX-lastX,dy=e.clientY-lastY;
@@ -105,14 +107,14 @@ canvas.addEventListener('pointermove', e => {
 canvas.addEventListener('pointerup', stopDragging);canvas.addEventListener('pointercancel',stopDragging);canvas.addEventListener('lostpointercapture',stopDragging);
 // Mouse events include intermediate button changes that pointerup omits in chords.
 canvas.addEventListener('mousedown',e=>{
-  if(inWorld||!settingsPanel.hidden||document.querySelector('dialog[open]'))return;
+  if(renderBusy||inWorld||!settingsPanel.hidden||document.querySelector('dialog[open]'))return;
   fishing.mouseButtons(e);
 });
 document.addEventListener('mouseup',e=>{if(e.button===0)fishing.release();});
 document.addEventListener('pointerup',e=>{if(e.button===0)fishing.release();});
 document.addEventListener('pointercancel',()=>fishing.release());
 window.addEventListener('blur', () => {stopDragging();keys.clear();fishing.release();});
-document.addEventListener('visibilitychange', () => {stopDragging();keys.clear();fishing.release();});
+document.addEventListener('visibilitychange', () => {stopDragging();keys.clear();fishing.release();renderMetrics.resetWindow();});
 const settingsToggle=document.querySelector('#settings-toggle'),settingsPanel=document.querySelector('#settings-panel');
 function setSettingsOpen(open) {
   settingsPanel.hidden=!open;settingsToggle.setAttribute('aria-expanded',String(open));
@@ -131,11 +133,27 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&!settingsPanel.hidden){e.preventDefault();setSettingsOpen(false);settingsToggle.focus({preventScroll:true});}
 });
 document.querySelector('#reset').addEventListener('click',()=>{reset();setSettingsOpen(false);});
-document.querySelector('#quality').addEventListener('click', () => {
-  fine=!fine;renderSettings.set({quality:fine?'high':'low'});adaptiveScale=1;applyResolution();renderer.shadowMap.enabled=true;renderer.shadowMap.needsUpdate=true;map?.setQuality(fine);
-  document.querySelector('#quality span').textContent=`画质 · ${fine?'高':'低'}`;toast(fine?'高画质已开启':'低画质已开启');
-});
-document.querySelector('#quality span').textContent=`画质 · ${fine?'高':'低'}`;
+const qualityNames={low:'低',medium:'中',high:'高'};
+function syncRenderControls(){document.querySelector('#quality span').textContent='画质 · '+qualityNames[renderSettings.value.quality];document.querySelector('#auto-render').checked=renderSettings.value.automatic;document.querySelector('#show-performance').checked=renderSettings.value.showStats;document.querySelector('#performance-panel').hidden=!renderSettings.value.showStats;}
+function loadingView(open){document.querySelector('#render-loading').hidden=!open;canvas.setAttribute('aria-busy',String(open));}
+function renderProgress(kind,done,total){document.querySelector('#render-progress').textContent=kind==='compile'?'正在准备湖岸光照…':'正在准备湖岸素材'+(total?'（'+done+'/'+total+'）':'…');}
+const renderHooks={before(){rod.visible=false;fishing.hideReflection();},after(){fishing.restoreReflection();if(!mapSession.fishing)rod.visible=true;}};
+async function prepareMapView(id){renderBusy=true;loadingView(true);initialPreparation=new AbortController();try{
+ try{return await createMapRuntime({scene,camera,renderer,id,quality:renderSettings.value.quality,onProgress:renderProgress,signal:initialPreparation.signal,hooks:renderHooks});}
+ catch(error){if(id!=='summer-pond'||renderSettings.value.quality==='low'&&!initialPreparation.signal.aborted)throw error;renderSettings.set({quality:'low'});fine=false;syncRenderControls();toast('写实场景暂不可用，已切回当前场景');return await createMapRuntime({scene,camera,renderer,id,quality:'low',onProgress:renderProgress,hooks:renderHooks});}
+}finally{initialPreparation=null;renderBusy=false;loadingView(false);}}
+async function changeQuality(tier){if(!['low','medium','high'].includes(tier))throw Error('画质无效');renderSettings.set({quality:tier});fine=tier!=='low';syncRenderControls();
+ if(initialPreparation){if(tier==='low')initialPreparation.abort();return;}
+ if(!map){adaptiveScale=1;applyResolution();return;}
+ const token=++renderOperation;renderBusy=true;loadingView(true);keys.clear();stopDragging();fishing.release();if(!gameTime.paused){gameTime.pause();fishing.update(gameTime.now());fishing.pauseAudio();}
+ try{await map.setQuality(tier);}catch(error){if(token!==renderOperation)return;if(tier!=='low'){renderSettings.set({quality:'low'});fine=false;syncRenderControls();await map.setQuality('low');toast('写实场景暂不可用，已切回当前场景');}else{toast('画面准备失败，请返回地图重试');throw error;}}
+ finally{if(token===renderOperation){renderBusy=false;loadingView(false);autoQuality.reset();adaptiveScale=1;applyResolution();renderSettledAt=performance.now();renderMetrics.resetWindow();sceneDirty=true;clock.reset();nextFrame=performance.now();if(!inWorld&&!document.querySelector('dialog[open]')){gameTime.resume();fishing.resumeAudio();}canvas.focus({preventScroll:true});}}
+}
+document.querySelector('#quality').addEventListener('click',()=>{const tiers=['low','medium','high'];void changeQuality(tiers[(tiers.indexOf(renderSettings.value.quality)+1)%3]).catch(console.error);});
+document.querySelector('#auto-render').addEventListener('change',event=>{renderSettings.set({automatic:event.target.checked});autoQuality.reset();adaptiveScale=1;map?.setAdaptive(1);applyResolution();});
+document.querySelector('#show-performance').addEventListener('change',event=>{renderSettings.set({showStats:event.target.checked});syncRenderControls();});
+document.querySelector('#render-fallback').addEventListener('click',()=>void changeQuality('low').catch(console.error));
+syncRenderControls();
 const frameSelect=document.querySelector('#max-fps');frameSelect.value=String(renderSettings.value.maxFps);
 frameSelect.addEventListener('change',()=>{renderSettings.set({maxFps:Number(frameSelect.value)});TARGET_FPS=renderSettings.value.maxFps;frameSelect.value=String(TARGET_FPS);nextFrame=performance.now();sampleStart=nextFrame;sampleFrames=0;slowSamples=0;toast('最高帧率 · '+TARGET_FPS+'帧');});
 async function fullscreen() {
@@ -153,7 +171,7 @@ document.querySelector('#help').addEventListener('click',()=>{prepareModal();ren
 dialog.addEventListener('close',finishModal);
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 window.addEventListener('keydown',e=>{
-  if(inWorld||e.defaultPrevented||Boolean(document.querySelector('dialog[open]'))||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(renderBusy||inWorld||e.defaultPrevented||Boolean(document.querySelector('dialog[open]'))||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if(!/^(BUTTON|A)$/.test(e.target.tagName)&&settingsPanel.hidden&&fishing.key(e)){e.preventDefault();return;}
   if(fishing.isFighting()&&e.code.startsWith('Arrow'))return;
   if(!settingsPanel.hidden&&e.code.startsWith('Arrow'))return;
@@ -172,13 +190,13 @@ let elapsed=0,nextFrame=performance.now(),sampleStart=performance.now(),sampleFr
 function animate(now){
   if(contextLost)return;
   requestAnimationFrame(animate);
-  if(inWorld||!map){clock.update();sceneDirty=false;nextFrame=now+1000/TARGET_FPS;sampleStart=now;sampleFrames=0;return;}
+  if(inWorld||!map||renderBusy){clock.update();sceneDirty=false;nextFrame=now+1000/TARGET_FPS;sampleStart=now;sampleFrames=0;return;}
   if(document.hidden){nextFrame=now+1000/TARGET_FPS;sampleStart=now;sampleFrames=0;return;}
   // Keep the last canvas as a static backdrop; resize requests one fresh frame.
   if(gameTime.paused&&!sceneDirty){clock.update();nextFrame=now+1000/TARGET_FPS;sampleStart=now;sampleFrames=0;return;}
   if(now<nextFrame)return;
   nextFrame=nextFrameTime(now,nextFrame,TARGET_FPS);
-  const refreshScene=sceneDirty;sceneDirty=false;
+  renderMetrics.begin(now);const refreshScene=sceneDirty;sceneDirty=false;
   clock.update();const dt=gameTime.paused?0:Math.min(clock.getDelta(),.12);elapsed+=dt;
   fishing.update(gameTime.now(now/1000));ownerPanel.update();const tracked=fishing.view();
   if(tracked){targetYaw=yaw+Math.atan2(Math.sin(tracked.yaw-yaw),Math.cos(tracked.yaw-yaw));targetPitch=tracked.pitch;}
@@ -190,14 +208,15 @@ function animate(now){
   fishing.updateDistanceLabel();
   rod.position.y=-.19+Math.sin(elapsed*1.1)*.004;rod.rotation.z=Math.sin(elapsed*.65)*.003;
   map.update(elapsed);
-  map.renderReflection({frame,fine,time:elapsed,force:refreshScene,before:()=>{rod.visible=false;fishing.hideReflection();},after:()=>fishing.restoreReflection()});
-  renderer.render(scene,camera);frame++;sampleFrames++;
+  map.renderReflection({frame,fine,time:elapsed,force:refreshScene,before:()=>{rod.visible=false;fishing.hideReflection();},after:()=>fishing.restoreReflection(),metrics:renderMetrics});
+  renderMetrics.measure('main',()=>renderer.render(scene,camera));frame++;sampleFrames++;
+  if(renderMetrics.end(now)){const m=renderMetrics.snapshot;if(!gameTime.paused&&now-renderSettledAt>5000&&autoQuality.update({time:now,p95:Math.max(m.cpuP95,m.fps<TARGET_FPS*.94?1000/TARGET_FPS:0),cap:TARGET_FPS,enabled:renderSettings.value.automatic})){adaptiveScale=autoQuality.scale;map.setAdaptive(adaptiveScale);applyResolution();}if(renderSettings.value.showStats){document.querySelector('#performance-values').textContent=m.fps.toFixed(1)+' FPS · 帧间隔 '+m.frameMs.toFixed(1)+'ms · CPU '+m.cpuMs.toFixed(1)+'ms · Draw Call '+m.calls+' · 三角形 '+m.triangles.toLocaleString();}}
   if(gameTime.paused){sampleStart=now;sampleFrames=0;return;}
   if(frame===3){sampleStart=performance.now();sampleFrames=0;}
   if(now-sampleStart>=2000){
     measuredFps=sampleFrames*1000/(now-sampleStart);sampleStart=now;sampleFrames=0;
     slowSamples=measuredFps<21?slowSamples+1:0;
-    if(slowSamples>=2&&adaptiveScale>.70){adaptiveScale=Math.max(.70,adaptiveScale-.15);applyResolution();slowSamples=0;}
+    // Automatic quality is sampled independently of gameplay time above.
   }
 }
 animate(performance.now());
@@ -208,7 +227,7 @@ setTimeout(()=>{
   const warmup=()=>preloadInventoryImages(FISH_DATA.filter(fish=>discoveries.has(fish.id)).map(fish=>fish.inventory.image));
   if(globalThis.requestIdleCallback)requestIdleCallback(warmup,{timeout:3000});else warmup();
 },1500);
-window.lakeside={getState:()=>({screen:inWorld?'world':'lake',paused:gameTime.paused,activeSave:saveSlots.activeId,inventory:inventory.snapshot(),storage:playerStorage.snapshot().storage,version:releaseVersion(),scene:map?.context.id??null,map:map?.getDiagnostics()??{disposed:true,chairs:[],treeCount:0},mapSession:mapSession.diagnostics(),gpu:{...renderer.info.memory},fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs:map?.getDiagnostics().chairs??[],treeCount:map?.getDiagnostics().treeCount??0,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
+window.lakeside={setQuality:changeQuality,getState:()=>({quality:renderSettings.value.quality,renderBusy,renderMetrics:renderMetrics.snapshot,screen:inWorld?'world':'lake',paused:gameTime.paused,activeSave:saveSlots.activeId,inventory:inventory.snapshot(),storage:playerStorage.snapshot().storage,version:releaseVersion(),scene:map?.context.id??null,map:map?.getDiagnostics()??{disposed:true,chairs:[],treeCount:0},mapSession:mapSession.diagnostics(),gpu:{...renderer.info.memory},fishing:fishing.getState(),yaw,pitch,targetYaw,targetPitch,fine,explored,dragging,frames:frame,camera:camera.position.toArray(),rodFollowsCamera:rod.parent===camera,targetFps:TARGET_FPS,measuredFps,adaptiveScale,chairs:map?.getDiagnostics().chairs??[],treeCount:map?.getDiagnostics().treeCount??0,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,webgl:renderer.capabilities.isWebGL2!==false})};
 
 function prepareWorldReturn(){
   fishing.interrupt();const itemsSaved=playerStorage.flush(),guideSaved=discoveries.flush();
@@ -220,7 +239,7 @@ function returnToWorld(){
 }
 const mapEntry=createMapEntry({store:playerStorage,getFee:id=>getMapContext(id).entryFee,isUnlocked:id=>mapUnlocked(playerStorage.model.quests,id),
   async prepare(id){
-    map=await mapSession.enter(id);map.setQuality(fine);
+    map=await mapSession.enter(id);autoQuality.reset();adaptiveScale=1;applyResolution();renderSettledAt=performance.now();renderMetrics.resetWindow();
     document.querySelector('.location h2').textContent=map.context.name+' · '+(map.context.labels.spot??(id==='amazon-confluence'?'雨林木平台':'林间钓位'));
     const weather=document.querySelector('.location p'),icon=weather.querySelector('svg'),breeze=weather.querySelector('span');breeze.textContent=map.context.labels.breeze??'微风拂面';weather.replaceChildren(icon,document.createTextNode((map.context.labels.weather??'晴朗夏日')+' '),breeze);
     yaw=targetYaw=map.context.spawn.yaw;pitch=targetPitch=map.context.spawn.pitch;camera.rotation.set(pitch,yaw,0);camera.updateMatrixWorld();return map;

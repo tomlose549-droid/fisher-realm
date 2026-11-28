@@ -17,7 +17,7 @@ test('import-map manifest covers every runtime module and every relative module 
   return (await Promise.all(entries.map(entry=>entry.isDirectory()?mapModules(directory+'/'+entry.name):entry.name.endsWith('.js')?[directory+'/'+entry.name]:[]))).flat();
  }
  const maps=await mapModules();
- const expected=[...root,...maps,'vendor/three.module.js','vendor/three.core.js'].sort();assert.deepEqual([...modules].sort(),expected);
+ const expected=[...root,...maps,...await mapModules('rendering'),...await mapModules('vendor/addons'),'vendor/three.module.js','vendor/three.core.js'].sort();assert.deepEqual([...modules].sort(),expected);
  for(const name of modules){const source=await read(name);assert.ok(!/from\s+['"][^'"]+\?v=/.test(source),name+' has a manual module version');for(const m of source.matchAll(/(?:from\s*|import\s*\()\s*['"](\.[^'"]+)['"]/g)){const url=new URL(m[1],new URL('../'+name,import.meta.url));const relative=decodeURI(url.pathname.slice(new URL('../',import.meta.url).pathname.length));assert.ok(modules.includes(relative),name+' missing dependency '+relative);}}
  for(const name of [...config.styles,...config.preloadImages])assert.ok((await readFile(new URL('../'+name,import.meta.url))).length>0);
 });

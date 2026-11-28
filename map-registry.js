@@ -12,7 +12,7 @@ import {SAC_ACTUN_ENCOUNTERS} from './maps/sac-actun-fish.js';
 
 export const DEFAULT_MAP_ID=SUMMER_POND.id;
 const definitions=Object.freeze({[DEFAULT_MAP_ID]:Object.freeze({config:SUMMER_POND,
-    isWater:isSummerPondWater,encounters:SUMMER_POND_ENCOUNTERS,load:()=>import('./pond-scene.js')}),
+    isWater:isSummerPondWater,encounters:SUMMER_POND_ENCOUNTERS,load:()=>import('./pond-scene.js'),loadRealistic:()=>import('./rendering/scene.js')}),
   [AMAZON_CONFLUENCE.id]:Object.freeze({config:AMAZON_CONFLUENCE,isWater:isAmazonWater,encounters:AMAZON_CONFLUENCE_ENCOUNTERS,load:()=>import('./amazon-scene.js')}),
   [AMAZON_FLOODED_FOREST.id]:Object.freeze({config:AMAZON_FLOODED_FOREST,isWater:isFloodedForestWater,encounters:FLOODED_FOREST_ENCOUNTERS,load:()=>import('./flooded-forest-scene.js')}),
   [SAC_ACTUN.id]:Object.freeze({config:SAC_ACTUN,isWater:isSacActunWater,encounters:SAC_ACTUN_ENCOUNTERS,load:()=>import('./cenote-scene.js')})});

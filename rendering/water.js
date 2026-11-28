@@ -1,0 +1,26 @@
+import * as THREE from '../vendor/three.module.js';
+import {Reflector} from '../vendor/addons/objects/Reflector.js';
+import {MAP,surfaceFactor} from './config.js';
+import {shorelinePoint} from '../maps/summer-pond.js';
+export function createWater(scope,profile){
+ const g=scope.own(new THREE.BufferGeometry()),p=[0,0,0],idx=[];for(let i=0;i<=224;i++){const [x,,z]=shorelinePoint(i/224*Math.PI*2,surfaceFactor,MAP.water);p.push(x,0,z);if(i)idx.push(0,i+1,i);}g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(idx);g.computeVertexNormals();
+ const reflector=scope.own(new Reflector(scope.own(new THREE.PlaneGeometry(1,1)),{textureWidth:profile.reflection[0],textureHeight:profile.reflection[1],clipBias:.002}));reflector.rotation.x=-Math.PI/2;reflector.position.y=MAP.water.level;reflector.updateMatrixWorld(true);const reflect=reflector.onBeforeRender.bind(reflector);reflector.onBeforeRender=()=>{};
+ const refraction=scope.own(new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,depthBuffer:true}));refraction.depthTexture=new THREE.DepthTexture(1,1,THREE.UnsignedIntType);
+ const inversePlane=reflector.matrixWorld.clone().invert();const u={time:{value:0},reflection:{value:reflector.getRenderTarget().texture},mirrorMatrix:{value:new THREE.Matrix4()},sceneColor:{value:refraction.texture},sceneDepth:{value:refraction.depthTexture},resolution:{value:new THREE.Vector2(1,1)},nearFar:{value:new THREE.Vector2(.06,420)},high:{value:profile===undefined?0:profile.refractionScale>.7?1:0},sunDirection:{value:new THREE.Vector3(-.42,.82,.37)}};
+ const vertex=`varying vec3 world;varying vec4 mirror;uniform mat4 mirrorMatrix;void main(){vec4 p=modelMatrix*vec4(position,1.);world=p.xyz;mirror=mirrorMatrix*p;gl_Position=projectionMatrix*viewMatrix*p;}`;
+ const fragment=`precision highp float;uniform float time;uniform float high;uniform sampler2D reflection;uniform sampler2D sceneColor;uniform sampler2D sceneDepth;uniform vec2 resolution;uniform vec2 nearFar;uniform vec3 sunDirection;varying vec3 world;varying vec4 mirror;
+ float linearDepth(float z){float n=nearFar.x,f=nearFar.y;return n*f/(f-z*(f-n));}
+ void main(){vec2 p=world.xz;vec2 d=vec2(sin(p.x*2.7+p.y*.9+time*.8)+.4*sin(p.y*7.1-time*.65),cos(p.y*3.8-p.x*.5-time*.73)+.35*sin(p.x*9.+time*.6));vec3 normal=normalize(vec3(d.x*.024,1.,d.y*.020));vec3 eye=normalize(cameraPosition-world);vec2 screen=gl_FragCoord.xy/resolution;
+ vec2 offset=normal.xz*(.007+high*.005);float front=linearDepth(texture2D(sceneDepth,screen+offset).x);float here=linearDepth(gl_FragCoord.z);if(front<here+.025)offset=vec2(0.);vec2 refractUV=clamp(screen+offset,.001,.999);float thickness=max(0.,linearDepth(texture2D(sceneDepth,refractUV).x)-here);float opticalDepth=clamp(thickness*.18,0.,1.);
+ vec3 under=texture2D(sceneColor,refractUV).rgb;vec3 transmittance=exp(-vec3(.40,.105,.082)*thickness);vec3 scatter=vec3(.018,.19,.16);vec3 body=under*transmittance+scatter*(1.-transmittance);vec2 uv=mirror.xy/mirror.w;uv+=normal.xz*.024;vec3 sky=texture2D(reflection,clamp(uv,.002,.998)).rgb;
+ float fresnel=.025+.73*pow(1.-max(dot(eye,normal),0.),4.2);fresnel*=smoothstep(0.,.3,thickness);vec3 color=mix(body,sky,fresnel);float spec=pow(max(dot(reflect(-sunDirection,normal),eye),0.),310.);color+=vec3(1.,.88,.62)*spec*.85;
+ float caustic=pow(max(0.,sin(p.x*5.5+sin(p.y*4.-time*.35))*cos(p.y*4.8+sin(p.x*3.8+time*.4))),6.);color+=vec3(.075,.11,.073)*caustic*exp(-thickness*.9)*(1.-opticalDepth);gl_FragColor=vec4(color,1.);
+ #include <tonemapping_fragment>
+ #include <colorspace_fragment>
+ }`;
+ const material=scope.own(new THREE.ShaderMaterial({uniforms:u,vertexShader:vertex,fragmentShader:fragment,depthWrite:true}));const mesh=new THREE.Mesh(g,material);mesh.name='single-depth-water';mesh.position.y=MAP.water.level;mesh.renderOrder=2;
+ let last=-Infinity,disposed=false,adaptive=1;
+ return {mesh,refraction,setAdaptive(value){adaptive=value;},resize(w,h){refraction.setSize(Math.max(1,Math.round(w*profile.refractionScale)),Math.max(1,Math.round(h*profile.refractionScale)));u.resolution.value.set(w,h);},update(t){u.time.value=t;},render(renderer,scene,camera,time,measure,hidden=[]){if(disposed)return;const old=renderer.getRenderTarget(),visibility=hidden.map(o=>o.visible);mesh.visible=false;hidden.forEach(o=>o.visible=false);
+ try{if(time-last>=profile.reflectionInterval/Math.max(.45,adaptive*adaptive)||time<last){measure('reflection',()=>reflect(renderer,scene,camera));u.mirrorMatrix.value.copy(reflector.material.uniforms.textureMatrix.value).multiply(inversePlane);last=time;}
+ measure('refraction',()=>{const layers=camera.layers.mask,background=scene.background,autoShadow=renderer.shadowMap.autoUpdate,shadowDirty=renderer.shadowMap.needsUpdate;try{camera.layers.set(1);scene.background=null;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=false;renderer.setRenderTarget(refraction);renderer.render(scene,camera);}finally{camera.layers.mask=layers;scene.background=background;renderer.shadowMap.autoUpdate=autoShadow;renderer.shadowMap.needsUpdate=shadowDirty;}});}finally{renderer.setRenderTarget(old);mesh.visible=true;hidden.forEach((o,i)=>o.visible=visibility[i]);}},dispose(){disposed=true;refraction.depthTexture.dispose();}};
+}

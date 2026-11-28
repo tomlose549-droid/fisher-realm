@@ -1,6 +1,6 @@
 {
   "name": "lakeside-fishing",
-  "version": "0.76.1",
+  "version": "0.77.0",
   "private": true,
   "type": "module",
   "description": "湖畔慢时光：第一人称 3D 钓鱼场景",
@@ -75,7 +75,27 @@
       "render-settings.js",
       "scene-materials.js",
       "scene-quality.js",
-      "foliage-support.js"
+      "foliage-support.js",
+      "rendering/assets.js",
+      "rendering/config.js",
+      "rendering/performance.js",
+      "rendering/preparation.js",
+      "rendering/resources.js",
+      "rendering/scene.js",
+      "rendering/terrain.js",
+      "rendering/vegetation.js",
+      "rendering/water.js",
+      "vendor/addons/libs/basis/basis_transcoder.js",
+      "vendor/addons/libs/ktx-parse.module.js",
+      "vendor/addons/libs/zstddec.module.js",
+      "vendor/addons/loaders/GLTFLoader.js",
+      "vendor/addons/loaders/HDRLoader.js",
+      "vendor/addons/loaders/KTX2Loader.js",
+      "vendor/addons/math/ColorSpaces.js",
+      "vendor/addons/objects/Reflector.js",
+      "vendor/addons/utils/BufferGeometryUtils.js",
+      "vendor/addons/utils/SkeletonUtils.js",
+      "vendor/addons/utils/WorkerPool.js"
     ],
     "styles": [
       "style.css"

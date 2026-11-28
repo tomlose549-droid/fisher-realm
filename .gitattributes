@@ -1,0 +1,8 @@
+# Preserve authored model bytes and manifest hashes on Windows checkouts.
+/map-assets/**/*.gltf text eol=lf
+/map-assets/**/*.bin binary
+/map-assets/**/*.glb binary
+/map-assets/**/*.ktx2 binary
+/map-assets/**/*.hdr binary
+# Preserve the pinned upstream add-on formatting.
+/vendor/addons/** whitespace=-blank-at-eof

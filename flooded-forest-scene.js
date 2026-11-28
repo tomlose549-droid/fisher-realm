@@ -1,3 +1,5 @@
+import {createAmazonQuality} from './amazon-quality.js';
+import {bankPlantHeight,discardUnsupportedVegetation} from './foliage-support.js';
 import * as THREE from './vendor/three.module.js';
 import {riverBank,riverCenter,riverBankOffset,riverHalfWidth,amazonWaterMaxZ} from './maps/amazon-confluence.js';
 import {AMAZON_FLOODED_FOREST} from './maps/amazon-flooded-forest.js';
@@ -7,7 +9,7 @@ import {createResourceScope} from './scene-resources.js';
 export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{sharedResources=new Set()}={}){
   const root=new THREE.Group();root.name='map-'+config.id;parent.add(root);
   const previous={background:parent.background,fog:parent.fog,exposure:renderer.toneMappingExposure,auto:renderer.shadowMap.autoUpdate,dirty:renderer.shadowMap.needsUpdate};
-  const targets=[];
+  const targets=[];let removedUnsupported=0;
   try{
     let seed=621831;
     const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
@@ -20,7 +22,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     parent.background=background;parent.fog=fog;renderer.toneMappingExposure=config.environment.exposure;
     const hemi=new THREE.HemisphereLight('#cad8bb','#343b23',1.45),sun=new THREE.DirectionalLight('#fff0bf',2.5);
     sun.position.set(-18,34,16);sun.target.position.set(0,0,0);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-    Object.assign(sun.shadow.camera,{left:-46,right:46,top:45,bottom:-45,near:1,far:110});sun.shadow.bias=-.00025;sun.shadow.normalBias=.035;root.add(hemi,sun,sun.target,new THREE.AmbientLight('#9baa76',.35));
+    Object.assign(sun.shadow.camera,{left:-46,right:46,top:45,bottom:-45,near:1,far:110});sun.shadow.bias=-.00025;sun.shadow.normalBias=.035;const ambient=new THREE.AmbientLight('#9baa76',.35);root.add(hemi,sun,sun.target,ambient);
     renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
     function texture(paint,w=512,h=512,repeat=[1,1]){
       const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;paint(canvas.getContext('2d'),w,h);
@@ -58,7 +60,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     function mesh(geo,mat,p,s,parentNode=root){const m=new THREE.Mesh(geo,mat);if(p)m.position.set(...p);if(s)m.scale.set(...s);m.castShadow=m.receiveShadow=true;parentNode.add(m);return m;}
     const cube=new THREE.BoxGeometry(1,1,1),cylinder=new THREE.CylinderGeometry(1,1,1,10),sphere=new THREE.SphereGeometry(1,10,7);
     const pools=[];
-    function pool(geo,mat,shadow=true,parentNode=root){const entries=[];const result={add(p,s,r=null,tint=null){entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();parentNode.add(inst);}};pools.push(result);return result;}
+    function pool(geo,mat,shadow=true,parentNode=root){const entries=[];const result={entries,add(p,s,r=null,tint=null){if(mat===leafMat&&p[1]===.35)p=[p[0],bankPlantHeight(p[0],p[2],config.water),p[2]];entries.push({p,s,r,tint});},finish(){if(!entries.length)return;const inst=new THREE.InstancedMesh(geo,mat,entries.length);for(let i=0;i<entries.length;i++){const e=entries[i];dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(0,0,0);if(e.r?.isQuaternion)dummy.quaternion.copy(e.r);else if(e.r)dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);if(e.tint)inst.setColorAt(i,color.set(e.tint));}inst.castShadow=shadow;inst.receiveShadow=true;inst.computeBoundingSphere();parentNode.add(inst);result.mesh=inst;}};pools.push(result);return result;}
     const trunks=pool(new THREE.CylinderGeometry(.68,1,1,12,3),barkMat),roots=pool(new THREE.CylinderGeometry(.48,1,1,8,2),barkMat),vines=pool(new THREE.CylinderGeometry(.7,1,1,5),standard('#4b5330'));
     function beam(target,a,b,radius,taper=1,tint=null){const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),delta=to.clone().sub(from);target.add(from.clone().add(to).multiplyScalar(.5).toArray(),[radius,delta.length(),radius*taper],new THREE.Quaternion().setFromUnitVectors(Y,delta.normalize()),tint);}
     function leafGeometry(rows=3){
@@ -88,9 +90,9 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     const treeRecords=[];
     function tree(x,z,h,r,far=false){
       if(inPlatformClearing(x,z))return;
-      const lean=range(-1.6,1.6),base=.35;treeRecords.push({x,z,h});beam(trunks,[x,base,z],[x+lean,h,z+range(-1,1)],r);
+      const lean=range(-1.6,1.6),base=bankPlantHeight(x,z,config.water),top=[x+lean,h,z+range(-1,1)];treeRecords.push({x,z,h,top});beam(trunks,[x,base,z],top,r);
       for(let k=0;k<(far?3:7);k++){const a=k*Math.PI*2/(far?3:7)+range(-.18,.18),length=range(2,4.5)*r,ex=x+Math.cos(a)*length,ez=z+Math.sin(a)*length;
-        const side=x<riverCenter(z)?-1:1,edge=riverBank(ez,side,config.water),inWater=side<0?ex>edge:ex<edge,y=inWater?-.05:.38;
+        const side=x<riverCenter(z)?-1:1,edge=riverBank(ez,side,config.water),inWater=side<0?ex>edge:ex<edge,y=inWater?-.05:bankPlantHeight(ex,ez,config.water);
         beam(roots,[x,base+range(.6,2)*r,z],[ex,y,ez],r*range(.28,.55),.65);beam(roots,[ex,y,ez],[ex+Math.cos(a)*range(.7,1.8),y-.04,ez+Math.sin(a)*range(.7,1.8)],r*.13);
       }
       for(let k=0;k<(far?3:5);k++){
@@ -98,10 +100,10 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
         beam(trunks,[x+lean*.7,h*.62,z],[cx,cy,cz],r*.25);
         for(let j=0;j<(far||z< -55?2:4);j++){const la=a+j*1.5,reach=range(1.8,3.8);leafyTwig([cx,cy,cz],[cx+Math.cos(la)*reach,cy+range(-.8,1.2),cz+Math.sin(la)*reach],far||z< -55?4:6,range(.6,1.1));}
       }
-      if(!far&&z> -48)for(let k=0;k<2;k++){
+      if(!far&&z> -48)removedUnsupported+=discardUnsupportedVegetation([vines,smallLeaves],()=>{for(let k=0;k<2;k++){
         const vx=x+range(-1.8,1.8),vz=z+range(-1,1),bottom=range(1.6,4),top=h*range(.65,.92);let from=[vx,top,vz];
         for(let y=top-1;y>bottom;y-=1){const to=[vx+Math.sin(y*.65+k)*.32,y,vz+Math.cos(y*.5)*.3];beam(vines,from,to,.025);from=to;if(y%2<1)smallLeaves.add(to,[.25,.5,1],[range(.1,2),range(0,7),0],foliage[k+1]);}
-      }
+      }});
     }
     // Near trees carry roots and hanging vines; distant trees need only instanced silhouettes.
     for(const side of [-1,1])for(let row=0;row<2;row++)for(let j=0;j<21;j++){
@@ -120,15 +122,17 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     // Lower arching boughs form an overhead rainforest canopy rather than rows of bare poles.
     for(const side of [-1,1])for(let j=0;j<10;j++){
       const z=22-j*11+range(-2,2),x=riverBank(z,side,config.water)+side*range(1,3),h=range(6.5,11),reach=range(6,12),tip=[x-side*reach,h+range(0,2),z-3];
-      beam(trunks,[x,.6,z],[x-side*1.8,h*.55,z-1],range(.4,.7));beam(trunks,[x-side*1.8,h*.55,z-1],tip,range(.23,.42));
-      for(let k=0;k<9;k++){const u=.25+random()*.75,start=[x-side*reach*u,h*.55+(tip[1]-h*.55)*u,z-3*u],a=range(0,7),length=range(2,4);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.8,1),start[2]+Math.sin(a)*length],6,range(.8,1.4));}
+      beam(trunks,[x,bankPlantHeight(x,z,config.water),z],[x-side*1.8,h*.55,z-1],range(.4,.7));beam(trunks,[x-side*1.8,h*.55,z-1],tip,range(.23,.42));
+      for(let k=0;k<9;k++){const u=.25+random()*.75,start=[x-side*1.8*(1-u)-side*reach*u,h*.55+(tip[1]-h*.55)*u,z-1-2*u],a=range(0,7),length=range(2,4);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.8,1),start[2]+Math.sin(a)*length],6,range(.8,1.4));}
     }
+    removedUnsupported+=discardUnsupportedVegetation([trunks,vines,leaves,smallLeaves],()=>{
     // Broad boughs bridge the river high overhead, leaving a softly lit opening downriver.
     for(const [authoredX,z,side]of [[-21,17,-1],[21,0,1],[-18,-17,-1],[25,-35,1]]){
       const x=bankX(authoredX,z,side);
       const tip=[x-side*17,12,z-9];beam(trunks,[x,5,z],tip,.32);
       for(let k=0;k<14;k++){const u=.15+random()*.85,start=[x-side*17*u,5+7*u,z-9*u],a=range(0,7),length=range(2,4.2);leafyTwig(start,[start[0]+Math.cos(a)*length,start[1]+range(-.5,1.5),start[2]+Math.sin(a)*length],7,range(.8,1.4));}
     }
+        });
     // Understory fans, ferns and broad tropical foliage: all drawn in two instanced batches.
     for(let i=0;i<1600;i++){
       const z=range(-156,47),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(.4,12);
@@ -141,12 +145,12 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     // Dense midstory hides bare ground and breaks up the tall trunks into layered jungle.
     for(let i=0;i<260;i++){
       const z=range(-100,46),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(1.4,9);if(inPlatformClearing(x,z))continue;
-      const height=range(1.5,4.5);beam(vines,[x,.3,z],[x,height,z],.035);
-      for(let k=0;k<6;k++){const a=k*1.05+random()*.4,length=range(1,2.2),y=height*(.4+k*.09);leafyTwig([x,y,z],[x+Math.cos(a)*length,y+range(.1,.7),z+Math.sin(a)*length],4,range(.45,.9));}
+      const height=range(1.5,4.5),base=bankPlantHeight(x,z,config.water);beam(vines,[x,base,z],[x,base+height,z],.035);
+      for(let k=0;k<6;k++){const a=k*1.05+random()*.4,length=range(1,2.2),y=base+height*(.4+k*.09);leafyTwig([x,y,z],[x+Math.cos(a)*length,y+range(.1,.7),z+Math.sin(a)*length],4,range(.45,.9));}
     }
     // Fine fern leaflets sit on connected fronds along the visible bank.
     for(let i=0;i<220;i++){const z=range(-56,43),side=i%2?1:-1,x=riverBank(z,side,config.water)+side*range(.5,4);if(inPlatformClearing(x,z))continue;
-      for(let k=0;k<4;k++){const a=k*1.57+random(),length=range(.7,1.7);leafyTwig([x,.4,z],[x+Math.cos(a)*length,.7+length*.3,z+Math.sin(a)*length],7,range(.15,.28));}
+      for(let k=0;k<4;k++){const a=k*1.57+random(),length=range(.7,1.7),base=bankPlantHeight(x,z,config.water);leafyTwig([x,base,z],[x+Math.cos(a)*length,base+.3+length*.3,z+Math.sin(a)*length],7,range(.15,.28));}
     }
     // A few warm red heliconia bracts beside the platform.
     const red=standard('#a84322');for(const [authoredX,z]of[[-22.7,24],[-23.2,29],[19,20]]){const x=bankX(authoredX,z);beam(vines,[x,.4,z],[x,2.4,z],.035);for(let k=0;k<5;k++){const bract=mesh(new THREE.ConeGeometry(.12,.65,7),red,[x+(k%2?.18:-.18),1.1+k*.25,z]);bract.rotation.z=k%2?-.9:.9;}}
@@ -175,11 +179,13 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
         moss.add([p.x,p.y+radius*.6,p.z],[radius*1.2,.035,radius*.8],null,'#667044');
       }
     }
+    removedUnsupported+=discardUnsupportedVegetation([trunks,vines,leaves,smallLeaves],()=>{
     // Low overhead boughs and epiphytes make a sheltered forest opening.
     for(const side of [-1,1])for(let j=0;j<7;j++){const z=20-j*10,x=riverBank(z,side,config.water)+side*2,tip=[x-side*9,8+Math.sin(j)*1.3,z-5];beam(trunks,[x,3,z],tip,.25);for(let k=0;k<10;k++){const a=k*.628,p=new THREE.Vector3(x,3,z).lerp(new THREE.Vector3(...tip),.5+k*.045);leafyTwig(p.toArray(),[p.x+Math.cos(a)*3,p.y+.5,p.z+Math.sin(a)*3],8,1.2);}}
+        });
     // Submerged ribbons grow in clumps; their roots stay underwater and are purely visual.
     const grass=pool(leafGeometry(5),standard('#6e8245',{side:THREE.DoubleSide,transparent:true,opacity:.65,roughness:.6}),false);
-    for(let i=0;i<230;i++){const z=range(-35,25),side=i%2?1:-1,x=riverBank(z,side,config.water)-side*range(.6,6);for(let k=0;k<3;k++)grass.add([x,-.1,z],[.07,range(1.2,2.6),1],[range(1.15,1.45),range(0,7),range(-.4,.4)],'#92a85a');}
+    for(let i=0;i<230;i++){const z=range(-35,25),side=i%2?1:-1,x=riverBank(z,side,config.water)-side*range(.6,6);for(let k=0;k<3;k++)grass.add([x,-2.85,z],[.07,range(1.2,2.6),1],[range(1.15,1.45),range(0,7),range(-.4,.4)],'#92a85a');}
 
     // Same blue gradient and seeded white cloud banks as the first lake.
     // Sky randomness is independent of the bank and vegetation layout.
@@ -210,24 +216,25 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
     // River water reflects the actual current scene. Reflection resolution/frequency are bounded.
     const reflectionTarget=new THREE.WebGLRenderTarget(...config.quality.fine.reflection,{depthBuffer:true});targets.push(reflectionTarget);
     const reflectionCamera=new THREE.PerspectiveCamera(),reflectionMatrix=new THREE.Matrix4(),lookDirection=new THREE.Vector3(),lookTarget=new THREE.Vector3();
-    const uniforms={time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()},grassMask:{value:grassMask},grassBounds:{value:grassBounds}};
+    const highQuality={value:0};const uniforms={highQuality,time:{value:0},mirrorMap:{value:reflectionTarget.texture},mirrorMatrix:{value:reflectionMatrix},sunDir:{value:sun.position.clone().normalize()},grassMask:{value:grassMask},grassBounds:{value:grassBounds}};
     const waterGeo=new THREE.BufferGeometry(),wp=[],wi=[];
     for(let j=0;j<=waterSegments;j++){const z=config.water.minZ+(waterEnd-config.water.minZ)*j/waterSegments;wp.push(riverBank(z,-1,config.water),0,z,riverBank(z,1,config.water),0,z);if(j){const n=j*2;wi.push(n,n+1,n-2,n+1,n-1,n-2);}}
     waterGeo.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));waterGeo.setIndex(wi);waterGeo.computeVertexNormals();
     const water=mesh(waterGeo,new THREE.ShaderMaterial({uniforms,side:THREE.DoubleSide,
       vertexShader:'varying vec3 vWorld;varying vec4 vMirror;uniform mat4 mirrorMatrix;void main(){vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;vMirror=mirrorMatrix*w;gl_Position=projectionMatrix*viewMatrix*w;}',
-      fragmentShader:`uniform float time;uniform sampler2D mirrorMap;uniform sampler2D grassMask;uniform vec4 grassBounds;uniform vec3 sunDir;varying vec3 vWorld;varying vec4 vMirror;
-      void main(){vec2 p=vWorld.xz;float t=time;vec3 eye=normalize(cameraPosition-vWorld);vec3 n=normalize(vec3((sin(p.x*5.2+p.y*.9+t*.52)+.32*cos(p.y*13.-t))* .010,1.,cos(p.y*8.-p.x*.5-t*.38)*.009));float f=.14+.68*pow(1.-max(dot(eye,n),0.),2.8);vec2 uv=vMirror.xy/vMirror.w*.5+.5+n.xz*.17;vec3 reflection=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb*.5+texture2D(mirrorMap,clamp(uv+vec2(.0015,.001),.002,.998)).rgb*.25+texture2D(mirrorMap,clamp(uv-vec2(.0015,.001),.002,.998)).rgb*.25;vec3 c=mix(vec3(.047,.028,.009),reflection*vec3(.81,.83,.56),f);vec2 grassUV=(p-grassBounds.xy)/grassBounds.zw+n.xz*.035;float inside=step(0.,grassUV.x)*step(grassUV.x,1.)*step(0.,grassUV.y)*step(grassUV.y,1.);float submerged=texture2D(grassMask,clamp(grassUV,0.,1.)).a*inside;float clarity=(1.-smoothstep(35.,120.,distance(cameraPosition,vWorld)))*(1.-f*.65);c=mix(c,vec3(.13,.16,.055),submerged*clarity*.26);float fleck=pow(max(dot(reflect(-sunDir,n),eye),0.),180.);c+=vec3(.84,.68,.30)*fleck*.65;float thread=pow(max(0.,sin(p.y*17.+sin(p.x*2.)*.7-t*.52)),35.);c+=vec3(.025,.023,.009)*thread;float haze=smoothstep(45.,160.,distance(cameraPosition,vWorld));c=mix(c,vec3(.24,.30,.17),haze*.6);gl_FragColor=vec4(c,1.);
+      fragmentShader:`uniform float highQuality;uniform float time;uniform sampler2D mirrorMap;uniform sampler2D grassMask;uniform vec4 grassBounds;uniform vec3 sunDir;varying vec3 vWorld;varying vec4 vMirror;
+      void main(){vec2 p=vWorld.xz;float t=time;vec3 eye=normalize(cameraPosition-vWorld);vec3 n=normalize(vec3((sin(p.x*5.2+p.y*.9+t*.52)+.32*cos(p.y*13.-t))* .010,1.,cos(p.y*8.-p.x*.5-t*.38)*.009));n=normalize(mix(n,vec3(0.,1.,0.),highQuality*.35));float f=mix(.14,.22,highQuality)+.68*pow(1.-max(dot(eye,n),0.),2.8);vec2 uv=vMirror.xy/vMirror.w*.5+.5+n.xz*.17;vec3 reflection=texture2D(mirrorMap,clamp(uv,.002,.998)).rgb*.5+texture2D(mirrorMap,clamp(uv+vec2(.0015,.001),.002,.998)).rgb*.25+texture2D(mirrorMap,clamp(uv-vec2(.0015,.001),.002,.998)).rgb*.25;vec3 c=mix(mix(vec3(.047,.028,.009),vec3(.025,.055,.042),highQuality),reflection*mix(vec3(.81,.83,.56),vec3(.91,.98,.95),highQuality),f);vec2 grassUV=(p-grassBounds.xy)/grassBounds.zw+n.xz*.035;float inside=step(0.,grassUV.x)*step(grassUV.x,1.)*step(0.,grassUV.y)*step(grassUV.y,1.);float submerged=texture2D(grassMask,clamp(grassUV,0.,1.)).a*inside;float clarity=(1.-smoothstep(35.,120.,distance(cameraPosition,vWorld)))*(1.-f*.65);c=mix(c,vec3(.13,.16,.055),submerged*clarity*.26);float fleck=pow(max(dot(reflect(-sunDir,n),eye),0.),180.);c+=vec3(.84,.68,.30)*fleck*.65;float thread=pow(max(0.,sin(p.y*17.+sin(p.x*2.)*.7-t*.52)),35.);c+=vec3(.025,.023,.009)*thread;float haze=smoothstep(45.,160.,distance(cameraPosition,vWorld));c=mix(c,vec3(.24,.30,.17),haze*.6);gl_FragColor=vec4(c,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
       }`}),[0,config.water.level,0]);water.castShadow=water.receiveShadow=false;
     const pads=pool(new THREE.CircleGeometry(1,14,.1,Math.PI*1.88),standard('#ffffff',{side:THREE.DoubleSide,roughness:.55}),false);
     for(let i=0;i<630;i++){const z=range(-130,42),side=i%2?1:-1,x=riverBank(z,side,config.water)-side*range(.12,2.7),s=range(.08,.25);pads.add([x,.018,z],[s,s,1],[-Math.PI/2,0,range(0,7)],foliage[i%6]);}
-    pools.forEach(p=>p.finish());
+    pools.forEach(p=>p.finish());grass.mesh.computeBoundingBox();const submergedGrassTop=grass.mesh.boundingBox.max.y;
+    const presentation=createAmazonQuality({root,renderer,camera,config,treeRecords,pools:{leaves,smallLeaves,trunks,roots,vines,pebbles},barkMat,woodMat,darkWood,soil,leafMat,hemi,sun,ambient,fog,waterUniform:highQuality});presentation.setQuality(true);
     const resources=createResourceScope(root,{targets,shared:sharedResources});
     return {
       update(elapsed){if(resources.disposed)return;wind.value=elapsed;uniforms.time.value=elapsed;},
-      setQuality(fine){if(!resources.disposed)reflectionTarget.setSize(...config.quality[fine?'fine':'fast'].reflection);},
+      setQuality(fine){if(!resources.disposed){presentation.setQuality(fine);reflectionTarget.setSize(...config.quality.fine.reflection);}},
       renderReflection({frame,fine,force=false,before=()=>{},after=()=>{}}){
         if(resources.disposed||(!force&&frame%config.quality[fine?'fine':'fast'].reflectionEvery!==0))return;
         reflectionCamera.copy(camera,false);reflectionCamera.position.y=2*config.water.level-camera.position.y;camera.getWorldDirection(lookDirection);lookTarget.copy(camera.position).add(lookDirection);lookTarget.y=2*config.water.level-lookTarget.y;reflectionCamera.up.set(0,-1,0);reflectionCamera.lookAt(lookTarget);reflectionCamera.updateMatrixWorld();reflectionMatrix.multiplyMatrices(reflectionCamera.projectionMatrix,reflectionCamera.matrixWorldInverse);
@@ -235,7 +242,7 @@ export function createMap(parent,camera,renderer,config=AMAZON_FLOODED_FOREST,{s
         try{water.visible=false;before();renderer.setRenderTarget(reflectionTarget);renderer.render(parent,reflectionCamera);}
         finally{renderer.setRenderTarget(target);water.visible=visible;after();}
       },
-      getDiagnostics:()=>({disposed:resources.disposed,treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],shorePosition:config.spawn.position,decorationColliders:0,decorations:config.decorations,riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,backwaterLogs:config.decorations.backwaterLogs?.length??0,submergedGrassPatches:grassPatches.length,landmarks:['open-backwater','natural-bank','folding-chair','tackle-box','hanging-lantern','landing-net','fallen-tree','submerged-log','floating-log','submerged-grass','dense-canopy']}),
+      getDiagnostics:()=>({disposed:resources.disposed,presentation:presentation.snapshot(),foliageCleanup:{removedUnsupportedInstances:removedUnsupported,groundedPlants:true},treeCount:treeRecords.length,chairs:[],objects:root.children.length,reflectionSize:[reflectionTarget.width,reflectionTarget.height],shorePosition:config.spawn.position,decorationColliders:0,decorations:config.decorations,riverWidthAtSpawn:2*riverHalfWidth(config.spawn.position[2],config.water),basin:config.water.basin?{...config.water.basin,width:config.water.basin.rightX-config.water.basin.leftX}:null,surfacePlantCount:pads.mesh.count,waterMeshCount:1,reflectionTargetCount:targets.length,waterSegments,waterEnd,backwaterLogs:config.decorations.backwaterLogs?.length??0,submergedGrassPatches:grassPatches.length,submergedGrassTop,landmarks:['open-backwater','natural-bank','folding-chair','tackle-box','hanging-lantern','landing-net','fallen-tree','submerged-log','floating-log','submerged-grass','dense-canopy']}),
       dispose(){if(resources.disposed)return;resources.dispose();if(parent.background===background)parent.background=previous.background;if(parent.fog===fog)parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;}
     };
   }catch(error){createResourceScope(root,{targets,shared:sharedResources}).dispose();parent.background=previous.background;parent.fog=previous.fog;renderer.toneMappingExposure=previous.exposure;renderer.shadowMap.autoUpdate=previous.auto;renderer.shadowMap.needsUpdate=previous.dirty;throw error;}
